@@ -1,0 +1,382 @@
+/* ============================================================
+   Hi no Kuni — Fiche de PRÉSENTATION pour Forumactif.
+   À héberger (GitHub/CDN ou l'app Vercel) puis importer UNE fois
+   dans la CSS du forum :  @import url("https://.../forum/hnk-presentation.css");
+
+   Le code collé dans un message reste court : juste les classes
+   .hnk-pres* + une variable --clan (couleur du clan) inline.
+   Aucun <style> ni <script> dans le message : 100% compatible
+   boîte de texte Forumactif.
+   ============================================================ */
+
+@import url("https://fonts.googleapis.com/css2?family=Anton&family=Cinzel:wght@600;700&family=Cormorant+Garamond:ital@0;1&family=Inter:wght@400;500;600;700&family=Noto+Serif+JP:wght@500;700;900&display=swap");
+
+/* ---------- Conteneur racine ---------- */
+.hnk-pres {
+  --clan: #ff5722;
+  --ink: #07080a;
+  --steel: #14171c;
+  --line: rgba(219, 222, 226, 0.10);
+  --line-strong: rgba(219, 222, 226, 0.18);
+  --bone: #dbdee2;
+  --white: #f5f1ea;
+  --smoke: #6c7079;
+  --ember: #ff5722;
+  --display: "Anton", Impact, sans-serif;
+  --serif: "Cinzel", Georgia, serif;
+  --story: "Cormorant Garamond", Georgia, serif;
+  --ui: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --jp: "Noto Serif JP", "Yu Mincho", serif;
+
+  box-sizing: border-box;
+  max-width: 800px;
+  margin: 16px auto;
+  padding: 0;
+  background-color: var(--ink);
+  background-image:
+    radial-gradient(680px 320px at 80% -60px, color-mix(in srgb, var(--clan) 14%, transparent), transparent 60%),
+    linear-gradient(180deg, #0a0b0e 0%, #07080a 420px);
+  border: 1px solid var(--line-strong);
+  border-top: 3px solid var(--clan);
+  color: var(--bone);
+  font-family: var(--ui);
+  font-size: 14.5px;
+  line-height: 1.6;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.03), 0 30px 80px rgba(0, 0, 0, 0.75);
+  -webkit-font-smoothing: antialiased;
+}
+.hnk-pres * { box-sizing: border-box; }
+.hnk-pres img { max-width: 100%; display: block; }
+
+/* ---------- En-tête ---------- */
+.hnk-pres-head {
+  position: relative;
+  padding: 34px 36px 28px;
+  border-bottom: 1px solid var(--line-strong);
+  overflow: hidden;
+}
+.hnk-pres-head .kanji {
+  position: absolute;
+  right: 18px;
+  top: -42px;
+  font-family: var(--jp);
+  font-weight: 900;
+  font-size: 168px;
+  line-height: 1;
+  color: color-mix(in srgb, var(--clan) 9%, transparent);
+  pointer-events: none;
+  user-select: none;
+}
+/* Crête du clan (blason en image de fond, couleur du clan cuite dans le SVG).
+   Image plutôt que masque → les blasons en CONTOUR (Hyûga, Uzumaki) rendent
+   aussi bien que ceux en aplat. Les règles par clan (avec data-URI coloré)
+   sont générées par scripts/gen-crests.ts. */
+.hnk-pres-emblem {
+  position: absolute;
+  top: 26px;
+  right: 30px;
+  width: 60px;
+  height: 60px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  opacity: 0.92;
+  filter: drop-shadow(0 0 12px color-mix(in srgb, var(--clan) 45%, transparent));
+  pointer-events: none;
+}
+/* CRESTS:START */
+.hnk-pres--uchiha .hnk-pres-emblem{background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20500%20600%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M236%20215L221%20217L195%20224L162%20240L139%20257L122%20274L102%20300L120%20328L134%20343L151%20357L185%20376L223%20387L208%20522L278%20522L279%20524L287%20523L285%20520L275%20387L297%20382L319%20374L347%20358L376%20332L399%20299L394%20299L387%20287L366%20263L344%20245L328%20235L306%20225L282%20218L263%20215L237%20215ZM249%20209L249%20210ZM236%2065L203%2071L183%2078L160%2090L132%20112L108%20142L100%20156L90%20182L84%20216L86%20253L91%20274L98%20292L100%20293L113%20274L130%20256L151%20239L167%20229L203%20214L220%20210L251%20207L272%20209L295%20214L315%20221L333%20230L364%20252L382%20270L399%20294L401%20293L406%20281L414%20250L415%20211L412%20192L405%20169L395%20148L384%20131L356%20102L341%2091L321%2080L300%2072L279%2067L263%2065L237%2065Z%22%20fill%3D%22%23C0392B%22%20fill-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E")}
+.hnk-pres--hyuga .hnk-pres-emblem{background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M%206%2014%20C%208%208%2C%2014%208%2C%2014%2014%20L%2032%2052%20L%2050%2014%20C%2050%208%2C%2056%208%2C%2058%2014%22%20fill%3D%22none%22%20stroke%3D%22%238E7CC3%22%20stroke-width%3D%223.4%22%20stroke-linecap%3D%22round%22%2F%3E%3Cpath%20d%3D%22M%2032%2016%20C%2028%2022%2C%2024%2028%2C%2028%2034%20C%2030%2038%2C%2036%2038%2C%2036%2032%20C%2036%2028%2C%2032%2027%2C%2031%2030%20C%2030.3%2032%2C%2033%2033%2C%2033%2031%22%20fill%3D%22none%22%20stroke%3D%22%238E7CC3%22%20stroke-width%3D%222.4%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E")}
+.hnk-pres--senju .hnk-pres-emblem{background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20960%20400%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M748%208L718%2012L692%2021L663%2038L639%2061L621%2086L606%20121L600%20149L597%20189L491%20188L490%20105L475%20105L474%20188L358%20189L356%20158L351%20130L345%20111L335%2090L314%2061L299%2046L278%2031L262%2023L236%2014L192%2010L156%2015L136%2022L105%2039L81%2059L44%20116L30%20127L14%20133L5%20150L30%20142L48%20131L70%20108L89%2082L102%2069L120%2056L156%2041L174%2037L202%2035L234%2039L258%2053L280%2074L296%2096L308%20119L316%20140L323%20168L325%20181L324%20190L282%20191L280%20167L273%20143L262%20125L247%20109L231%2098L209%2089L186%2085L165%2085L137%2091L121%2098L105%20108L95%20118L77%20144L68%20152L54%20157L49%20167L67%20162L77%20156L112%20120L131%20109L159%20101L189%20100L200%20102L214%20109L229%20121L237%20130L247%20145L255%20163L259%20177L260%20192L8%20200L8%20202L22%20203L259%20208L261%20210L257%20232L253%20243L242%20262L230%20275L218%20284L209%20289L193%20294L163%20294L132%20286L109%20272L78%20239L68%20233L49%20227L54%20237L69%20243L79%20253L97%20279L104%20286L126%20300L142%20306L157%20309L198%20308L219%20302L232%20296L245%20287L261%20271L268%20261L278%20237L282%20209L326%20211L325%20233L318%20267L311%20286L294%20316L286%20326L262%20348L239%20361L219%20366L183%20366L164%20363L144%20357L120%20346L102%20333L89%20320L70%20294L48%20271L30%20260L5%20252L14%20269L30%20275L44%20286L78%20339L91%20353L117%20372L132%20380L155%20388L173%20391L212%20391L236%20388L262%20379L278%20371L300%20355L326%20326L342%20298L353%20263L356%20244L358%20210L474%20212L475%20300L490%20300L491%20212L597%20211L599%20240L603%20265L617%20304L630%20325L646%20344L659%20356L676%20368L710%20383L721%20386L747%20389L778%20389L798%20386L820%20379L839%20369L860%20354L873%20342L910%20285L921%20275L942%20266L950%20250L929%20256L908%20268L889%20287L863%20321L849%20334L836%20343L818%20352L798%20359L769%20364L740%20364L722%20361L703%20352L687%20341L672%20327L654%20303L643%20281L634%20253L630%20230L629%20211L673%20209L678%20238L685%20255L697%20272L713%20287L732%20298L753%20305L770%20307L803%20306L824%20300L852%20283L879%20247L889%20239L901%20235L906%20225L891%20229L878%20236L863%20250L850%20266L827%20282L797%20291L765%20292L758%20291L741%20284L729%20276L715%20262L701%20238L695%20216L696%20209L951%20202L951%20200L930%20199L695%20192L694%20188L696%20175L701%20158L709%20141L717%20129L739%20108L754%20100L763%2098L798%2099L825%20107L847%20121L877%20153L889%20160L906%20165L901%20155L886%20149L876%20139L852%20107L824%2091L810%2086L794%2083L766%2083L752%2085L734%2091L720%2098L710%20105L695%20120L686%20133L676%20160L674%20190L630%20190L632%20166L639%20138L646%20119L662%2089L673%2074L698%2050L718%2038L733%2034L764%2033L783%2035L812%2043L832%2052L851%2065L869%2083L887%20108L904%20126L926%20140L950%20148L942%20131L924%20124L909%20111L875%2058L868%2050L849%2036L822%2021L800%2013L771%208L749%208Z%22%20fill%3D%22%233FA34D%22%20fill-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E")}
+.hnk-pres--uzumaki .hnk-pres-emblem{background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%20fill%3D%22none%22%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2232%22%20r%3D%2228%22%20fill%3D%22none%22%20stroke%3D%22%23E67E22%22%20stroke-width%3D%223%22%2F%3E%3Cpath%20d%3D%22M32%2014%20A%2018%2018%200%201%201%2014%2032%20A%2014%2014%200%201%201%2042%2032%20A%2010%2010%200%201%201%2022%2032%20A%206%206%200%201%201%2034%2032%22%20fill%3D%22none%22%20stroke%3D%22%23E67E22%22%20stroke-width%3D%224.5%22%20stroke-linecap%3D%22square%22%2F%3E%3C%2Fsvg%3E")}
+.hnk-pres--sarutobi .hnk-pres-emblem{background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201800%201800%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M894%20394L871%20397L848%20404L824%20416L804%20432L790%20447L776%20469L766%20494L761%20520L761%20547L765%20569L772%20589L779%20603L790%20619L800%20631L827%20652L852%20664L872%20670L873%20669L875%20671L875%20854L873%20856L845%20853L813%20846L780%20835L755%20824L724%20807L699%20790L683%20778L651%20747L673%20723L683%20707L691%20689L698%20652L696%20624L688%20598L680%20582L667%20564L648%20546L619%20529L591%20521L556%20520L521%20529L496%20543L480%20556L470%20567L456%20589L445%20619L442%20639L442%20656L448%20687L459%20711L472%20730L488%20746L504%20757L536%20771L558%20775L589%20774L613%20767L656%20809L684%20830L725%20855L754%20869L800%20885L840%20894L871%20897L875%20899L875%20970L873%20972L838%20976L808%20983L778%20993L744%201008L710%201028L685%201046L655%201072L642%201086L622%201081L604%201079L579%201081L555%201088L541%201095L525%201106L509%201122L498%201138L488%201160L483%201181L482%201205L485%201224L492%201245L500%201260L512%201276L535%201296L556%201307L575%201313L597%201316L626%201313L645%201307L666%201296L682%201283L699%201263L711%201239L718%201210L718%201184L715%201168L708%201148L696%201128L680%201111L679%201107L699%201088L723%201069L755%201049L773%201040L805%201027L830%201020L873%201013L875%201015L875%201389L883%201402L896%201408L907%201407L916%201402L921%201396L925%201384L924%201015L926%201013L954%201017L979%201023L1027%201041L1073%201068L1100%201089L1119%201107L1119%201110L1106%201123L1096%201137L1086%201158L1080%201184L1080%201210L1082%201223L1088%201242L1099%201263L1112%201279L1132%201296L1151%201306L1176%201314L1202%201316L1223%201313L1240%201308L1263%201296L1287%201275L1301%201255L1311%201232L1316%201207L1314%201175L1307%201152L1299%201136L1289%201122L1273%201106L1257%201095L1243%201088L1213%201080L1183%201080L1157%201087L1130%201060L1109%201043L1085%201026L1052%201007L1015%20991L990%20983L960%20976L926%20972L924%20969L924%20899L926%20897L946%20896L975%20891L1016%20880L1045%20869L1080%20852L1114%20831L1143%20809L1185%20768L1218%20775L1241%20775L1272%20768L1295%20757L1311%20746L1325%20732L1344%20704L1351%20687L1355%20671L1357%20637L1351%20608L1335%20575L1316%20553L1287%20533L1256%20522L1227%20519L1191%20525L1166%20536L1144%20552L1123%20576L1111%20598L1102%20632L1102%20663L1109%20691L1124%20720L1136%20735L1148%20746L1146%20750L1112%20781L1089%20798L1067%20812L1036%20828L986%20846L954%20853L926%20856L924%20854L924%20671L950%20663L977%20649L999%20631L1015%20611L1028%20587L1034%20570L1038%20548L1038%20518L1033%20494L1022%20467L1009%20447L987%20425L966%20411L949%20403L929%20397L895%20394ZM1192%201130L1202%201129L1218%201132L1239%201143L1250%201153L1258%201165L1262%201173L1266%201190L1264%201215L1259%201228L1252%201239L1245%201247L1230%201258L1218%201263L1203%201266L1192%201266L1178%201263L1164%201257L1154%201250L1138%201231L1133%201220L1130%201207L1130%201187L1133%201174L1144%201155L1162%201139L1174%201133L1191%201130ZM594%201130L613%201130L638%201140L654%201155L660%201164L668%201187L668%201207L666%201217L660%201231L653%201241L634%201257L617%201264L605%201266L584%201264L575%201261L558%201251L541%201232L537%201224L532%201205L532%201189L534%201180L537%201171L546%201156L553%201148L566%201138L580%201132L593%201130ZM1225%20570L1241%20570L1259%20575L1281%20589L1290%20598L1298%20610L1303%20621L1307%20638L1306%20663L1302%20676L1292%20694L1281%20706L1270%20714L1258%20720L1239%20725L1220%20725L1206%20722L1190%20715L1179%20707L1169%20697L1160%20684L1156%20675L1151%20653L1152%20635L1157%20617L1173%20593L1182%20585L1199%20575L1212%20571L1224%20570ZM566%20570L581%20570L600%20575L622%20589L638%20609L645%20625L648%20640L646%20666L640%20682L630%20697L609%20715L596%20721L580%20725L560%20725L546%20722L531%20715L521%20708L512%20700L502%20686L495%20670L492%20655L492%20639L495%20625L501%20610L510%20597L523%20585L540%20575L553%20571L565%20570ZM893%20445L906%20444L926%20448L941%20454L956%20464L968%20476L979%20492L986%20510L989%20527L988%20547L983%20565L975%20581L966%20593L957%20602L942%20612L922%20620L911%20622L888%20622L874%20619L857%20612L844%20603L833%20593L821%20576L814%20559L810%20538L811%20519L816%20501L825%20484L832%20475L853%20457L873%20448L892%20445Z%22%20fill%3D%22%23C99B3A%22%20fill-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E")}
+.hnk-pres--konoha .hnk-pres-emblem{background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%20fill%3D%22none%22%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22%235E83A8%22%20stroke-width%3D%224.20699%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-miterlimit%3D%224%22%20transform%3D%22matrix(1.35911%2C0%2C0%2C1.3562%2C265.674%2C124.785)%22%3E%3Cpath%20d%3D%22M%20-142.125%2C-55.25%20C%20-140.875%2C-54.666667%20-139.4375%2C-53.9375%20-139.875%2C-49.875%20C%20-141.1875%2C-46.3125%20-143.6875%2C-43.270833%20-150%2C-43.5%20C%20-155.0625%2C-44.729167%20-160.5625%2C-46.166667%20-160.125%2C-56.25%20C%20-159.6875%2C-61.458333%20-154.25%2C-68.6875%20-145%2C-68.75%20C%20-131.625%2C-68.5625%20-125.0625%2C-56.75%20-125.625%2C-47.625%20C%20-126.3125%2C-34.625%20-136.70833%2C-27.875%20-151%2C-26.625%20C%20-158.66667%2C-26.625%20-167.5625%2C-30.8125%20-171.625%2C-37.125%20C%20-176.6875%2C-43.6875%20-178.64583%2C-57.208333%20-174.375%2C-66.125%20C%20-169.85417%2C-75.666667%20-161.3244%2C-81.672042%20-151.25%2C-81.875%20C%20-141.89583%2C-82.0625%20-135.75%2C-78.541667%20-132.25%2C-76.375%20L%20-124%2C-84.375%22%2F%3E%3Cpath%20d%3D%22M%20-172.625%2C-69.25%20C%20-177.5736%2C-61.537772%20-180.88532%2C-51.495796%20-184.25%2C-45.375%20C%20-186.66667%2C-40.125%20-189.95833%2C-37.125%20-193.375%2C-33.125%20C%20-179.80766%2C-25.257434%20-158.89934%2C-24.622727%20-145.3125%2C-27.4375%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E")}
+/* CRESTS:END */
+
+.hnk-pres-eyebrow {
+  position: relative;
+  display: inline-block;
+  font: 700 10px/1 var(--ui);
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--clan);
+  margin-bottom: 14px;
+}
+.hnk-pres-eyebrow::after {
+  content: "";
+  display: inline-block;
+  width: 34px;
+  height: 1px;
+  background: var(--clan);
+  vertical-align: middle;
+  margin-left: 12px;
+}
+.hnk-pres-name {
+  position: relative;
+  margin: 0;
+  font-family: var(--display);
+  font-size: 58px;
+  line-height: 0.95;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--white);
+}
+.hnk-pres-sub {
+  position: relative;
+  margin-top: 10px;
+  font-family: var(--story);
+  font-style: italic;
+  font-size: 19px;
+  color: var(--bone);
+  opacity: 0.82;
+}
+
+/* ---------- Sections génériques ---------- */
+.hnk-pres-sec { padding: 26px 36px; border-bottom: 1px solid var(--line); }
+.hnk-pres-sec:last-child { border-bottom: 0; }
+.hnk-pres-title {
+  position: relative;
+  margin: 0 0 18px;
+  padding-left: 22px;
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--white);
+}
+.hnk-pres-title::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 4px;
+  width: 10px;
+  height: 10px;
+  background: var(--clan);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--clan) 55%, transparent);
+}
+
+/* ---------- Bloc Personnage (avatar + identité) ---------- */
+.hnk-pres-char {
+  display: flex;
+  gap: 24px;
+  align-items: stretch;
+}
+/* Cadre avatar VERROUILLÉ : 200×280 fixe, l'image est bridée dedans et
+   recadrée (cover). Les !important écrasent les styles inline que
+   Forumactif peut injecter sur les images de message → aucun débordement,
+   la fiche ne casse jamais quelle que soit la taille de l'image fournie. */
+.hnk-pres-ava {
+  flex: 0 0 200px;
+  width: 200px !important;
+  max-width: 200px !important;
+  height: 280px !important;
+  max-height: 280px !important;
+  position: relative;
+  border: 1px solid var(--line-strong);
+  border-bottom: 3px solid var(--clan);
+  background: #000;
+  overflow: hidden !important;
+}
+.hnk-pres-ava img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  min-width: 0 !important;
+  object-fit: cover !important;
+  object-position: center top;
+  display: block !important;
+  margin: 0 !important;
+  filter: saturate(1.05) contrast(1.05);
+}
+.hnk-pres-id {
+  flex: 1 1 auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  align-self: center;
+}
+.hnk-pres-id li {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line);
+}
+.hnk-pres-id li:last-child { border-bottom: 0; }
+.hnk-pres-id li span {
+  flex: 0 0 110px;
+  font: 700 10px/1.3 var(--ui);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--smoke);
+  position: relative;
+  padding-left: 14px;
+}
+.hnk-pres-id li span::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 3px;
+  width: 5px;
+  height: 5px;
+  background: var(--clan);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+.hnk-pres-id li b {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 0.04em;
+  color: var(--white);
+}
+
+/* ---------- Traits particuliers ---------- */
+.hnk-pres-traits {
+  font-family: var(--story);
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--bone);
+  text-align: justify;
+}
+.hnk-pres-traits em { color: var(--clan); font-style: italic; }
+.hnk-pres-traits strong { color: var(--white); font-weight: 600; }
+
+/* ---------- Caractère : 3 questions ---------- */
+.hnk-pres-qa { display: flex; flex-direction: column; gap: 16px; }
+.hnk-pres-q {
+  padding: 16px 20px;
+  background: linear-gradient(180deg, rgba(28, 32, 38, 0.55), rgba(14, 16, 20, 0.55));
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--clan);
+}
+.hnk-pres-q .q {
+  margin: 0 0 8px;
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: var(--clan);
+}
+.hnk-pres-q .a {
+  margin: 0;
+  font-family: var(--story);
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--bone);
+  text-align: justify;
+}
+
+/* ---------- Chronologie : fresque (reprise du wiki) ---------- */
+.hnk-pres-chrono {
+  margin: 4px 0 2px;
+  padding-left: 30px;
+  border-left: 1px dashed color-mix(in srgb, var(--clan) 40%, transparent);
+  position: relative;
+}
+.hnk-pres-chrono::before,
+.hnk-pres-chrono::after {
+  content: "";
+  position: absolute;
+  left: -5px;
+  width: 9px;
+  height: 9px;
+  background: var(--clan);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--clan) 55%, transparent);
+}
+.hnk-pres-chrono::before { top: 0; }
+.hnk-pres-chrono::after { bottom: 0; }
+.hnk-pres-chrono .ev { position: relative; margin: 0 0 22px; padding: 2px 0 0 8px; }
+.hnk-pres-chrono .ev:last-child { margin-bottom: 0; }
+.hnk-pres-chrono .ev::before {
+  content: "";
+  position: absolute;
+  left: -35px;
+  top: 9px;
+  width: 8px;
+  height: 1px;
+  background: var(--clan);
+  opacity: 0.5;
+}
+.hnk-pres-chrono .yr {
+  display: inline-block;
+  font-family: var(--display);
+  font-size: 18px;
+  color: var(--clan);
+  letter-spacing: 0.04em;
+  margin-right: 14px;
+  min-width: 54px;
+  text-shadow: 0 0 10px color-mix(in srgb, var(--clan) 30%, transparent);
+}
+.hnk-pres-chrono .lab {
+  font: 700 11px/1.4 var(--ui);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--white);
+}
+.hnk-pres-chrono .ev p {
+  margin: 6px 0 0;
+  font-family: var(--story);
+  font-size: 15.5px;
+  line-height: 1.55;
+  color: var(--bone);
+  opacity: 0.85;
+  text-align: justify;
+}
+
+/* ---------- HRP ---------- */
+.hnk-pres-hrp {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  padding: 18px 22px;
+  background: repeating-linear-gradient(135deg, rgba(108,112,121,0.07) 0 14px, rgba(108,112,121,0.02) 14px 28px);
+  border: 1px solid var(--line-strong);
+  border-left: 3px solid var(--clan);
+}
+.hnk-pres-hrp .ico {
+  flex: 0 0 auto;
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  background: rgba(14, 16, 20, 0.7);
+  border: 1px solid color-mix(in srgb, var(--clan) 40%, transparent);
+  font-family: var(--jp);
+  font-size: 22px;
+  color: var(--clan);
+  text-shadow: 0 0 12px color-mix(in srgb, var(--clan) 45%, transparent);
+}
+.hnk-pres-hrp .hrp-body { flex: 1 1 auto; min-width: 0; }
+.hnk-pres-hrp ul { margin: 0; padding: 0; list-style: none; }
+.hnk-pres-hrp li {
+  display: flex;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13.5px;
+}
+.hnk-pres-hrp li:last-child { border-bottom: 0; }
+.hnk-pres-hrp li span {
+  flex: 0 0 150px;
+  font: 700 10px/1.5 var(--ui);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--smoke);
+}
+.hnk-pres-hrp li b { color: var(--white); font-weight: 600; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 560px) {
+  .hnk-pres-name { font-size: 40px; }
+  .hnk-pres-char { flex-direction: column; }
+  /* Cadre avatar conservé fixe (200×280) — il tient sur tout écran ≥ 320px. */
+  .hnk-pres-ava { flex-basis: auto; }
+  .hnk-pres-id li { flex-wrap: wrap; gap: 4px; }
+  .hnk-pres-id li span { flex-basis: 100%; }
+  .hnk-pres-hrp li { flex-wrap: wrap; gap: 2px; }
+  .hnk-pres-hrp li span { flex-basis: 100%; }
+}

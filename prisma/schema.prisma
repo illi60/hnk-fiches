@@ -1,0 +1,219 @@
+// ============================================================
+// Hi no Kuni — Fiches Techniques
+// Schéma : User (RP + sync forum) · FicheTechnique · XPTransaction
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  // Runtime serverless (Vercel) → Transaction pooler Supabase (port 6543)
+  url       = env("DATABASE_URL")
+  // Migrations Prisma → Direct connection Supabase (port 5432)
+  // Sur Neon ou Postgres local, mets la même valeur que DATABASE_URL.
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum Role {
+  USER
+  ADMIN
+}
+
+// Rang shinobi (verrouillé : E → S, cf. CdC §9)
+enum Rang {
+  E
+  D
+  C
+  B
+  A
+  S
+}
+
+// Grade institutionnel
+enum Grade {
+  GENIN
+  CHUNIN
+  JONIN
+}
+
+// Workflow d'une fiche technique
+enum FicheStatus {
+  DRAFT      // en cours d'écriture par le joueur
+  PENDING    // soumise, en attente de modération
+  VALIDATED  // approuvée par le staff (XP débité à ce moment)
+  REJECTED   // refusée (motif obligatoire)
+}
+
+// Raison d'un mouvement d'XP (audit immuable)
+enum XPReason {
+  ADMIN_GRANT             // admin crédite manuellement
+  ADMIN_REMOVE            // admin retire manuellement
+  REGISTRATION_BONUS      // crédit à la création de compte
+  FORUM_SYNC              // delta calculé depuis la page profil Forumactif
+  FICHE_VALIDATED         // débit lors de la validation d'une fiche
+  FICHE_REJECTED_REFUND   // remboursement éventuel si validation annulée
+  ARTS_SPEND              // dépense XP : expertise d'art, montée de spé, Kuchiyose
+  QUINTESSENCE_SPEND      // dépense XP : quintessence d'art/KG, second KG
+}
+
+// ============================================================
+// MODELS
+// ============================================================
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  username      String   @unique
+  passwordHash  String
+  role          Role     @default(USER)
+  canManageAdmins Boolean @default(false)
+
+  // Économie XP — voir lib/xp.ts pour les dérivés (niveau).
+  // Le niveau N'EST JAMAIS stocké : il est recalculé à la volée.
+  xpAvailable   Int      @default(0) // monnaie dépensable
+  xpTotalEarned Int      @default(0) // lifetime → drive le niveau
+  version       Int      @default(0) // optimistic lock (cf. PLAYBOOK §2.3)
+
+  // === Profil RP ===
+  primaryKg       String?  // 1er Kekkei Genkai (choix joueur IRRÉVERSIBLE)
+  primaryAffinity String?  // 1ère affinité élémentaire (choix joueur IRRÉVERSIBLE)
+  clan          String?
+  rang          Rang?    // legacy / miroir du champ "Rang" du forum (sync)
+  // Les 3 rangs du jeu (E→S), gérés par le staff dans l'app :
+  rangVillage   Rang?
+  rangHistoire  Rang?
+  rangClan      Rang?
+  grade         Grade?
+  artsState     Json?    // état des Arts Shinobi (rangs de spés, expertises) — cf. lib/arts.ts
+  progressionState Json? // quintessences acquises + mode spécial — cf. lib/quintessence.ts
+  uniteSpeciale String?
+  trame         String?
+  prime         String?
+  age           Int?
+  genre         String?
+  kekkeiGenkai  String?
+  affinites     String[] @default([])
+  // Affinité(s) du pacte Kuchiyose (1ère verrouillée ; 2e via pré-stade Mode Ermite).
+  pactAffinities String[] @default([])
+
+  // === Sync forum Hi no Kuni ===
+  forumProfileUrl    String?   // ex: https://hinokuni.forumactif.com/u1
+  forumUserId        Int?      // ID numérique parsé de l'URL
+  forumPseudo        String?   // dernier pseudo connu sur le forum
+  forumAvatar        String?   // URL de l'avatar forum (CDN 2img.net)
+  forumLastXp        Int?      // dernière valeur XP lue (pour calcul delta)
+  forumLastRang      String?   // dernier rang lu (pour audit)
+  forumPresentationUrl String?
+  forumCarnetUrl     String?
+  forumLastSyncAt    DateTime?
+  forumLastSyncError String?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  fiches          FicheTechnique[] @relation("FicheAuthor")
+  fichesValidated FicheTechnique[] @relation("FicheValidator")
+  xpHistory       XPTransaction[]  @relation("UserXP")
+  xpActedOn       XPTransaction[]  @relation("ActorXP")
+  invocations     Invocation[]     @relation("UserInvocations")
+
+  @@index([forumUserId])
+}
+
+// Invocation (Kuchiyose) — mini-profil rattaché à un joueur, avec sa
+// propre liste de techniques (JSON [{nom, description}]).
+model Invocation {
+  id           String   @id @default(cuid())
+  ownerId      String
+  owner        User     @relation("UserInvocations", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  nom          String
+  espece       String?
+  affinite     String?  // legacy : affinité libre (remplacée par l'affinité de pacte héritée du joueur)
+  artShinobi   String?  // Art Shinobi de l'animal (remplace le KG côté invocation)
+  kekkeiGenkai String?  // KG : seulement si Mode Ermite stade 2 (KG partagé)
+  image        String?  // URL d'illustration (optionnelle)
+  description  String?  @db.Text
+  techniques   Json?    // [{ nom, description }] (legacy ; techniques validées = FicheTechnique liées)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Techniques de Kuchiyose passées par la validation (FicheTechnique)
+  fiches       FicheTechnique[] @relation("InvocationFiches")
+
+  @@index([ownerId])
+}
+
+model FicheTechnique {
+  id              String      @id @default(cuid())
+  slug            String      @unique
+  nom             String
+  description     String      @db.Text
+
+  // Métadonnées RP
+  art             String?     // Art Shinobi : Ninjutsu, Taijutsu, Bukijutsu, Genjutsu, Fūinjutsu, Kanchijutsu, Kuchiyose
+  secondaryArt    String?     // 2e Art Shinobi (techniques de type COMBINEE)
+  actionType      String?     // Type d'action : EVOLUTIVE..SUPREME (drive le coût)
+  element         String?     // affinité : Katon, Suiton, Doton, Raiton, Futon
+  kekkeiGenkai    String?     // si manifesté par un Kekkei Genkai (lequel)
+  nature          String?     // PERSONNELLE | COLLECTIVE (clan / bibliothèque commune)
+  kinjutsuScope   String?     // legacy (ancien scope Kinjutsu : CLAN | VILLAGE)
+  clan            String?     // clan propriétaire (Nature COLLECTIVE → bibliothèque commune)
+  type            String?     // legacy (ancien champ "type")
+  rangMin         Rang?       // legacy (rang minimal)
+
+  // Technique de Kuchiyose : rattachée à une invocation du joueur (sinon = perso)
+  invocationId    String?
+  invocation      Invocation? @relation("InvocationFiches", fields: [invocationId], references: [id], onDelete: SetNull)
+
+  // Type d'action COLLECTIVE (jouée à 2-3) : participants co-payeurs
+  collaborators   String[]    @default([]) // pseudos saisis (audit / affichage)
+  collaboratorIds String[]    @default([]) // IDs résolus (partage du coût + affichage croisé)
+
+  coutXp          Int         @default(0)
+
+  status          FicheStatus @default(DRAFT)
+  rejectionReason String?
+
+  authorId        String
+  author          User        @relation("FicheAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  validatedById   String?
+  validatedBy     User?       @relation("FicheValidator", fields: [validatedById], references: [id], onDelete: SetNull)
+  validatedAt     DateTime?
+
+  // Soft delete : on n'efface jamais (préserve l'historique RP)
+  isActive        Boolean     @default(true)
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([authorId, status])
+  @@index([status, createdAt])
+  @@index([clan, status])
+  @@index([invocationId])
+}
+
+model XPTransaction {
+  id        String   @id @default(cuid())
+  userId    String
+  actorId   String?  // null = système (sync forum, bonus inscription)
+  amount    Int      // signe + ou − (audit immuable)
+  reason    XPReason
+  metadata  Json?    // ex: { ficheId, ficheSlug, delta, syncFrom: "forum" }
+  createdAt DateTime @default(now())
+
+  user      User     @relation("UserXP",  fields: [userId],  references: [id], onDelete: Cascade)
+  actor     User?    @relation("ActorXP", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([reason, createdAt])
+}

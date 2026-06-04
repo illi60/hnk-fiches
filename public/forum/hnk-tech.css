@@ -1,0 +1,75 @@
+/* ============================================================
+   Hi no Kuni — cartes de techniques pour Forumactif.
+   À héberger (GitHub/CDN ou l'app Vercel) puis importer UNE fois
+   dans la CSS du forum :  @import url("https://.../forum/hnk-tech.css");
+
+   Le code collé dans un message reste court : juste les classes
+   ci-dessous + une variable --kg (couleur du Kekkei Genkai) inline.
+   ============================================================ */
+
+.hnk-tech {
+  --kg: #ff8a4c;
+  font-family: Arial, Helvetica, sans-serif;
+  max-width: 800px;
+  margin: 14px 0;
+  padding: 18px 20px;
+  background-color: #141110;
+  background-image: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--kg) 18%, transparent) 0%,
+    color-mix(in srgb, var(--kg) 7%, transparent) 38%,
+    rgba(0, 0, 0, 0) 72%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 4px solid var(--kg);
+  border-radius: 4px;
+  color: #e8e2da;
+  box-shadow: 0 0 22px color-mix(in srgb, var(--kg) 12%, transparent);
+}
+
+.hnk-tech-meta {
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #9a9088;
+  margin-bottom: 6px;
+}
+
+.hnk-tech-name {
+  font-size: 24px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #ffffff;
+  margin-bottom: 12px;
+}
+
+.hnk-tech-chips {
+  margin-bottom: 10px;
+}
+
+.hnk-tech-chip {
+  display: inline-block;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  margin: 0 6px 6px 0;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 3px;
+  color: #d8cfc6;
+}
+
+/* Chip Kekkei Genkai : prend la couleur du KG. */
+.hnk-tech-chip--kg {
+  color: var(--kg);
+  border-color: var(--kg);
+}
+
+.hnk-tech-desc {
+  font-size: 14px;
+  line-height: 1.65;
+  color: #d8cfc6;
+  white-space: pre-line;
+  text-align: justify;
+}
