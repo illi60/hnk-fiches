@@ -112,6 +112,8 @@ export interface TechniqueExportData {
   kinjutsuScope: string | null;
   clan?: string | null;
   espece?: string | null; // espèce de l'invocation (techniques de Kuchiyose)
+  secondaryElement?: string | null; // 2e affinité (COMBINEE)
+  secondaryKekkeiGenkai?: string | null; // 2e KG (COMBINEE)
   description: string;
   coutXp: number;
 }
@@ -139,7 +141,9 @@ export function techniqueForumHtml(t: TechniqueExportData): string {
   if (t.espece) chips.push(chip(`口 ${t.espece}`));
   if (t.actionType) chips.push(chip(actionLabel(t.actionType)));
   if (t.element) chips.push(chip(t.element));
+  if (t.secondaryElement) chips.push(chip(t.secondaryElement));
   if (t.kekkeiGenkai) chips.push(chip(`KG · ${t.kekkeiGenkai}`, true));
+  if (t.secondaryKekkeiGenkai) chips.push(chip(`KG · ${t.secondaryKekkeiGenkai}`, true));
   if (t.nature) chips.push(chip(natureLabel(t.nature, t.kinjutsuScope, t.clan)));
 
   const meta = `Technique${t.coutXp ? ` &middot; ${t.coutXp} XP` : ""}`;

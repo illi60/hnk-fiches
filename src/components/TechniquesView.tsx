@@ -16,6 +16,8 @@ export interface MyTech {
   actionType: string | null;
   element: string | null;
   kekkeiGenkai: string | null;
+  secondaryElement: string | null;
+  secondaryKekkeiGenkai: string | null;
   nature: string | null;
   kinjutsuScope: string | null;
   clan: string | null;
@@ -122,12 +124,24 @@ export default function TechniquesView({ techniques }: { techniques: MyTech[] })
                   {t.secondaryArt && <span className="hnk-tech-chip">+ {t.secondaryArt}</span>}
                   {t.actionType && <span className="hnk-tech-chip">{actionLabel(t.actionType)}</span>}
                   {t.element && <span className="hnk-tech-chip">{t.element}</span>}
+                  {t.secondaryElement && <span className="hnk-tech-chip">{t.secondaryElement}</span>}
                   {t.kekkeiGenkai && (
                     <span
                       className="hnk-tech-chip"
                       style={{ color: kgColor(t.kekkeiGenkai), borderColor: kgColor(t.kekkeiGenkai) }}
                     >
                       KG · {t.kekkeiGenkai}
+                    </span>
+                  )}
+                  {t.secondaryKekkeiGenkai && (
+                    <span
+                      className="hnk-tech-chip"
+                      style={{
+                        color: kgColor(t.secondaryKekkeiGenkai),
+                        borderColor: kgColor(t.secondaryKekkeiGenkai),
+                      }}
+                    >
+                      KG · {t.secondaryKekkeiGenkai}
                     </span>
                   )}
                   {t.invocationNom && (
@@ -161,6 +175,8 @@ export default function TechniquesView({ techniques }: { techniques: MyTech[] })
                           actionType: t.actionType,
                           element: t.element,
                           kekkeiGenkai: t.kekkeiGenkai,
+                          secondaryElement: t.secondaryElement,
+                          secondaryKekkeiGenkai: t.secondaryKekkeiGenkai,
                           nature: t.nature,
                           kinjutsuScope: t.kinjutsuScope,
                           clan: t.clan,

@@ -33,6 +33,8 @@ export default async function AdminClansPage() {
       actionType: true,
       element: true,
       kekkeiGenkai: true,
+      secondaryElement: true,
+      secondaryKekkeiGenkai: true,
       description: true,
       coutXp: true,
       author: { select: { username: true } },
@@ -79,6 +81,8 @@ export default async function AdminClansPage() {
                   actionType: t.actionType,
                   element: t.element,
                   kekkeiGenkai: t.kekkeiGenkai,
+                  secondaryElement: t.secondaryElement,
+                  secondaryKekkeiGenkai: t.secondaryKekkeiGenkai,
                   coutXp: t.coutXp,
                   author: t.author,
                 }))}

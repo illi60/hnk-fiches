@@ -57,6 +57,9 @@ export const ficheCreateSchema = z.object({
     .nullable(),
   element: z.string().max(40).optional().nullable(),
   kekkeiGenkai: z.string().max(60).optional().nullable(),
+  // COMBINEE : 2e manifestation (affinité et/ou KG).
+  secondaryElement: z.string().max(40).optional().nullable(),
+  secondaryKekkeiGenkai: z.string().max(60).optional().nullable(),
   nature: z.enum(["PERSONNELLE", "COLLECTIVE"]).optional().nullable(),
   // Nature COLLECTIVE → clan propriétaire (bibliothèque commune).
   clan: z.string().max(60).optional().nullable(),
@@ -96,8 +99,10 @@ export const identitySchema = z.object({
 });
 
 // Affinité du pacte Kuchiyose (1ère verrouillée ; 2e via pré-stade Mode Ermite).
+// `species` : espèce du pacte, posée et verrouillée au 1er choix d'affinité.
 export const pactAffinitySchema = z.object({
   affinity: z.string().min(1).max(40),
+  species: z.string().max(60).optional(),
 });
 
 // Admin (god-mode) : remplace la liste complète des affinités du pacte d'un joueur.

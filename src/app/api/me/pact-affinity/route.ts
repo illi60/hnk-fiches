@@ -23,7 +23,7 @@ export async function POST(req: Request) {
 
     const user = await prisma.user.findUnique({
       where: { id: me.id },
-      select: { pactAffinities: true, progressionState: true },
+      select: { pactAffinities: true, progressionState: true, pactSpecies: true },
     });
     if (!user) return NextResponse.json({ ok: false, error: "NOT_FOUND" }, { status: 404 });
 
@@ -43,9 +43,18 @@ export async function POST(req: Request) {
       );
     }
 
+    // Espèce du pacte : verrouillée au 1er choix (si pas encore définie).
+    const speciesToSet =
+      !user.pactSpecies && parsed.data.species && parsed.data.species.trim()
+        ? parsed.data.species.trim()
+        : undefined;
+
     await prisma.user.update({
       where: { id: me.id },
-      data: { pactAffinities: { push: el } },
+      data: {
+        pactAffinities: { push: el },
+        ...(speciesToSet ? { pactSpecies: speciesToSet } : {}),
+      },
     });
     return NextResponse.json({ ok: true });
   } catch (e) {

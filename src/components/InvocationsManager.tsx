@@ -46,6 +46,7 @@ export default function InvocationsManager({
   initial,
   pactAffinities,
   pactMaxSlots,
+  pactSpecies,
   ermitePerfect,
   ownedKgs,
   ficheCtx,
@@ -53,6 +54,7 @@ export default function InvocationsManager({
   initial: Invocation[];
   pactAffinities: string[];
   pactMaxSlots: number;
+  pactSpecies: string | null;
   ermitePerfect: boolean;
   ownedKgs: string[];
   ficheCtx: FicheFormCtx;
@@ -62,7 +64,11 @@ export default function InvocationsManager({
 
   return (
     <div className="space-y-6">
-      <PactAffinityPanel affinities={pactAffinities} maxSlots={pactMaxSlots} />
+      <PactAffinityPanel
+        affinities={pactAffinities}
+        maxSlots={pactMaxSlots}
+        species={pactSpecies}
+      />
 
       {editing ? (
         <InvocationForm
@@ -70,6 +76,7 @@ export default function InvocationsManager({
           ermitePerfect={ermitePerfect}
           ownedKgs={ownedKgs}
           pactAffinities={pactAffinities}
+          pactSpecies={pactSpecies}
           onClose={() => setEditing(null)}
           onSaved={() => {
             setEditing(null);
@@ -91,6 +98,7 @@ export default function InvocationsManager({
                   key={inv.id}
                   inv={inv}
                   pactAffinities={pactAffinities}
+                  ermitePerfect={ermitePerfect}
                   ficheCtx={ficheCtx}
                   onEdit={() => setEditing(inv)}
                   onChanged={() => router.refresh()}
@@ -104,23 +112,38 @@ export default function InvocationsManager({
   );
 }
 
-function PactAffinityPanel({ affinities, maxSlots }: { affinities: string[]; maxSlots: number }) {
+function PactAffinityPanel({
+  affinities,
+  maxSlots,
+  species,
+}: {
+  affinities: string[];
+  maxSlots: number;
+  species: string | null;
+}) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [sel, setSel] = useState("");
+  const [spec, setSpec] = useState("");
   const [err, setErr] = useState<string | null>(null);
 
   const remaining = Math.max(0, maxSlots - affinities.length);
   const options = ELEMENTS.filter((e) => !affinities.some((a) => a.toLowerCase() === e.toLowerCase()));
+  // L'espèce se fixe au tout premier verrouillage d'affinité (puis verrouillée).
+  const needSpecies = !species && affinities.length === 0;
 
   function add() {
     if (!sel) return;
+    if (needSpecies && !spec.trim()) {
+      setErr("Renseigne l'espèce du pacte (elle sera verrouillée).");
+      return;
+    }
     setErr(null);
     start(async () => {
       const r = await fetch("/api/me/pact-affinity", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ affinity: sel }),
+        body: JSON.stringify({ affinity: sel, species: needSpecies ? spec.trim() : undefined }),
       });
       const j = await r.json().catch(() => ({}));
       if (!j.ok) {
@@ -134,20 +157,24 @@ function PactAffinityPanel({ affinities, maxSlots }: { affinities: string[]; max
         return;
       }
       setSel("");
+      setSpec("");
       router.refresh();
     });
   }
 
   return (
     <div className="hnk-panel" data-kanji="盟">
-      <p className="hnk-eyebrow">Affinité du pacte · verrouillée</p>
+      <p className="hnk-eyebrow">Pacte · affinité &amp; espèce verrouillées</p>
       <p className="text-[11px] text-smoke mt-2 leading-relaxed">
-        L&apos;affinité s&apos;applique à toute la race de ton pacte. Choix
-        <span className="text-bone"> définitif</span>. Une 2e affinité se débloque au pré-stade du
-        Mode Ermite.
+        L&apos;affinité et l&apos;espèce s&apos;appliquent à toute la race de ton pacte. Choix
+        <span className="text-bone"> définitif</span> (l&apos;espèce se fixe au 1er choix d&apos;affinité).
+        Une 2e affinité se débloque au pré-stade du Mode Ermite.
       </p>
       <div className="flex flex-wrap items-center gap-2 mt-3">
-        {affinities.length === 0 && <span className="text-sm text-smoke italic">Aucune.</span>}
+        {species && <span className="hnk-chip">Espèce · {species}</span>}
+        {affinities.length === 0 && !species && (
+          <span className="text-sm text-smoke italic">Aucune.</span>
+        )}
         {affinities.map((a) => (
           <span key={a} className="hnk-chip">
             {a}
@@ -156,6 +183,19 @@ function PactAffinityPanel({ affinities, maxSlots }: { affinities: string[]; max
       </div>
       {remaining > 0 && (
         <div className="flex flex-wrap items-end gap-3 mt-4">
+          {needSpecies && (
+            <label className="block">
+              <span className="hnk-label">Espèce du pacte</span>
+              <input
+                className="hnk-input"
+                value={spec}
+                onChange={(e) => setSpec(e.target.value)}
+                disabled={pending}
+                maxLength={60}
+                placeholder="ex. Crapauds, Serpents…"
+              />
+            </label>
+          )}
           <label className="block">
             <span className="hnk-label">Choisir une affinité</span>
             <select
@@ -190,12 +230,14 @@ function PactAffinityPanel({ affinities, maxSlots }: { affinities: string[]; max
 function InvocationCard({
   inv,
   pactAffinities,
+  ermitePerfect,
   ficheCtx,
   onEdit,
   onChanged,
 }: {
   inv: Invocation;
   pactAffinities: string[];
+  ermitePerfect: boolean;
   ficheCtx: FicheFormCtx;
   onEdit: () => void;
   onChanged: () => void;
@@ -263,7 +305,7 @@ function InvocationCard({
       {proposing ? (
         <div className="mt-4 border-t border-white/10 pt-4">
           <p className="hnk-eyebrow mb-3">Proposer une technique de {inv.nom}</p>
-          {!inv.artShinobi && (
+          {!inv.artShinobi && !ermitePerfect && (
             <p className="text-sm text-ember-hot mb-3">
               Définis d&apos;abord l&apos;Art Shinobi de cette invocation (bouton « Éditer ») : une
               technique de kuchy ne peut être que de son Art.
@@ -272,6 +314,7 @@ function InvocationCard({
           <FicheForm
             invocationId={inv.id}
             invocationArt={inv.artShinobi}
+            kuchyAllArts={ermitePerfect}
             allowedKg={ficheCtx.allowedKg}
             allowedElements={pactAffinities}
             userClan={ficheCtx.userClan}
@@ -325,6 +368,7 @@ function InvocationForm({
   ermitePerfect,
   ownedKgs,
   pactAffinities,
+  pactSpecies,
   onClose,
   onSaved,
 }: {
@@ -332,6 +376,7 @@ function InvocationForm({
   ermitePerfect: boolean;
   ownedKgs: string[];
   pactAffinities: string[];
+  pactSpecies: string | null;
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -356,7 +401,7 @@ function InvocationForm({
       setErr("Le nom est requis.");
       return;
     }
-    if (!especeLocked && !f.espece.trim()) {
+    if (!pactSpecies && !especeLocked && !f.espece.trim()) {
       setErr("L'espèce est requise (elle sera verrouillée).");
       return;
     }
@@ -407,10 +452,12 @@ function InvocationForm({
       <div className="grid sm:grid-cols-2 gap-4">
         <FieldInput label="Nom *" v={f.nom} on={(x) => setF((s) => ({ ...s, nom: x }))} />
         <FieldInput
-          label={especeLocked ? "Espèce (verrouillée)" : "Espèce *"}
-          v={f.espece}
+          label={
+            pactSpecies ? "Espèce (du pacte)" : especeLocked ? "Espèce (verrouillée)" : "Espèce *"
+          }
+          v={pactSpecies ?? f.espece}
           on={(x) => setF((s) => ({ ...s, espece: x }))}
-          disabled={especeLocked}
+          disabled={!!pactSpecies || especeLocked}
         />
         <label className="block">
           <span className="hnk-label">Art Shinobi</span>

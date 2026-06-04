@@ -27,6 +27,8 @@ export interface FicheFormInitial {
   kinjutsuScope?: string;
   collaborators?: string[];
   secondaryArt?: string;
+  secondaryElement?: string;
+  secondaryKekkeiGenkai?: string;
 }
 
 export default function FicheForm({
@@ -39,6 +41,7 @@ export default function FicheForm({
   rangClan,
   invocationId,
   invocationArt,
+  kuchyAllArts = false,
 }: {
   initial?: FicheFormInitial;
   ficheId?: string;
@@ -49,6 +52,7 @@ export default function FicheForm({
   rangClan?: string | null; // Rang Clan (B+ → technique collective en duo)
   invocationId?: string; // si défini : technique de Kuchiyose rattachée à cette invocation
   invocationArt?: string | null; // Art Shinobi de l'invocation (verrouille l'Art de la technique)
+  kuchyAllArts?: boolean; // Mode Ermite parfait : le kuchy accède à TOUS tes arts
 }) {
   const router = useRouter();
 
@@ -67,6 +71,14 @@ export default function FicheForm({
     manifestation: initialManifestation as ManifestationKey,
     element: initial?.element ?? "",
     kekkeiGenkai: initial?.kekkeiGenkai ?? "",
+    // 2e manifestation (COMBINEE) : x2 KG, KG/affi, ou x2 affi
+    manifestation2: (initial?.secondaryElement
+      ? "ELEMENT"
+      : initial?.secondaryKekkeiGenkai
+      ? "KEKKEI_GENKAI"
+      : "AUCUNE") as ManifestationKey,
+    secondaryElement: initial?.secondaryElement ?? "",
+    secondaryKekkeiGenkai: initial?.secondaryKekkeiGenkai ?? "",
     nature: initial?.nature ?? "",
     collab0: initial?.collaborators?.[0] ?? "",
     collab1: initial?.collaborators?.[1] ?? "",
@@ -100,6 +112,12 @@ export default function FicheForm({
   const elementOptions = Array.from(
     new Set([...elementPool, ...(v.element ? [v.element] : [])])
   );
+  // Nature COLLECTIVE (clan) : KG associé restreint à TES propres KG.
+  const collectiveKgOptions = Array.from(
+    new Set([...(allowedKg ?? KG_NAMES), ...(v.kekkeiGenkai ? [v.kekkeiGenkai] : [])])
+  );
+  // Kuchy : Art verrouillé sur celui de l'invocation, sauf Mode Ermite parfait.
+  const artLocked = !!invocationId && !kuchyAllArts;
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -143,6 +161,14 @@ export default function FicheForm({
         !isKuchy && (v.manifestation === "KEKKEI_GENKAI" || v.nature === "COLLECTIVE")
           ? v.kekkeiGenkai.trim() || null
           : null,
+      secondaryElement:
+        v.actionType === "COMBINEE" && v.manifestation2 === "ELEMENT"
+          ? v.secondaryElement || null
+          : null,
+      secondaryKekkeiGenkai:
+        v.actionType === "COMBINEE" && v.manifestation2 === "KEKKEI_GENKAI"
+          ? v.secondaryKekkeiGenkai.trim() || null
+          : null,
       nature: isKuchy ? null : v.nature || null,
       collaborators,
       ...(invocationId ? { invocationId } : {}),
@@ -182,12 +208,20 @@ export default function FicheForm({
       </Field>
 
       <div className="grid sm:grid-cols-2 gap-4">
-        <Field label={isKuchy ? "Art Shinobi de l'invocation" : "Art Shinobi"}>
+        <Field
+          label={
+            isKuchy
+              ? kuchyAllArts
+                ? "Art Shinobi (Mode Ermite parfait : tous tes arts + le sien)"
+                : "Art Shinobi de l'invocation"
+              : "Art Shinobi"
+          }
+        >
           <select
             className="hnk-input"
             value={v.art}
             onChange={(e) => up("art", e.target.value)}
-            disabled={disabled || !!invocationId}
+            disabled={disabled || artLocked}
           >
             <option value="">—</option>
             {ART_OPTIONS.map((a) => (
@@ -226,23 +260,79 @@ export default function FicheForm({
         </div>
       )}
 
-      {/* Type d'action COMBINEE : 2e Art Shinobi associé */}
+      {/* Type d'action COMBINEE : 2e composante (Art, et/ou 2e manifestation KG/affinité) */}
       {v.actionType === "COMBINEE" && (
-        <Field label="2e Art Shinobi (combinaison)">
-          <select
-            className="hnk-input max-w-xs"
-            value={v.secondaryArt}
-            onChange={(e) => up("secondaryArt", e.target.value)}
-            disabled={disabled}
-          >
-            <option value="">—</option>
-            {ART_OPTIONS.filter((a) => a !== v.art).map((a) => (
-              <option key={a} value={a}>
-                {a}
-              </option>
-            ))}
-          </select>
-        </Field>
+        <div className="hnk-panel !p-4 space-y-4">
+          <p className="text-[11px] text-smoke leading-relaxed">
+            Combinaison : associe une 2e composante — <span className="text-bone">2e Art</span>,
+            et/ou une <span className="text-bone">2e manifestation</span> (x2 affinité, x2 Kekkei
+            Genkai, ou KG + affinité).
+          </p>
+          <Field label="2e Art Shinobi (optionnel)">
+            <select
+              className="hnk-input max-w-xs"
+              value={v.secondaryArt}
+              onChange={(e) => up("secondaryArt", e.target.value)}
+              disabled={disabled}
+            >
+              <option value="">—</option>
+              {ART_OPTIONS.filter((a) => a !== v.art).map((a) => (
+                <option key={a} value={a}>
+                  {a}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <div>
+            <span className="hnk-label">2e manifestation</span>
+            <div className="flex flex-wrap gap-x-6 gap-y-2 mb-3">
+              {MANIFESTATIONS.map((m) => (
+                <label key={m.key} className="flex items-center gap-2 text-sm text-bone cursor-pointer">
+                  <input
+                    type="radio"
+                    name="manifestation2"
+                    checked={v.manifestation2 === m.key}
+                    onChange={() => up("manifestation2", m.key)}
+                    disabled={disabled}
+                    className="accent-[var(--ember)]"
+                  />
+                  {m.label}
+                </label>
+              ))}
+            </div>
+            {v.manifestation2 === "ELEMENT" && (
+              <select
+                className="hnk-input max-w-xs"
+                value={v.secondaryElement}
+                onChange={(e) => up("secondaryElement", e.target.value)}
+                disabled={disabled}
+              >
+                <option value="">— Quelle affinité ?</option>
+                {elementOptions.map((el) => (
+                  <option key={el} value={el}>
+                    {el}
+                  </option>
+                ))}
+              </select>
+            )}
+            {v.manifestation2 === "KEKKEI_GENKAI" && (
+              <select
+                className="hnk-input max-w-xs"
+                value={v.secondaryKekkeiGenkai}
+                onChange={(e) => up("secondaryKekkeiGenkai", e.target.value)}
+                disabled={disabled}
+              >
+                <option value="">— Quel Kekkei Genkai ?</option>
+                {kgOptions.map((k) => (
+                  <option key={k} value={k}>
+                    {k}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        </div>
       )}
 
       {/* Type d'action COLLECTIVE : partenaires co-payeurs (pseudos exacts) */}
@@ -377,7 +467,7 @@ export default function FicheForm({
               </p>
             )}
             <label className="block">
-              <span className="hnk-label">Kekkei Genkai associé</span>
+              <span className="hnk-label">Kekkei Genkai associé (parmi tes KG)</span>
               <select
                 className="hnk-input max-w-xs"
                 value={v.kekkeiGenkai}
@@ -385,7 +475,7 @@ export default function FicheForm({
                 disabled={disabled}
               >
                 <option value="">— Quel Kekkei Genkai ?</option>
-                {KG_NAMES.map((k) => (
+                {collectiveKgOptions.map((k) => (
                   <option key={k} value={k}>
                     {k}
                   </option>

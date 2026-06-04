@@ -32,7 +32,13 @@ export async function POST(req: Request) {
 
     const user = await prisma.user.findUnique({
       where: { id: me.id },
-      select: { artsState: true, progressionState: true, primaryKg: true, kekkeiGenkai: true },
+      select: {
+        artsState: true,
+        progressionState: true,
+        primaryKg: true,
+        kekkeiGenkai: true,
+        pactSpecies: true,
+      },
     });
     const state = ((user?.artsState ?? {}) as unknown) as ArtsState;
     if (!getArtState(state, "kuchiyose").unlocked) {
@@ -63,7 +69,8 @@ export async function POST(req: Request) {
       data: {
         ownerId: me.id,
         nom: d.nom,
-        espece: d.espece || null,
+        // Espèce héritée du pacte (verrouillée) si définie.
+        espece: user?.pactSpecies ?? (d.espece || null),
         artShinobi: d.artShinobi || null,
         kekkeiGenkai: kgEff,
         image: d.image || null,

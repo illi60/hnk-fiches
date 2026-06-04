@@ -53,6 +53,20 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       };
     }
 
+    // Type d'action COMBINEE → 2e manifestation (affinité / KG) ; sinon on l'efface.
+    let secondaryManifUpdate: { secondaryElement?: string | null; secondaryKekkeiGenkai?: string | null } = {};
+    if (
+      parsed.data.secondaryElement !== undefined ||
+      parsed.data.secondaryKekkeiGenkai !== undefined ||
+      parsed.data.actionType !== undefined
+    ) {
+      const combinee = newActionType === "COMBINEE";
+      secondaryManifUpdate = {
+        secondaryElement: combinee ? parsed.data.secondaryElement ?? null : null,
+        secondaryKekkeiGenkai: combinee ? parsed.data.secondaryKekkeiGenkai ?? null : null,
+      };
+    }
+
     // Type d'action COLLECTIVE → pseudos des partenaires (re-résolus à la soumission).
     let collaboratorsUpdate: { collaborators?: string[]; collaboratorIds?: string[] } = {};
     if (parsed.data.collaborators !== undefined || parsed.data.actionType !== undefined) {
@@ -74,6 +88,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         ...(parsed.data.description !== undefined && { description: parsed.data.description }),
         ...(parsed.data.art !== undefined && { art: parsed.data.art ?? null }),
         ...secondaryArtUpdate,
+        ...secondaryManifUpdate,
         ...(parsed.data.actionType !== undefined && { actionType: parsed.data.actionType ?? null }),
         ...(parsed.data.element !== undefined && { element: parsed.data.element ?? null }),
         ...(parsed.data.kekkeiGenkai !== undefined && { kekkeiGenkai: parsed.data.kekkeiGenkai ?? null }),

@@ -101,6 +101,7 @@ model User {
   affinites     String[] @default([])
   // Affinité(s) du pacte Kuchiyose (1ère verrouillée ; 2e via pré-stade Mode Ermite).
   pactAffinities String[] @default([])
+  pactSpecies   String?  // Espèce du pacte Kuchiyose (verrouillée avec l'affinité)
 
   // === Sync forum Hi no Kuni ===
   forumProfileUrl    String?   // ex: https://hinokuni.forumactif.com/u1
@@ -163,7 +164,9 @@ model FicheTechnique {
   secondaryArt    String?     // 2e Art Shinobi (techniques de type COMBINEE)
   actionType      String?     // Type d'action : EVOLUTIVE..SUPREME (drive le coût)
   element         String?     // affinité : Katon, Suiton, Doton, Raiton, Futon
+  secondaryElement String?    // 2e affinité (COMBINEE : x2 affi ou KG/affi)
   kekkeiGenkai    String?     // si manifesté par un Kekkei Genkai (lequel)
+  secondaryKekkeiGenkai String? // 2e KG (COMBINEE : x2 KG ou KG/affi)
   nature          String?     // PERSONNELLE | COLLECTIVE (clan / bibliothèque commune)
   kinjutsuScope   String?     // legacy (ancien scope Kinjutsu : CLAN | VILLAGE)
   clan            String?     // clan propriétaire (Nature COLLECTIVE → bibliothèque commune)

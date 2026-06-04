@@ -28,6 +28,7 @@ export default async function InvocationsPage() {
       primaryAffinity: true,
       affinites: true,
       kekkeiGenkai: true,
+      pactSpecies: true,
     },
   });
   const state = ((dbUser?.artsState ?? {}) as unknown) as ArtsState;
@@ -87,6 +88,7 @@ export default async function InvocationsPage() {
         initial={invocations}
         pactAffinities={(dbUser?.pactAffinities ?? []).filter(Boolean)}
         pactMaxSlots={ermiteStage >= 1 ? 2 : 1}
+        pactSpecies={dbUser?.pactSpecies ?? null}
         ermitePerfect={ermiteStage >= 3}
         ownedKgs={ownedKgsFull(dbUser?.primaryKg, prog, dbUser?.kekkeiGenkai)}
         ficheCtx={{

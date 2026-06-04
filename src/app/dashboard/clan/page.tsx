@@ -41,6 +41,8 @@ export default async function ClanLibraryPage() {
       actionType: true,
       element: true,
       kekkeiGenkai: true,
+      secondaryElement: true,
+      secondaryKekkeiGenkai: true,
       coutXp: true,
       author: { select: { username: true } },
     },

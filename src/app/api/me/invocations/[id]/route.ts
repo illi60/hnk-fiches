@@ -24,7 +24,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     const user = await prisma.user.findUnique({
       where: { id: me.id },
-      select: { progressionState: true, primaryKg: true, kekkeiGenkai: true },
+      select: { progressionState: true, primaryKg: true, kekkeiGenkai: true, pactSpecies: true },
     });
     const prog = getProgression((user?.progressionState ?? {}) as unknown as ProgressionState);
     const ermitePerfect = prog.mode?.path === "ERMITE" && (prog.mode?.stage ?? 0) >= 3;
@@ -38,8 +38,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       where: { id },
       data: {
         nom: d.nom,
-        // Espèce verrouillée : on conserve la valeur existante si déjà définie.
-        espece: owned.espece ?? (d.espece || null),
+        // Espèce : pacte (prioritaire) sinon valeur existante (verrouillée).
+        espece: user?.pactSpecies ?? owned.espece ?? (d.espece || null),
         artShinobi: d.artShinobi || null,
         kekkeiGenkai: kgEff,
         image: d.image || null,

@@ -133,6 +133,12 @@ export async function POST(req: Request) {
         actionType: parsed.data.actionType ?? null,
         element: parsed.data.element ?? null,
         kekkeiGenkai: kekkeiGenkaiEff,
+        secondaryElement:
+          parsed.data.actionType === "COMBINEE" ? parsed.data.secondaryElement ?? null : null,
+        secondaryKekkeiGenkai:
+          !isKuchy && parsed.data.actionType === "COMBINEE"
+            ? parsed.data.secondaryKekkeiGenkai ?? null
+            : null,
         nature: natureEff,
         kinjutsuScope: parsed.data.kinjutsuScope ?? null,
         clan,

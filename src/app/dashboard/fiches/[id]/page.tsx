@@ -38,6 +38,8 @@ export default async function FicheDetailPage({
       actionType: true,
       element: true,
       kekkeiGenkai: true,
+      secondaryElement: true,
+      secondaryKekkeiGenkai: true,
       nature: true,
       kinjutsuScope: true,
       clan: true,
@@ -119,12 +121,26 @@ export default async function FicheDetailPage({
                 <span className="hnk-tech-chip">{actionLabel(fiche.actionType)}</span>
               )}
               {fiche.element && <span className="hnk-tech-chip">{fiche.element}</span>}
+              {fiche.secondaryElement && (
+                <span className="hnk-tech-chip">{fiche.secondaryElement}</span>
+              )}
               {fiche.kekkeiGenkai && (
                 <span
                   className="hnk-tech-chip"
                   style={{ color: kgColor(fiche.kekkeiGenkai), borderColor: kgColor(fiche.kekkeiGenkai) }}
                 >
                   KG · {fiche.kekkeiGenkai}
+                </span>
+              )}
+              {fiche.secondaryKekkeiGenkai && (
+                <span
+                  className="hnk-tech-chip"
+                  style={{
+                    color: kgColor(fiche.secondaryKekkeiGenkai),
+                    borderColor: kgColor(fiche.secondaryKekkeiGenkai),
+                  }}
+                >
+                  KG · {fiche.secondaryKekkeiGenkai}
                 </span>
               )}
               {fiche.nature && (
@@ -153,6 +169,8 @@ export default async function FicheDetailPage({
                 actionType: fiche.actionType,
                 element: fiche.element,
                 kekkeiGenkai: fiche.kekkeiGenkai,
+                secondaryElement: fiche.secondaryElement,
+                secondaryKekkeiGenkai: fiche.secondaryKekkeiGenkai,
                 nature: fiche.nature,
                 kinjutsuScope: fiche.kinjutsuScope,
                 clan: fiche.clan,
@@ -178,6 +196,8 @@ export default async function FicheDetailPage({
             actionType: fiche.actionType ?? "",
             element: fiche.element ?? "",
             kekkeiGenkai: fiche.kekkeiGenkai ?? "",
+            secondaryElement: fiche.secondaryElement ?? "",
+            secondaryKekkeiGenkai: fiche.secondaryKekkeiGenkai ?? "",
             nature: fiche.nature ?? "",
             kinjutsuScope: fiche.kinjutsuScope ?? "",
             collaborators: fiche.collaborators ?? [],
