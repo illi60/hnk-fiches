@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { auth } from "@/auth";
 import GeneratorNav from "@/components/GeneratorNav";
 
 // Outils du Hub. Pour en ajouter un plus tard : pousse une entrée ici.
@@ -46,10 +45,7 @@ const TOOLS: Tool[] = [
   },
 ];
 
-export default async function Home() {
-  const session = await auth();
-  const isLogged = !!session?.user;
-
+export default function Home() {
   return (
     <main className="min-h-screen flex flex-col">
       <GeneratorNav current="hub" />
@@ -81,11 +77,10 @@ export default async function Home() {
 
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {TOOLS.map((t) => {
-              const href = t.auth && !isLogged ? "/login" : t.href;
               return (
                 <Link
                   key={t.key}
-                  href={href}
+                  href={t.href}
                   className="group relative overflow-hidden flex flex-col justify-end min-h-[300px] p-6 border transition hover:-translate-y-0.5"
                   style={{
                     borderColor: "rgba(219,222,226,0.12)",
@@ -121,9 +116,7 @@ export default async function Home() {
                       {t.kanji}
                     </span>
                     {t.auth && (
-                      <span className="hnk-chip text-[9px]">
-                        {isLogged ? "Connecté" : "Connexion requise"}
-                      </span>
+                      <span className="hnk-chip text-[9px]">Connexion requise</span>
                     )}
                   </div>
 
@@ -153,12 +146,10 @@ export default async function Home() {
             </div>
           </div>
 
-          {!isLogged && (
-            <p className="text-[11px] text-smoke mt-10">
-              Les comptes sont créés par le staff. Rapproche-toi d&apos;un membre du staff pour
-              obtenir tes accès à la fiche technique.
-            </p>
-          )}
+          <p className="text-[11px] text-smoke mt-10">
+            Les comptes sont créés par le staff. Rapproche-toi d&apos;un membre du staff pour
+            obtenir tes accès à la fiche technique.
+          </p>
         </div>
       </div>
     </main>

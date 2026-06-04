@@ -1,8 +1,10 @@
 // Barre de navigation commune aux outils publics (Hub, générateurs).
-// Server component : connaît la session pour afficher « Mon espace » vs
-// « Connexion ». `current` met en surbrillance l'onglet actif.
+// Composant synchrone et STATIQUE : il n'appelle PAS auth() (sinon il forcerait
+// le rendu dynamique de toutes les pages qui l'utilisent). L'état de session
+// est géré par <NavAuthLink> côté client (useSession). `current` met en
+// surbrillance l'onglet actif.
 import Link from "next/link";
-import { auth } from "@/auth";
+import NavAuthLink from "./NavAuthLink";
 
 const LINKS = [
   { key: "hub", href: "/", label: "Hub" },
@@ -10,8 +12,7 @@ const LINKS = [
   { key: "carnet", href: "/carnet", label: "Carnet" },
 ] as const;
 
-export default async function GeneratorNav({ current }: { current?: string }) {
-  const session = await auth();
+export default function GeneratorNav({ current }: { current?: string }) {
   return (
     <header className="hnk-header">
       <Link href="/" className="brand">
@@ -24,11 +25,7 @@ export default async function GeneratorNav({ current }: { current?: string }) {
             {l.label}
           </Link>
         ))}
-        {session?.user ? (
-          <Link href="/technique">Mon espace</Link>
-        ) : (
-          <Link href="/login">Connexion</Link>
-        )}
+        <NavAuthLink />
       </nav>
     </header>
   );
