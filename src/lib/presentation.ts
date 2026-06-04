@@ -207,7 +207,7 @@ export function presentationForumHtml(d: PresentationData): string {
   }).join("");
   const charQaSec = qaItems
     ? `<div class="hnk-pres-sec">` +
-      `<h2 class="hnk-pres-title">Caractère</h2>` +
+      `<h2 class="hnk-pres-title">Regards sur le Monde</h2>` +
       `<div class="hnk-pres-qa">${qaItems}</div>` +
       `</div>`
     : "";

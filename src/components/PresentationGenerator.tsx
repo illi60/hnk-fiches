@@ -248,7 +248,7 @@ export default function PresentationGenerator() {
 
         {/* Caractère : questions verrouillées */}
         <section className="hnk-panel p-5 space-y-4">
-          <h2 className="hnk-section-title mb-1">Caractère</h2>
+          <h2 className="hnk-section-title mb-1">Regards sur le Monde</h2>
           <p className="text-smoke text-xs">Questions imposées — tu n'as qu'à répondre.</p>
           {CHARACTER_QUESTIONS.filter((q) => !q.requiresTrame || d.trame).map((q) => (
             <Field key={q.id} label={q.label}>
