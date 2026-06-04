@@ -8,7 +8,7 @@ import FicheActions from "@/components/FicheActions";
 import TechniqueExport from "@/components/TechniqueExport";
 import { actionLabel, natureLabel, ART_KANJI } from "@/lib/techniques";
 import { kgColor, kgCardStyle } from "@/lib/kekkei";
-import { ownedKgs, ownedAffinities, type ProgressionState } from "@/lib/quintessence";
+import { ownedKgsFull, ownedAffinities, type ProgressionState } from "@/lib/quintessence";
 
 const STATUS_LABEL: Record<string, string> = {
   DRAFT: "Brouillon",
@@ -69,10 +69,11 @@ export default async function FicheDetailPage({
       progressionState: true,
       clan: true,
       rangClan: true,
+      kekkeiGenkai: true,
     },
   });
   const authorState = ((author?.progressionState ?? {}) as unknown) as ProgressionState;
-  const allowedKg = ownedKgs(author?.primaryKg, authorState);
+  const allowedKg = ownedKgsFull(author?.primaryKg, authorState, author?.kekkeiGenkai);
   const allowedElements = ownedAffinities(author?.primaryAffinity, author?.affinites);
 
   return (

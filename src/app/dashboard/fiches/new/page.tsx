@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import FicheForm from "@/components/FicheForm";
-import { ownedKgs, ownedAffinities, type ProgressionState } from "@/lib/quintessence";
+import { ownedKgsFull, ownedAffinities, type ProgressionState } from "@/lib/quintessence";
 
 export const metadata = { title: "Nouvelle technique · Hi no Kuni" };
 
@@ -20,10 +20,11 @@ export default async function NewFichePage() {
       progressionState: true,
       clan: true,
       rangClan: true,
+      kekkeiGenkai: true,
     },
   });
   const state = ((user?.progressionState ?? {}) as unknown) as ProgressionState;
-  const allowedKg = ownedKgs(user?.primaryKg, state);
+  const allowedKg = ownedKgsFull(user?.primaryKg, state, user?.kekkeiGenkai);
   const allowedElements = ownedAffinities(user?.primaryAffinity, user?.affinites);
 
   return (

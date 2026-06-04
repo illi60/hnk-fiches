@@ -5,6 +5,8 @@ import { requireUser, jsonError } from "@/lib/permissions";
 import { rateLimit } from "@/lib/rate-limit";
 import { ficheCreateSchema } from "@/lib/validators";
 import { ficheTotalCost } from "@/lib/techniques";
+import { clanKg } from "@/lib/kekkei";
+import { ownedKgsFull, type ProgressionState } from "@/lib/quintessence";
 
 /**
  * GET /api/fiches?scope=mine|public
@@ -104,16 +106,29 @@ export async function POST(req: Request) {
     // Kuchy : ni nature ni KG (donc pas de surcharge +10 XP).
     const isKuchy = !!invocationId;
     const natureEff = isKuchy ? null : parsed.data.nature ?? null;
-    const kekkeiGenkaiEff = isKuchy ? null : parsed.data.kekkeiGenkai ?? null;
+    let kekkeiGenkaiEff = isKuchy ? null : parsed.data.kekkeiGenkai ?? null;
     const coutXp = ficheTotalCost(parsed.data.actionType ?? null, natureEff);
 
-    // Nature COLLECTIVE (bibliothèque commune) : le clan est celui du joueur,
-    // jamais une valeur arbitraire du client.
+    // Nature COLLECTIVE (bibliothèque de clan) : il faut ÊTRE du clan ET posséder
+    // le KG du clan ; le KG associé est imposé (= KG du clan), jamais arbitraire.
     let clan: string | null = null;
     if (natureEff === "COLLECTIVE") {
-      const u = await prisma.user.findUnique({ where: { id: me.id }, select: { clan: true } });
+      const u = await prisma.user.findUnique({
+        where: { id: me.id },
+        select: { clan: true, primaryKg: true, kekkeiGenkai: true, progressionState: true },
+      });
       if (!u?.clan) return NextResponse.json({ error: "CLAN_REQUIS" }, { status: 400 });
+      const ck = clanKg(u.clan);
+      if (!ck) return NextResponse.json({ error: "CLAN_SANS_KG" }, { status: 400 });
+      const owned = ownedKgsFull(
+        u.primaryKg,
+        (u.progressionState ?? {}) as unknown as ProgressionState,
+        u.kekkeiGenkai
+      ).map((k) => k.toLowerCase());
+      if (!owned.includes(ck.toLowerCase()))
+        return NextResponse.json({ error: "KG_CLAN_REQUIS" }, { status: 403 });
       clan = u.clan;
+      kekkeiGenkaiEff = ck; // KG imposé du clan
     }
 
     // Type d'action COLLECTIVE : pseudos des partenaires (résolus à la soumission).

@@ -118,6 +118,30 @@ export function kgColor(name?: string | null): string {
   return kgDef(name)?.color ?? "#ff8a4c";
 }
 
+// ---------- Clans à Kekkei Genkai (bibliothèque commune) ----------
+// Un membre ne peut proposer une technique de clan que s'il EST du clan ET
+// possède le KG associé. Clé = clan normalisé (sans accents, minuscules).
+export const CLAN_KG: Record<string, string> = {
+  hyuga: "Byakugan",
+  uchiha: "Sharingan",
+  senju: "Mokuton",
+  sarutobi: "Godai Seishitsu Henka",
+  uzumaki: "Sōzō Saisei",
+};
+
+function normClan(clan?: string | null): string {
+  return (clan ?? "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+/** KG associé à un clan (ou null si le clan n'a pas de KG répertorié). */
+export function clanKg(clan?: string | null): string | null {
+  return CLAN_KG[normClan(clan)] ?? null;
+}
+
 /**
  * Style de carte teinté par la couleur du KG (overlay subtil par-dessus le fond
  * sombre du panneau → reste lisible). Retourne {} si aucun KG (pas de teinte).

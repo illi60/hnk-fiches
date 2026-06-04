@@ -13,7 +13,7 @@ import {
   PERSONAL_SURCHARGE,
   type ManifestationKey,
 } from "@/lib/techniques";
-import { KG_NAMES, kgColor } from "@/lib/kekkei";
+import { KG_NAMES, kgColor, clanKg } from "@/lib/kekkei";
 
 export interface FicheFormInitial {
   slug?: string;
@@ -112,25 +112,31 @@ export default function FicheForm({
   const elementOptions = Array.from(
     new Set([...elementPool, ...(v.element ? [v.element] : [])])
   );
-  // Nature COLLECTIVE (clan) : KG associé restreint à TES propres KG.
-  const collectiveKgOptions = Array.from(
-    new Set([...(allowedKg ?? KG_NAMES), ...(v.kekkeiGenkai ? [v.kekkeiGenkai] : [])])
-  );
   // Kuchy : Art verrouillé sur celui de l'invocation, sauf Mode Ermite parfait.
   const artLocked = !!invocationId && !kuchyAllArts;
+
+  // Technique de clan (nature COLLECTIVE) : KG imposé = KG du clan, et le joueur
+  // doit le posséder.
+  const clanKgName = clanKg(userClan);
+  const ownsClanKg =
+    !!clanKgName && (allowedKg ?? []).some((k) => k.toLowerCase() === clanKgName.toLowerCase());
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
 
-    // Nature COLLECTIVE : besoin d'un clan + d'un KG associé.
+    // Nature COLLECTIVE : être du clan + posséder le KG du clan.
     if (v.nature === "COLLECTIVE") {
       if (!userClan) {
-        setError("Tu dois appartenir à un clan pour créer une technique collective.");
+        setError("Tu dois appartenir à un clan pour créer une technique de clan.");
         return;
       }
-      if (!v.kekkeiGenkai.trim()) {
-        setError("Choisis le Kekkei Genkai associé à cette technique de clan.");
+      if (!clanKgName) {
+        setError("Ton clan n'a pas de Kekkei Genkai répertorié (clans : Hyuga, Uchiha, Senju, Sarutobi, Uzumaki).");
+        return;
+      }
+      if (!ownsClanKg) {
+        setError(`Tu dois posséder le ${clanKgName} de ton clan pour proposer une technique de clan.`);
         return;
       }
     }
@@ -157,10 +163,13 @@ export default function FicheForm({
       secondaryArt: v.actionType === "COMBINEE" ? v.secondaryArt || null : null,
       actionType: v.actionType || null,
       element: v.manifestation === "ELEMENT" ? v.element || null : null,
-      kekkeiGenkai:
-        !isKuchy && (v.manifestation === "KEKKEI_GENKAI" || v.nature === "COLLECTIVE")
-          ? v.kekkeiGenkai.trim() || null
-          : null,
+      kekkeiGenkai: isKuchy
+        ? null
+        : v.nature === "COLLECTIVE"
+        ? clanKgName // KG imposé du clan
+        : v.manifestation === "KEKKEI_GENKAI"
+        ? v.kekkeiGenkai.trim() || null
+        : null,
       secondaryElement:
         v.actionType === "COMBINEE" && v.manifestation2 === "ELEMENT"
           ? v.secondaryElement || null
@@ -451,37 +460,31 @@ export default function FicheForm({
           ))}
         </div>
         {v.nature === "COLLECTIVE" && (
-          <div className="space-y-3">
+          <div className="space-y-2">
             <p className="text-[11px] text-smoke leading-relaxed">
               Technique versée dans la <span className="text-bone">bibliothèque commune</span> de ton
               clan. Visible par tous les membres, utilisable seulement par ceux qui possèdent le
-              Kekkei Genkai associé.
+              Kekkei Genkai du clan.
             </p>
-            {userClan ? (
-              <p className="text-sm text-bone">
-                Clan : <span className="text-ember">{userClan}</span>
+            {!userClan ? (
+              <p className="text-sm text-ember-hot">Aucun clan défini sur ta fiche — demande au staff.</p>
+            ) : !clanKgName ? (
+              <p className="text-sm text-ember-hot">
+                Clan « {userClan} » sans Kekkei Genkai répertorié.
               </p>
             ) : (
-              <p className="text-sm text-ember-hot">
-                Aucun clan défini sur ta fiche — demande au staff.
-              </p>
+              <>
+                <p className="text-sm text-bone">
+                  Clan : <span className="text-ember">{userClan}</span> · KG du clan :{" "}
+                  <span style={{ color: kgColor(clanKgName) }}>{clanKgName}</span>
+                </p>
+                {!ownsClanKg && (
+                  <p className="text-sm text-ember-hot">
+                    Tu ne possèdes pas le {clanKgName} — tu ne peux pas proposer de technique de ce clan.
+                  </p>
+                )}
+              </>
             )}
-            <label className="block">
-              <span className="hnk-label">Kekkei Genkai associé (parmi tes KG)</span>
-              <select
-                className="hnk-input max-w-xs"
-                value={v.kekkeiGenkai}
-                onChange={(e) => up("kekkeiGenkai", e.target.value)}
-                disabled={disabled}
-              >
-                <option value="">— Quel Kekkei Genkai ?</option>
-                {collectiveKgOptions.map((k) => (
-                  <option key={k} value={k}>
-                    {k}
-                  </option>
-                ))}
-              </select>
-            </label>
           </div>
         )}
       </div>
