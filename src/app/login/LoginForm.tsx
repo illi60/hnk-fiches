@@ -32,7 +32,7 @@ export default function LoginForm({
         setError("Identifiants invalides.");
         return;
       }
-      router.push(from && from.startsWith("/") ? from : "/dashboard");
+      router.push(from && from.startsWith("/") ? from : "/technique");
       router.refresh();
     });
   }

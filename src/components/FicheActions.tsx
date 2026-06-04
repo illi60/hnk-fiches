@@ -18,7 +18,7 @@ export default function FicheActions({ ficheId, status }: { ficheId: string; sta
     if (!confirm("Supprimer cette technique ?")) return;
     start(async () => {
       const res = await fetch(`/api/fiches/${ficheId}`, { method: "DELETE" });
-      if (res.ok) router.push("/dashboard/fiches");
+      if (res.ok) router.push("/technique/fiches");
     });
   }
 

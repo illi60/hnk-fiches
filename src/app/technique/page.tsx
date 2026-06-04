@@ -193,11 +193,11 @@ export default async function DashboardPage() {
       )}
 
       <div className="pt-2 flex flex-wrap gap-3">
-        <Link href="/dashboard/fiches" className="hnk-btn">
+        <Link href="/technique/fiches" className="hnk-btn">
           Mes techniques <span aria-hidden>→</span>
         </Link>
         {user.clan && (
-          <Link href="/dashboard/clan" className="hnk-btn-ghost">
+          <Link href="/technique/clan" className="hnk-btn-ghost">
             Bibliothèque de clan · {user.clan} <span aria-hidden>→</span>
           </Link>
         )}

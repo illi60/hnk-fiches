@@ -22,15 +22,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <div className="min-h-screen flex flex-col">
       <header className="hnk-header">
-        <Link href="/dashboard" className="brand">
+        <Link href="/technique" className="brand">
           <span className="kanji">火</span>
           <span className="name">Hi no Kuni</span>
         </Link>
         <nav className="hnk-nav">
-          <Link href="/dashboard">Profil</Link>
-          <Link href="/dashboard/fiches">Mes techniques</Link>
-          {hasClan && <Link href="/dashboard/clan">Bibliothèque clan</Link>}
-          {hasKuchiyose && <Link href="/dashboard/invocations">Invocations</Link>}
+          <Link href="/">Hub</Link>
+          <Link href="/technique">Profil</Link>
+          <Link href="/technique/fiches">Mes techniques</Link>
+          {hasClan && <Link href="/technique/clan">Bibliothèque clan</Link>}
+          {hasKuchiyose && <Link href="/technique/invocations">Invocations</Link>}
           {isAdmin && (
             <Link href="/admin" className="active">
               Admin

@@ -102,7 +102,7 @@ export default async function AdminUserDetail({
         <ul className="divide-y divide-white/5 border border-white/5 bg-ink-700">
           {fiches.map((f) => (
             <li key={f.id} className="px-4 py-2 flex items-center justify-between text-sm">
-              <Link href={`/dashboard/fiches/${f.id}`} className="text-bone hover:text-ember">
+              <Link href={`/technique/fiches/${f.id}`} className="text-bone hover:text-ember">
                 {f.nom}
               </Link>
               <span className="text-xs text-smoke">

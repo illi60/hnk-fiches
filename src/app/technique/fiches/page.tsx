@@ -63,7 +63,7 @@ export default async function MyFichesPage() {
           <p className="hnk-eyebrow">Registre</p>
           <h1 className="hnk-serif text-3xl mt-1">Mes techniques</h1>
         </div>
-        <Link href="/dashboard/fiches/new" className="hnk-btn">
+        <Link href="/technique/fiches/new" className="hnk-btn">
           Nouvelle technique
         </Link>
       </div>

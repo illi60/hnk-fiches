@@ -16,7 +16,7 @@ export default async function ClanLibraryPage() {
     where: { id: session.user.id },
     select: { clan: true, primaryKg: true, kekkeiGenkai: true, progressionState: true },
   });
-  if (!user?.clan) redirect("/dashboard");
+  if (!user?.clan) redirect("/technique");
 
   const owned = ownedKgsFull(
     user.primaryKg,
@@ -62,7 +62,7 @@ export default async function ClanLibraryPage() {
           <span className="text-ember">●</span> indique que tu possèdes le Kekkei Genkai associé et
           peux donc l&apos;utiliser. Les autres restent visibles mais verrouillées.
         </p>
-        <Link href="/dashboard" className="text-xs text-smoke hover:text-ember">
+        <Link href="/technique" className="text-xs text-smoke hover:text-ember">
           ← Retour au profil
         </Link>
       </div>

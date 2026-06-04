@@ -33,7 +33,7 @@ export default async function InvocationsPage() {
   });
   const state = ((dbUser?.artsState ?? {}) as unknown) as ArtsState;
   // Onglet réservé aux joueurs ayant débloqué le Kuchiyose.
-  if (!getArtState(state, "kuchiyose").unlocked) redirect("/dashboard");
+  if (!getArtState(state, "kuchiyose").unlocked) redirect("/technique");
 
   const prog = getProgression((dbUser?.progressionState ?? {}) as unknown as ProgressionState);
   const ermiteStage = prog.mode?.path === "ERMITE" ? prog.mode?.stage ?? 0 : 0;

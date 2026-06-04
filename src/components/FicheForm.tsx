@@ -197,7 +197,7 @@ export default function FicheForm({
         return;
       }
       const json = await res.json();
-      if (!ficheId && json.fiche?.id) router.push(`/dashboard/fiches/${json.fiche.id}`);
+      if (!ficheId && json.fiche?.id) router.push(`/technique/fiches/${json.fiche.id}`);
       else router.refresh();
     });
   }

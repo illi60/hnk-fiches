@@ -80,7 +80,7 @@ export default async function FicheDetailPage({
     <div className="space-y-6 max-w-3xl">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <Link href="/dashboard/fiches" className="text-xs text-smoke hover:text-ember">
+          <Link href="/technique/fiches" className="text-xs text-smoke hover:text-ember">
             ← Mes techniques
           </Link>
           <h1 className="font-serif text-3xl text-white2 mt-2">{fiche.nom}</h1>

@@ -106,7 +106,7 @@ export default function TechniquesView({ techniques }: { techniques: MyTech[] })
               <div key={t.id} className="hnk-panel" data-kanji="技" style={kgCardStyle(t.kekkeiGenkai)}>
                 <div className="flex items-start justify-between gap-2">
                   <Link
-                    href={`/dashboard/fiches/${t.id}`}
+                    href={`/technique/fiches/${t.id}`}
                     className="font-display uppercase tracking-wider text-lg text-white hover:text-ember min-w-0 break-words"
                   >
                     {t.nom}
@@ -161,7 +161,7 @@ export default function TechniquesView({ techniques }: { techniques: MyTech[] })
                   <span className="text-xs text-smoke tabular-nums">{t.coutXp} XP</span>
                   <div className="flex items-center gap-2">
                     <Link
-                      href={`/dashboard/fiches/${t.id}`}
+                      href={`/technique/fiches/${t.id}`}
                       className="hnk-btn-ghost !py-1.5 !px-3 !text-[10px]"
                     >
                       Voir

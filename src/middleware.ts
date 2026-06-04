@@ -1,7 +1,7 @@
 // ============================================================
 // Middleware Edge — 1ère couche de la triple garde.
 //
-// /dashboard/* : exige une session.
+// /technique/* : exige une session.
 // /admin/*     : exige une session. Le rôle ADMIN n'est PAS vérifié ici :
 //   le token JWT (Edge) peut être périmé après une promotion, et le middleware
 //   n'a pas accès à la DB. Le rôle est donc revalidé EN BASE par le layout admin
@@ -33,7 +33,7 @@ export default auth((req) => {
     }
   }
 
-  if (pathname.startsWith("/dashboard") && !isLogged) {
+  if (pathname.startsWith("/technique") && !isLogged) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("from", pathname);
@@ -44,5 +44,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/admin/:path*"],
+  matcher: ["/technique/:path*", "/admin/:path*"],
 };

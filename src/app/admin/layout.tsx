@@ -14,7 +14,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     where: { id: session.user.id },
     select: { role: true, username: true },
   });
-  if (!me || me.role !== "ADMIN") redirect("/dashboard");
+  if (!me || me.role !== "ADMIN") redirect("/technique");
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -28,7 +28,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link href="/admin/users">Joueurs</Link>
           <Link href="/admin/fiches">Fiches</Link>
           <Link href="/admin/clans">Clans</Link>
-          <Link href="/dashboard" className="!text-smoke">
+          <Link href="/technique" className="!text-smoke">
             ← Joueur
           </Link>
         </nav>
