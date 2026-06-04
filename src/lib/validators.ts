@@ -8,7 +8,8 @@ import { z } from "zod";
 // ----- Auth -----
 
 export const registerSchema = z.object({
-  email: z.string().email().max(120),
+  // Pas d'email : le login se fait par username. L'API génère un email
+  // synthétique interne pour satisfaire la contrainte unique non-null en base.
   username: z
     .string()
     .min(3)

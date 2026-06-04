@@ -15,12 +15,7 @@ export async function GET(req: Request) {
     const q = (url.searchParams.get("q") ?? "").trim();
 
     const where = q
-      ? {
-          OR: [
-            { username: { contains: q, mode: "insensitive" as const } },
-            { email: { contains: q, mode: "insensitive" as const } },
-          ],
-        }
+      ? { username: { contains: q, mode: "insensitive" as const } }
       : {};
 
     const users = await prisma.user.findMany({
@@ -29,7 +24,6 @@ export async function GET(req: Request) {
       take: 100,
       select: {
         id: true,
-        email: true,
         username: true,
         role: true,
         canManageAdmins: true,
@@ -59,16 +53,21 @@ export async function POST(req: Request) {
     const parsed = registerSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ ok: false, error: "INVALID" }, { status: 400 });
 
-    const { email, username, password } = parsed.data;
+    const { username, password } = parsed.data;
+    // Email synthétique interne (jamais utilisé pour le login, qui se fait par
+    // username) : satisfait la contrainte unique non-null sans le demander.
+    const slug = username.toLowerCase().replace(/\s+/g, ".").replace(/[^a-z0-9._-]/g, "");
+    const email = `${slug || "joueur"}@hnk.local`;
+
     const existing = await prisma.user.findFirst({
-      where: { OR: [{ email: email.toLowerCase() }, { username }] },
+      where: { OR: [{ email }, { username }] },
       select: { id: true },
     });
     if (existing) return NextResponse.json({ ok: false, error: "DUPLICATE" }, { status: 409 });
 
     const user = await prisma.user.create({
       data: {
-        email: email.toLowerCase(),
+        email,
         username,
         passwordHash: await hash(password, 12),
         role: "USER",

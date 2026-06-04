@@ -15,7 +15,6 @@ type Role = "USER" | "ADMIN";
 export interface AdminUser {
   id: string;
   username: string;
-  email: string;
   role: Role;
   canManageAdmins: boolean;
   xpAvailable: number;

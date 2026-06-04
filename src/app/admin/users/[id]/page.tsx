@@ -20,7 +20,6 @@ export default async function AdminUserDetail({
       select: {
         id: true,
         username: true,
-        email: true,
         role: true,
         canManageAdmins: true,
         xpAvailable: true,
@@ -81,7 +80,6 @@ export default async function AdminUserDetail({
           ← Joueurs
         </Link>
         <h1 className="font-serif text-3xl text-white2 mt-2">{user.username}</h1>
-        <p className="text-sm text-smoke">{user.email}</p>
         <p className="text-xs text-smoke mt-2 tabular-nums">
           {user.xpAvailable} XP disponibles · {user.xpTotalEarned} XP cumulés
         </p>

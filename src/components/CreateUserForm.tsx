@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 export default function CreateUserForm() {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [f, setF] = useState({ email: "", username: "", password: "" });
+  const [f, setF] = useState({ username: "", password: "" });
   const [msg, setMsg] = useState<string | null>(null);
 
   function submit() {
@@ -21,7 +21,7 @@ export default function CreateUserForm() {
       if (!j.ok) {
         setMsg(
           j.error === "DUPLICATE"
-            ? "Email ou pseudo déjà pris."
+            ? "Pseudo déjà pris."
             : j.error === "INVALID"
             ? "Champs invalides (pseudo ≥ 3, mot de passe ≥ 8)."
             : "Erreur."
@@ -29,7 +29,7 @@ export default function CreateUserForm() {
         return;
       }
       setMsg("Compte créé ✓");
-      setF({ email: "", username: "", password: "" });
+      setF({ username: "", password: "" });
       router.refresh();
     });
   }
@@ -37,19 +37,12 @@ export default function CreateUserForm() {
   return (
     <section className="hnk-panel" data-kanji="証">
       <p className="hnk-eyebrow mb-3">Créer un compte joueur</p>
-      <div className="grid sm:grid-cols-3 gap-3">
+      <div className="grid sm:grid-cols-2 gap-3">
         <input
           className="hnk-input"
           placeholder="Pseudo"
           value={f.username}
           onChange={(e) => setF((s) => ({ ...s, username: e.target.value }))}
-        />
-        <input
-          className="hnk-input"
-          type="email"
-          placeholder="Email"
-          value={f.email}
-          onChange={(e) => setF((s) => ({ ...s, email: e.target.value }))}
         />
         <input
           className="hnk-input"
@@ -61,7 +54,7 @@ export default function CreateUserForm() {
       <div className="flex items-center gap-3 mt-3">
         <button
           className="hnk-btn"
-          disabled={pending || !f.email || !f.username || !f.password}
+          disabled={pending || !f.username || !f.password}
           onClick={submit}
         >
           {pending ? "…" : "Créer le compte"}

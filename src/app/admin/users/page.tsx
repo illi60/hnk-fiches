@@ -15,19 +15,13 @@ export default async function AdminUsersPage({
 
   const users = await prisma.user.findMany({
     where: q
-      ? {
-          OR: [
-            { username: { contains: q, mode: "insensitive" } },
-            { email: { contains: q, mode: "insensitive" } },
-          ],
-        }
+      ? { username: { contains: q, mode: "insensitive" } }
       : {},
     orderBy: { createdAt: "desc" },
     take: 100,
     select: {
       id: true,
       username: true,
-      email: true,
       role: true,
       canManageAdmins: true,
       xpAvailable: true,
@@ -51,7 +45,7 @@ export default async function AdminUsersPage({
         <input
           name="q"
           defaultValue={q}
-          placeholder="Pseudo ou email…"
+          placeholder="Pseudo…"
           className="flex-1 bg-ink-900 border border-white/10 border-b-2 border-b-ember/50 px-3 py-2 text-bone focus:outline-none focus:border-ember"
         />
         <button className="px-5 py-2 bg-ember text-black font-bold tracking-[0.2em] uppercase text-xs hover:bg-ember-hot transition">
@@ -76,7 +70,7 @@ export default async function AdminUsersPage({
                   )}
                 </p>
                 <p className="text-xs text-smoke">
-                  {u.email} · {u.clan ?? "Sans clan"}
+                  {u.clan ?? "Sans clan"}
                   {u.rang && ` · Rang ${u.rang}`}
                 </p>
               </div>
