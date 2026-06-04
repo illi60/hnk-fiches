@@ -48,6 +48,25 @@
 .hnk-pres * { box-sizing: border-box; }
 .hnk-pres img { max-width: 100%; display: block; }
 
+/* ---------- Anti-conflit Forumactif ----------
+   Le thème du forum stylise les balises de titre génériques (<h1>..<h6>) avec
+   des bordures/soulignements colorés (souvent une barre bleue) qui ne doivent
+   PAS apparaître dans la fiche. On les neutralise sur NOS titres uniquement.
+   La double classe (.hnk-pres.hnk-pres) gonfle la spécificité pour gagner même
+   si le thème du forum utilise !important. Les bordures de mes blocs (portées
+   par des classes sur des <div>/<li>) ne sont pas touchées. */
+.hnk-pres.hnk-pres h1,
+.hnk-pres.hnk-pres h2,
+.hnk-pres.hnk-pres h3,
+.hnk-pres.hnk-pres h4,
+.hnk-pres.hnk-pres h5,
+.hnk-pres.hnk-pres h6 {
+  border: 0 !important;
+  text-decoration: none !important;
+  box-shadow: none !important;
+  background: none !important;
+}
+
 /* ---------- En-tête ---------- */
 .hnk-pres-head {
   position: relative;

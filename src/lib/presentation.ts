@@ -260,3 +260,98 @@ export function presentationForumHtml(d: PresentationData): string {
     `</div>`
   );
 }
+
+// ============================================================
+//  IMPORT (inverse) — reconstruit les données depuis le code forum.
+//  Sert à récupérer une fiche si la sauvegarde locale a sauté : on colle
+//  le code, on récupère les champs. Parsing DOM → client uniquement
+//  (DOMParser). Renvoie null si le code n'est pas reconnu.
+// ============================================================
+
+// Racine .hnk-pres du code collé (ou null si invalide / hors navigateur).
+export function parseHnkRoot(html: string): Element | null {
+  if (typeof DOMParser === "undefined") return null;
+  try {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    return doc.querySelector(".hnk-pres");
+  } catch {
+    return null;
+  }
+}
+
+export function nodeText(el: Element | null | undefined): string {
+  return (el?.textContent ?? "").replace(/\s+/g, " ").trim();
+}
+
+// Contenu multi-ligne : <br> → \n, le reste = texte (inverse de multiline()).
+export function nodeMultiline(el: Element | null | undefined): string {
+  if (!el) return "";
+  let out = "";
+  el.childNodes.forEach((n) => {
+    if (n.nodeName === "BR") out += "\n";
+    else out += n.textContent ?? "";
+  });
+  return out.replace(/[ \t]+\n/g, "\n").trim();
+}
+
+export function clanFromRoot(root: Element): ClanKey {
+  for (const k of CLAN_KEYS) {
+    if (root.classList.contains(`hnk-pres--${k}`)) return k;
+  }
+  return "uchiha";
+}
+
+// Liste d'identité <li><span>clé</span><b>valeur</b></li> → { clé(min): valeur }.
+export function idPairs(nodes: NodeListOf<Element> | Element[]): Record<string, string> {
+  const map: Record<string, string> = {};
+  nodes.forEach((li) => {
+    const k = nodeText(li.querySelector("span")).toLowerCase();
+    if (k) map[k] = nodeText(li.querySelector("b"));
+  });
+  return map;
+}
+
+export function parsePresentationForumHtml(html: string): PresentationData | null {
+  const root = parseHnkRoot(html);
+  if (!root) return null;
+  // Garde-fou : un bloc de CARNET (« Carnet de bord · … ») n'est pas une présentation.
+  const eyebrow = nodeText(root.querySelector(".hnk-pres-eyebrow")).toLowerCase();
+  if (eyebrow.includes("carnet")) return null;
+
+  const base = emptyPresentation();
+  const id = idPairs(root.querySelectorAll(".hnk-pres-char .hnk-pres-id li"));
+
+  const answers = emptyAnswers();
+  root.querySelectorAll(".hnk-pres-qa .hnk-pres-q").forEach((q) => {
+    const label = nodeText(q.querySelector(".q"));
+    const match = CHARACTER_QUESTIONS.find((cq) => cq.label === label);
+    if (match) answers[match.id] = nodeMultiline(q.querySelector(".a"));
+  });
+
+  const chrono = Array.from(root.querySelectorAll(".hnk-pres-chrono .ev")).map((ev) => ({
+    year: nodeText(ev.querySelector(".yr")),
+    label: nodeText(ev.querySelector(".lab")),
+    text: nodeMultiline(ev.querySelector("p")),
+  }));
+
+  const hrp = idPairs(root.querySelectorAll(".hnk-pres-hrp li"));
+
+  return {
+    clan: clanFromRoot(root),
+    name: nodeText(root.querySelector(".hnk-pres-name")),
+    subtitle: nodeText(root.querySelector(".hnk-pres-sub")),
+    avatarUrl: root.querySelector(".hnk-pres-ava img")?.getAttribute("src") ?? "",
+    age: id["naissance"] ?? "",
+    origine: id["origine"] ?? "",
+    trame: id["trame"] ?? "",
+    traits: nodeMultiline(root.querySelector(".hnk-pres-traits")),
+    answers,
+    chrono: chrono.length ? chrono : base.chrono,
+    hrp: {
+      pseudo: hrp["pseudo joueur"] ?? "",
+      found: hrp["trouvé le forum via"] ?? "",
+      parrain: hrp["parrain"] ?? "",
+      partenaire: hrp["forum partenaire / autre"] ?? "",
+    },
+  };
+}

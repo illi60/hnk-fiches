@@ -10,6 +10,7 @@ import {
   emptyAnswers,
   emptyPresentation,
   presentationForumHtml,
+  parsePresentationForumHtml,
   type ChronoEvent,
   type ClanKey,
   type PresentationData,
@@ -22,6 +23,9 @@ export default function PresentationGenerator() {
   const [d, setD] = useState<PresentationData>(emptyPresentation);
   const [copied, setCopied] = useState(false);
   const [showCode, setShowCode] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importText, setImportText] = useState("");
+  const [importMsg, setImportMsg] = useState<string | null>(null);
   // Sauvegarde locale (sans compte) : on restaure au montage, puis on
   // enregistre dans le navigateur à chaque modification.
   const [loaded, setLoaded] = useState(false);
@@ -71,6 +75,18 @@ export default function PresentationGenerator() {
     }
     setD(emptyPresentation());
     setSavedAt(null);
+  }
+
+  function doImport() {
+    const res = parsePresentationForumHtml(importText);
+    if (!res) {
+      setImportMsg("Code non reconnu. Colle le code d'une fiche de présentation générée ici.");
+      return;
+    }
+    setD(res);
+    setImportMsg("Fiche importée ✓");
+    setImportText("");
+    setImportOpen(false);
   }
 
   const html = useMemo(() => presentationForumHtml(d), [d]);
@@ -313,6 +329,9 @@ export default function PresentationGenerator() {
             <button type="button" className="hnk-btn-ghost !py-1.5 !px-3 !text-[10px]" onClick={resetAll} title="Effacer la fiche et la sauvegarde locale">
               Réinitialiser
             </button>
+            <button type="button" className="hnk-btn-ghost !py-1.5 !px-3 !text-[10px]" onClick={() => { setImportOpen((s) => !s); setImportMsg(null); }}>
+              {importOpen ? "Fermer l'import" : "Importer"}
+            </button>
             <button type="button" className="hnk-btn-ghost !py-1.5 !px-3 !text-[10px]" onClick={() => setShowCode((s) => !s)}>
               {showCode ? "Masquer le code" : "Voir le code"}
             </button>
@@ -321,6 +340,28 @@ export default function PresentationGenerator() {
             </button>
           </div>
         </div>
+
+        {importOpen && (
+          <div className="hnk-panel p-4 space-y-2">
+            <p className="hnk-label">Récupérer une fiche depuis son code forum</p>
+            <p className="text-smoke text-[11px]">
+              Colle le code d'une fiche générée ici : les champs sont réextraits automatiquement.
+              Utile si la sauvegarde locale a sauté.
+            </p>
+            <textarea
+              className="hnk-input w-full h-32 font-mono text-[11px] leading-relaxed"
+              placeholder="Colle ici le code &lt;div class=&quot;hnk-pres …&quot;&gt;…"
+              value={importText}
+              onChange={(e) => setImportText(e.target.value)}
+            />
+            <div className="flex items-center gap-3">
+              <button type="button" className="hnk-btn !py-1.5 !px-3 !text-[10px]" onClick={doImport} disabled={!importText.trim()}>
+                Charger la fiche
+              </button>
+              {importMsg && <span className="text-xs text-bone">{importMsg}</span>}
+            </div>
+          </div>
+        )}
 
         <iframe
           ref={iframeRef}

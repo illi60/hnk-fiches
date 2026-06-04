@@ -12,6 +12,7 @@ import {
   carnetForumHtml,
   emptyCarnet,
   emptyLien,
+  parseCarnetForumHtml,
   type AccCategory,
   type CarnetData,
   type CarnetTab,
@@ -38,6 +39,42 @@ export default function CarnetGenerator() {
   const [showCode, setShowCode] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importText, setImportText] = useState("");
+  const [importMsg, setImportMsg] = useState<string | null>(null);
+
+  const TAB_LABELS: Record<CarnetTab, string> = {
+    personnage: "Personnage",
+    liens: "Liens",
+    chrono: "Chronologie",
+    accomplissements: "Accomplissements",
+  };
+
+  function doImport() {
+    const res = parseCarnetForumHtml(importText);
+    if (!res) {
+      setImportMsg("Code non reconnu. Colle le code d'un bloc de carnet (Personnage, Liens, Chronologie ou Accomplissements).");
+      return;
+    }
+    setC((prev) => {
+      const next: CarnetData = {
+        ...prev,
+        clan: res.clan,
+        name: res.name || prev.name,
+        subtitle: res.subtitle || prev.subtitle,
+      };
+      if (res.section === "personnage" && res.personnage) next.personnage = res.personnage;
+      if (res.section === "liens" && res.liens) next.liens = res.liens;
+      if (res.section === "chrono" && res.chrono) next.chrono = res.chrono;
+      if (res.section === "accomplissements" && res.accomplissements)
+        next.accomplissements = res.accomplissements;
+      return next;
+    });
+    setTab(res.section);
+    setImportMsg(`Bloc « ${TAB_LABELS[res.section]} » importé ✓`);
+    setImportText("");
+    setImportOpen(false);
+  }
 
   // Restauration locale (sans compte) au montage.
   useEffect(() => {
@@ -228,6 +265,9 @@ export default function CarnetGenerator() {
             <button type="button" className="hnk-btn-ghost !py-1.5 !px-3 !text-[10px]" onClick={resetAll} title="Effacer le carnet et la sauvegarde locale">
               Réinitialiser
             </button>
+            <button type="button" className="hnk-btn-ghost !py-1.5 !px-3 !text-[10px]" onClick={() => { setImportOpen((s) => !s); setImportMsg(null); }}>
+              {importOpen ? "Fermer l'import" : "Importer"}
+            </button>
             <button type="button" className="hnk-btn-ghost !py-1.5 !px-3 !text-[10px]" onClick={() => setShowCode((s) => !s)}>
               {showCode ? "Masquer le code" : "Voir le code"}
             </button>
@@ -240,6 +280,28 @@ export default function CarnetGenerator() {
         <p className="text-smoke text-[11px]">
           Chaque onglet produit son propre code à coller dans un message distinct du sujet « Carnet de bord ».
         </p>
+
+        {importOpen && (
+          <div className="hnk-panel p-4 space-y-2">
+            <p className="hnk-label">Récupérer un bloc depuis son code forum</p>
+            <p className="text-smoke text-[11px]">
+              Colle le code d'<strong className="text-bone">un seul bloc</strong> (Personnage, Liens, Chronologie ou
+              Accomplissements). Le bon onglet est détecté automatiquement et rempli. Utile si la sauvegarde locale a sauté.
+            </p>
+            <textarea
+              className="hnk-input w-full h-32 font-mono text-[11px] leading-relaxed"
+              placeholder="Colle ici le code &lt;div class=&quot;hnk-pres …&quot;&gt;…"
+              value={importText}
+              onChange={(e) => setImportText(e.target.value)}
+            />
+            <div className="flex items-center gap-3">
+              <button type="button" className="hnk-btn !py-1.5 !px-3 !text-[10px]" onClick={doImport} disabled={!importText.trim()}>
+                Charger ce bloc
+              </button>
+              {importMsg && <span className="text-xs text-bone">{importMsg}</span>}
+            </div>
+          </div>
+        )}
 
         <iframe
           ref={iframeRef}
@@ -322,19 +384,16 @@ function PersonnageForm({
           ))}
         </select>
       </Field>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Grade">
-          <input className="hnk-input" list="hnk-grades" value={p.grade} onChange={(e) => setPerso("grade", e.target.value)} placeholder="Jônin" />
-          <datalist id="hnk-grades">
-            {GRADES.map((g) => (
-              <option key={g} value={g} />
-            ))}
-          </datalist>
-        </Field>
-        <Field label="Escouade">
-          <input className="hnk-input" value={p.escouade} onChange={(e) => setPerso("escouade", e.target.value)} placeholder="Équipe 7" />
-        </Field>
-      </div>
+      <Field label="Grade">
+        <select className="hnk-input" value={p.grade} onChange={(e) => setPerso("grade", e.target.value)}>
+          <option value="">—</option>
+          {GRADES.map((g) => (
+            <option key={g} value={g}>
+              {g}
+            </option>
+          ))}
+        </select>
+      </Field>
 
       <div className="border-t border-white/10 pt-4 space-y-4">
         <h3 className="hnk-label">Traits particuliers</h3>

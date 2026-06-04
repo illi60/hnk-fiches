@@ -17,23 +17,25 @@
 // public/forum/hnk-presentation.css (les classes .hnk-pres* + .hnk-cb*).
 // ============================================================
 
-import { FOUNDING_CLANS, CLAN_KEYS, CLAN_EMBLEMS, TRAMES, type ClanKey } from "./presentation";
+import {
+  FOUNDING_CLANS,
+  CLAN_KEYS,
+  CLAN_EMBLEMS,
+  TRAMES,
+  parseHnkRoot,
+  nodeText,
+  nodeMultiline,
+  clanFromRoot,
+  idPairs,
+  type ClanKey,
+} from "./presentation";
 
 // Ré-exports pratiques pour le composant (un seul import côté UI).
 export { FOUNDING_CLANS, CLAN_KEYS, CLAN_EMBLEMS, TRAMES };
 export type { ClanKey };
 
-// --- Grades de Konoha (suggestions ; le champ reste libre). ---
-export const GRADES = [
-  "Académie",
-  "Genin",
-  "Chûnin",
-  "Jônin",
-  "Jônin spécial",
-  "ANBU",
-  "Tokubetsu",
-  "Hokage",
-] as const;
+// --- Grades de Konoha (liste fermée). ---
+export const GRADES = ["Genin", "Chûnin", "Jônin"] as const;
 
 // --- Sentiment d'un lien : pilote la couleur des étoiles. ---
 export const SENTIMENTS = {
@@ -62,7 +64,6 @@ export interface PersonnageData {
   naissance: string;
   trame: string; // "" = sans trame
   grade: string;
-  escouade: string;
   // Traits particuliers
   voix: string;
   demarche: string;
@@ -140,7 +141,6 @@ export function emptyCarnet(): CarnetData {
       naissance: "",
       trame: "",
       grade: "",
-      escouade: "",
       voix: "",
       demarche: "",
       signes: "",
@@ -231,7 +231,6 @@ export function personnageForumHtml(c: CarnetData): string {
     ["Trame", p.trame],
     ["Clan", clan.label],
     ["Grade", p.grade],
-    ["Escouade", p.escouade],
   ]
     .filter(([, v]) => (v ?? "").toString().trim() !== "")
     .map(([k, v]) => `<li><span>${k}</span><b>${escapeHtml(v as string)}</b></li>`)
@@ -437,4 +436,164 @@ export function carnetForumHtml(c: CarnetData, tab: CarnetTab): string {
     case "accomplissements":
       return accomplissementsForumHtml(c);
   }
+}
+
+// ============================================================
+//  IMPORT (inverse) — reconstruit un bloc depuis le code forum.
+//  Le carnet est posté morceau par morceau : on importe UN bloc à la fois,
+//  la section est détectée automatiquement (eyebrow « Carnet de bord · X »,
+//  puis repli sur les classes). Parsing DOM → client uniquement.
+// ============================================================
+
+export interface CarnetBlockImport {
+  section: CarnetTab;
+  clan: ClanKey;
+  name: string;
+  subtitle: string;
+  personnage?: PersonnageData;
+  liens?: LienItem[];
+  chrono?: ChronoItem[];
+  accomplissements?: AccItem[];
+}
+
+function detectSection(root: Element): CarnetTab | null {
+  const eb = nodeText(root.querySelector(".hnk-pres-eyebrow")).toLowerCase();
+  if (eb.includes("personnage")) return "personnage";
+  if (eb.includes("liens")) return "liens";
+  if (eb.includes("chronolog")) return "chrono";
+  if (eb.includes("accompl")) return "accomplissements";
+  // Repli par classes (si l'eyebrow a été modifié).
+  if (root.querySelector(".hnk-cb-links")) return "liens";
+  if (root.querySelector(".hnk-cb-time")) return "chrono";
+  if (root.querySelector(".hnk-cb-acc")) return "accomplissements";
+  if (root.querySelector(".hnk-cb-carac, .hnk-cb-amb")) return "personnage";
+  return null;
+}
+
+function parsePersonnageBlock(root: Element): PersonnageData {
+  const base = emptyCarnet().personnage;
+  const id = idPairs(root.querySelectorAll(".hnk-pres-char .hnk-pres-id li"));
+  const tr = idPairs(root.querySelectorAll(".hnk-cb-id-full li"));
+  const qualites = Array.from(root.querySelectorAll(".hnk-cb-carac .col--q li"))
+    .map((li) => nodeText(li))
+    .filter(Boolean);
+  const defauts = Array.from(root.querySelectorAll(".hnk-cb-carac .col--d li"))
+    .map((li) => nodeText(li))
+    .filter(Boolean);
+  return {
+    ...base,
+    avatarUrl: root.querySelector(".hnk-pres-ava img")?.getAttribute("src") ?? "",
+    origine: id["origine"] ?? "",
+    naissance: id["naissance"] ?? "",
+    trame: id["trame"] ?? "",
+    grade: id["grade"] ?? "",
+    voix: tr["timbre de voix"] ?? "",
+    demarche: tr["démarche"] ?? "",
+    signes: tr["signes distinctifs"] ?? "",
+    traitsLibre: nodeMultiline(root.querySelector(".hnk-pres-traits")),
+    qualites: qualites.length ? qualites : ["", ""],
+    defauts: defauts.length ? defauts : ["", ""],
+    ambitions: nodeMultiline(root.querySelector(".hnk-cb-amb")),
+  };
+}
+
+function parseLiensBlock(root: Element): LienItem[] {
+  const out: LienItem[] = [];
+  root.querySelectorAll(".hnk-cb-links .hnk-cb-link").forEach((card) => {
+    const starsEl = card.querySelector(".hnk-cb-stars");
+    let sentiment: Sentiment = "allie";
+    if (starsEl?.classList.contains("hnk-cb-stars--ennemi")) sentiment = "ennemi";
+    else if (starsEl?.classList.contains("hnk-cb-stars--neutre")) sentiment = "neutre";
+
+    const rps: LienRp[] = [];
+    const box = card.querySelector(".hnk-cb-rplist-b");
+    if (box) {
+      box.querySelectorAll(":scope > a, :scope > span").forEach((n) => {
+        rps.push({
+          title: nodeText(n),
+          url: n.tagName === "A" ? n.getAttribute("href") ?? "" : "",
+        });
+      });
+    }
+
+    out.push({
+      avatarUrl: card.querySelector(".hnk-cb-link-ava img")?.getAttribute("src") ?? "",
+      pseudo: nodeText(card.querySelector(".pseudo")),
+      nature: nodeText(card.querySelector(".nature")),
+      sentiment,
+      force: starsEl ? starsEl.querySelectorAll("span.on").length : 0,
+      desc: nodeMultiline(card.querySelector(".hnk-cb-link-desc")),
+      rps: rps.length ? rps : [{ title: "", url: "" }],
+    });
+  });
+  return out.length ? out : [emptyLien()];
+}
+
+function parseChronoBlock(root: Element): ChronoItem[] {
+  const items: ChronoItem[] = [];
+  const time = root.querySelector(".hnk-cb-time");
+  if (time) {
+    time.querySelectorAll(":scope > .hnk-cb-ev, :scope > .hnk-cb-interlude").forEach((node) => {
+      if (node.classList.contains("hnk-cb-interlude")) {
+        items.push({
+          kind: "interlude",
+          title: nodeText(node.querySelector(".t")),
+          text: nodeMultiline(node.querySelector(".x")),
+        });
+      } else {
+        const lab = node.querySelector(".lab");
+        items.push({
+          kind: "rp",
+          date: nodeText(node.querySelector(".yr")),
+          title: nodeText(lab),
+          url: lab?.getAttribute("href") ?? "",
+          text: nodeMultiline(node.querySelector("p")),
+        });
+      }
+    });
+  }
+  return items.length ? items : [{ kind: "rp", date: "", title: "", url: "", text: "" }];
+}
+
+function parseAccBlock(root: Element): AccItem[] {
+  const out: AccItem[] = [];
+  const cats = Object.keys(ACC_CATEGORIES) as AccCategory[];
+  root.querySelectorAll(".hnk-cb-acc .hnk-cb-acc-item").forEach((item) => {
+    let category: AccCategory = "autre";
+    for (const c of cats) {
+      if (item.classList.contains(`hnk-cb-acc--${c}`)) category = c;
+    }
+    const tEl = item.querySelector(".t");
+    let date = "";
+    let title = "";
+    if (tEl) {
+      date = nodeText(tEl.querySelector(".dt"));
+      const clone = tEl.cloneNode(true) as Element;
+      clone.querySelector(".dt")?.remove();
+      title = nodeText(clone);
+    }
+    out.push({ category, date, title, text: nodeMultiline(item.querySelector("p")) });
+  });
+  return out.length ? out : [{ category: "village", date: "", title: "", text: "" }];
+}
+
+export function parseCarnetForumHtml(html: string): CarnetBlockImport | null {
+  const root = parseHnkRoot(html);
+  if (!root) return null;
+  const section = detectSection(root);
+  if (!section) return null;
+
+  const block: CarnetBlockImport = {
+    section,
+    clan: clanFromRoot(root),
+    name: nodeText(root.querySelector(".hnk-pres-name")),
+    subtitle: nodeText(root.querySelector(".hnk-pres-sub")),
+  };
+
+  if (section === "personnage") block.personnage = parsePersonnageBlock(root);
+  else if (section === "liens") block.liens = parseLiensBlock(root);
+  else if (section === "chrono") block.chrono = parseChronoBlock(root);
+  else block.accomplissements = parseAccBlock(root);
+
+  return block;
 }
