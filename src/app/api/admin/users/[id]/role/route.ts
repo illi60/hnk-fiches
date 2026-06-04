@@ -24,7 +24,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     });
     if (!target) throw new Error("NOT_FOUND");
 
-    if (parsed.data.role === "USER" && target.canManageAdmins) {
+    // Retirer le rôle d'un admin maître (vers USER ou TECH_MOD) : interdit si
+    // c'est le dernier, sinon plus personne ne peut gérer les admins.
+    if (parsed.data.role !== "ADMIN" && target.canManageAdmins) {
       const managers = await prisma.user.count({
         where: { role: "ADMIN", canManageAdmins: true },
       });
@@ -36,6 +38,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       data:
         parsed.data.role === "ADMIN"
           ? { role: "ADMIN", canManageAdmins: target.canManageAdmins }
+          : parsed.data.role === "TECH_MOD"
+          ? { role: "TECH_MOD", canManageAdmins: false }
           : { role: "USER", canManageAdmins: false },
       select: { id: true, role: true, canManageAdmins: true },
     });

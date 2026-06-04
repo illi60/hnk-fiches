@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
-import { requireAdmin, jsonError } from "@/lib/permissions";
+import { requireFicheModerator, jsonError } from "@/lib/permissions";
 import { adminFicheValidateSchema } from "@/lib/validators";
 import { defaultFicheCost } from "@/lib/xp";
 import { ficheTotalCost } from "@/lib/techniques";
@@ -22,7 +22,7 @@ import { ficheTotalCost } from "@/lib/techniques";
 //   - PAS de mouvement XP (rien n'avait été débité)
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const admin = await requireAdmin();
+    const admin = await requireFicheModerator();
     const { id } = await params;
 
     const body = await req.json().catch(() => null);

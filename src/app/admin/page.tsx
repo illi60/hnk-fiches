@@ -1,10 +1,13 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/permissions";
+import { requireFicheModerator } from "@/lib/permissions";
 
 export default async function AdminHome() {
-  await requireAdmin();
+  // Le modérateur technique n'a pas de KPIs : on l'envoie direct à la file de modération.
+  const me = await requireFicheModerator();
+  if (me.role !== "ADMIN") redirect("/admin/fiches");
 
   const [users, pending, validated, recent] = await Promise.all([
     prisma.user.count(),

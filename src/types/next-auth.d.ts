@@ -7,7 +7,7 @@ declare module "next-auth" {
     user: {
       id: string;
       username: string;
-      role: "USER" | "ADMIN";
+      role: "USER" | "ADMIN" | "TECH_MOD";
       canManageAdmins: boolean;
     } & DefaultSession["user"];
   }
@@ -15,7 +15,7 @@ declare module "next-auth" {
   interface User {
     id: string;
     username: string;
-    role: "USER" | "ADMIN";
+    role: "USER" | "ADMIN" | "TECH_MOD";
     canManageAdmins?: boolean;
   }
 }
@@ -24,7 +24,7 @@ declare module "next-auth/jwt" {
   interface JWT {
     id?: string;
     username?: string;
-    role?: "USER" | "ADMIN";
+    role?: "USER" | "ADMIN" | "TECH_MOD";
     canManageAdmins?: boolean;
   }
 }

@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
-import { requireAdmin, jsonError } from "@/lib/permissions";
+import { requireFicheModerator, jsonError } from "@/lib/permissions";
 
 // GET /api/admin/fiches?status=PENDING|VALIDATED|REJECTED|DRAFT
 //   Par défaut : PENDING (file de modération).
 export async function GET(req: Request) {
   try {
-    await requireAdmin();
+    await requireFicheModerator();
     const url = new URL(req.url);
     const statusParam = url.searchParams.get("status") ?? "PENDING";
     const allowed = ["DRAFT", "PENDING", "VALIDATED", "REJECTED"] as const;

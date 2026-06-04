@@ -23,6 +23,7 @@ datasource db {
 enum Role {
   USER
   ADMIN
+  TECH_MOD // Modérateur technique : valide/refuse les fiches, sans autre pouvoir admin.
 }
 
 // Rang shinobi (verrouillé : E → S, cf. CdC §9)

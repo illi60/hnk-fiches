@@ -10,7 +10,7 @@ import { AdminArtsForm, AdminQuintForm } from "@/components/AdminArtsQuint";
 
 type Rang = "E" | "D" | "C" | "B" | "A" | "S";
 type Grade = "GENIN" | "CHUNIN" | "JONIN";
-type Role = "USER" | "ADMIN";
+type Role = "USER" | "ADMIN" | "TECH_MOD";
 
 export interface AdminUser {
   id: string;
@@ -176,21 +176,27 @@ function RoleForm({
   const [msg, setMsg] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const isSelf = user.id === currentUserId;
-  const nextRole: Role = user.role === "ADMIN" ? "USER" : "ADMIN";
 
-  function submit() {
+  const ROLES: { value: Role; label: string }[] = [
+    { value: "USER", label: "Joueur" },
+    { value: "TECH_MOD", label: "Modérateur technique" },
+    { value: "ADMIN", label: "Administrateur" },
+  ];
+  const roleLabel = (r: Role) => ROLES.find((x) => x.value === r)?.label ?? r;
+
+  function setRole(role: Role) {
     setMsg(null);
     start(async () => {
       const res = await fetch(`/api/admin/users/${user.id}/role`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role: nextRole }),
+        body: JSON.stringify({ role }),
       });
       const j = await res.json().catch(() => ({}));
       if (!res.ok || !j.ok) {
         setMsg(
           j.error === "FORBIDDEN"
-            ? "Tu ne peux pas transmettre le statut admin."
+            ? "Tu ne peux pas transmettre ce statut."
             : j.error === "SELF_ROLE_CHANGE"
             ? "Tu ne peux pas changer ton propre rôle."
             : j.error === "LAST_ADMIN_MANAGER"
@@ -199,7 +205,7 @@ function RoleForm({
         );
         return;
       }
-      setMsg(nextRole === "ADMIN" ? "Statut admin accordé." : "Statut admin retiré.");
+      setMsg(`Statut : ${roleLabel(role)}.`);
       router.refresh();
     });
   }
@@ -208,22 +214,35 @@ function RoleForm({
     <div>
       <p className="block text-[10px] uppercase text-smoke mb-1">Statut</p>
       <p className="text-sm text-bone">
-        {user.role === "ADMIN" ? "Administrateur" : "Joueur"}
+        {roleLabel(user.role)}
         {user.canManageAdmins && (
           <span className="ml-2 text-[10px] tracking-[0.2em] uppercase text-ember">
             maître
           </span>
         )}
       </p>
-      <button
-        onClick={submit}
-        disabled={pending || !canManageAdmins || isSelf}
-        className="mt-3 px-4 py-2 border border-ember/50 text-ember font-bold tracking-[0.2em] uppercase text-xs hover:bg-ember/10 disabled:opacity-50"
-      >
-        {pending ? "…" : user.role === "ADMIN" ? "Retirer admin" : "Rendre admin"}
-      </button>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {ROLES.map((r) => {
+          const active = user.role === r.value;
+          return (
+            <button
+              key={r.value}
+              onClick={() => setRole(r.value)}
+              disabled={pending || !canManageAdmins || isSelf || active}
+              className={`px-3 py-2 border font-bold tracking-[0.16em] uppercase text-[11px] disabled:opacity-50 ${
+                active
+                  ? "border-ember bg-ember/10 text-ember"
+                  : "border-ember/50 text-ember hover:bg-ember/10"
+              }`}
+            >
+              {active ? `● ${r.label}` : r.label}
+            </button>
+          );
+        })}
+      </div>
       <p className="text-[10px] text-smoke mt-2">
-        Un admin promu ici ne peut pas promouvoir d&apos;autres admins.
+        Seul un admin maître attribue les statuts. Le modérateur technique ne peut que
+        valider/refuser des fiches — il ne peut transmettre aucun statut.
       </p>
       {msg && <p className="text-xs text-bone mt-2">{msg}</p>}
     </div>

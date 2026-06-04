@@ -51,6 +51,18 @@ export async function requireAdmin(): Promise<SessionUser> {
   return user;
 }
 
+// Modération des fiches techniques : ADMIN (pouvoir complet) ou TECH_MOD
+// (modérateur technique : peut UNIQUEMENT valider/refuser des fiches).
+// Utilisé par les routes/pages de modération, jamais par la gestion des
+// joueurs / XP / clans (qui restent réservées à requireAdmin).
+export async function requireFicheModerator(): Promise<SessionUser> {
+  const user = await requireUser();
+  if (user.role !== "ADMIN" && user.role !== "TECH_MOD") {
+    throw new AuthError("FORBIDDEN", 403);
+  }
+  return user;
+}
+
 // Mapper standard d'erreurs vers Response JSON.
 // N'expose JAMAIS le message brut d'une erreur DB / Prisma.
 export function jsonError(e: unknown): NextResponse {

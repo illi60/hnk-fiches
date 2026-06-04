@@ -160,7 +160,7 @@ function LiveMemberView({
 }: {
   user: {
     username: string;
-    role: "USER" | "ADMIN";
+    role: "USER" | "ADMIN" | "TECH_MOD";
     canManageAdmins: boolean;
     xpAvailable: number;
     xpTotalEarned: number;

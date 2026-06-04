@@ -68,6 +68,11 @@ export default async function AdminUsersPage({
                       admin{u.canManageAdmins ? " maître" : ""}
                     </span>
                   )}
+                  {u.role === "TECH_MOD" && (
+                    <span className="ml-2 text-[10px] tracking-[0.24em] uppercase text-amber-400">
+                      mod technique
+                    </span>
+                  )}
                 </p>
                 <p className="text-xs text-smoke">
                   {u.clan ?? "Sans clan"}

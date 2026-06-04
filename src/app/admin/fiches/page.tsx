@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/permissions";
+import { requireFicheModerator } from "@/lib/permissions";
 import AdminFicheDecision from "@/components/AdminFicheDecision";
 import { actionLabel, natureLabel, ART_KANJI } from "@/lib/techniques";
 import { kgColor } from "@/lib/kekkei";
@@ -11,7 +11,8 @@ export default async function AdminFichesPage({
 }: {
   searchParams: Promise<{ status?: string }>;
 }) {
-  await requireAdmin();
+  const me = await requireFicheModerator();
+  const isAdmin = me.role === "ADMIN";
   const sp = await searchParams;
   const allowed = ["PENDING", "VALIDATED", "REJECTED", "DRAFT"] as const;
   const status = (allowed as readonly string[]).includes(sp.status ?? "")
@@ -76,9 +77,13 @@ export default async function AdminFichesPage({
                 <h3 className="font-serif text-xl text-white2">{f.nom}</h3>
                 <p className="text-xs text-smoke mt-1">
                   Coût {f.coutXp} XP · par{" "}
-                  <Link href={`/admin/users/${f.author.id}`} className="text-ember hover:text-ember-hot">
-                    {f.author.username}
-                  </Link>{" "}
+                  {isAdmin ? (
+                    <Link href={`/admin/users/${f.author.id}`} className="text-ember hover:text-ember-hot">
+                      {f.author.username}
+                    </Link>
+                  ) : (
+                    <span className="text-ember">{f.author.username}</span>
+                  )}{" "}
                   ({f.author.xpAvailable} XP dispo)
                 </p>
                 <div className="flex flex-wrap gap-2 mt-2">

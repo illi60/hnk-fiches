@@ -14,20 +14,23 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     where: { id: session.user.id },
     select: { role: true, username: true },
   });
-  if (!me || me.role !== "ADMIN") redirect("/technique");
+  // Accès au panneau : ADMIN (complet) ou TECH_MOD (modération des fiches seule).
+  const isAdmin = me?.role === "ADMIN";
+  const isMod = me?.role === "TECH_MOD";
+  if (!me || (!isAdmin && !isMod)) redirect("/technique");
 
   return (
     <div className="min-h-screen flex flex-col">
       <header className="hnk-header">
-        <Link href="/admin" className="brand">
+        <Link href={isAdmin ? "/admin" : "/admin/fiches"} className="brand">
           <span className="kanji">監</span>
-          <span className="name">Vigie · Admin</span>
+          <span className="name">{isAdmin ? "Vigie · Admin" : "Vigie · Modération"}</span>
         </Link>
         <nav className="hnk-nav">
-          <Link href="/admin">KPIs</Link>
-          <Link href="/admin/users">Joueurs</Link>
+          {isAdmin && <Link href="/admin">KPIs</Link>}
+          {isAdmin && <Link href="/admin/users">Joueurs</Link>}
           <Link href="/admin/fiches">Fiches</Link>
-          <Link href="/admin/clans">Clans</Link>
+          {isAdmin && <Link href="/admin/clans">Clans</Link>}
           <Link href="/technique" className="!text-smoke">
             ← Joueur
           </Link>

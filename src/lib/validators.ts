@@ -134,7 +134,7 @@ export const adminPasswordResetSchema = z.object({
 });
 
 export const adminRoleSchema = z.object({
-  role: z.enum(["USER", "ADMIN"]),
+  role: z.enum(["USER", "ADMIN", "TECH_MOD"]),
 });
 
 // ----- Arts Shinobi (dépense XP joueur) -----
