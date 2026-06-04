@@ -166,7 +166,7 @@ export function presentationForumHtml(d: PresentationData): string {
   // Personnage : avatar + identité
   const idRows = [
     ["Nom", name],
-    ["Âge", d.age],
+    ["Naissance", d.age],
     ["Origine", d.origine],
     ["Clan", clan.label],
     ["Trame", d.trame],

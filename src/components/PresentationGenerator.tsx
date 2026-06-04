@@ -196,10 +196,13 @@ export default function PresentationGenerator() {
           <h2 className="hnk-section-title mb-1">Personnage</h2>
           <Field label="URL de l'avatar (portrait)">
             <input className="hnk-input" value={d.avatarUrl} onChange={(e) => set("avatarUrl", e.target.value)} placeholder="https://i.imgur.com/…" />
+            <p className="text-smoke text-[11px] mt-1">
+              Cadre <strong className="text-bone">200 × 280 px</strong> (portrait, ratio ~5:7). L'image est recadrée pour remplir le cadre — fournis de préférence un portrait, idéalement ≥ 400 × 560 px.
+            </p>
           </Field>
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Âge">
-              <input className="hnk-input" value={d.age} onChange={(e) => set("age", e.target.value)} placeholder="19 ans" />
+            <Field label="Naissance">
+              <input className="hnk-input" value={d.age} onChange={(e) => set("age", e.target.value)} placeholder="An -12" />
             </Field>
             <Field label="Origine">
               <input className="hnk-input" value={d.origine} onChange={(e) => set("origine", e.target.value)} placeholder="Konohagakure no Sato" />
