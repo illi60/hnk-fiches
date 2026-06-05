@@ -2,11 +2,14 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  CHAKRISME_TRAME,
   CHARACTER_QUESTIONS,
   CLAN_EMBLEMS,
   CLAN_KEYS,
   FOUNDING_CLANS,
+  RANK_CHOICES,
   TRAMES,
+  effectiveRank,
   emptyAnswers,
   emptyPresentation,
   presentationForumHtml,
@@ -224,6 +227,24 @@ export default function PresentationGenerator() {
               <input className="hnk-input" value={d.origine} onChange={(e) => set("origine", e.target.value)} placeholder="Konohagakure no Sato" />
             </Field>
           </div>
+          <Field label="Rang">
+            <select className="hnk-input" value={d.rank} onChange={(e) => set("rank", e.target.value)}>
+              <option value="">— Rang —</option>
+              {RANK_CHOICES.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+            {d.rank && d.trame.trim() === CHAKRISME_TRAME ? (
+              <p className="text-smoke text-[11px] mt-1">
+                Chakrisme : bump +1 → rang effectif{" "}
+                <strong className="text-bone">{effectiveRank(d.rank, d.trame)}</strong>.
+              </p>
+            ) : (
+              <p className="text-smoke text-[11px] mt-1">Rang de départ (E → C). La trame « Chakrisme » accorde un bump +1.</p>
+            )}
+          </Field>
           <Field label="Trame (départ avancé)">
             <select className="hnk-input" value={d.trame} onChange={(e) => set("trame", e.target.value)}>
               <option value="">Sans trame (sans départ avancé)</option>

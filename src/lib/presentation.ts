@@ -60,6 +60,25 @@ export const TRAMES: TrameGroup[] = [
   },
 ];
 
+// --- Rang du personnage.
+//     Le joueur choisit un rang de départ entre E et C. La trame « Chakrisme »
+//     accorde un bump +1 : le rang AFFICHÉ est relevé d'un cran (E→D, D→C, C→B).
+export const RANK_LADDER = ["E", "D", "C", "B", "A", "S"] as const;
+export type Rank = (typeof RANK_LADDER)[number];
+// Rangs sélectionnables à la création d'une présentation.
+export const RANK_CHOICES: Rank[] = ["E", "D", "C"];
+// Trame qui déclenche le bump +1.
+export const CHAKRISME_TRAME = "Chakrisme";
+
+// Rang effectif = rang choisi + bump éventuel (Chakrisme). Borné au sommet (S).
+export function effectiveRank(rank: string, trame: string): string {
+  if (!rank) return "";
+  const i = RANK_LADDER.indexOf(rank as Rank);
+  if (i < 0) return rank;
+  const bump = trame.trim() === CHAKRISME_TRAME ? 1 : 0;
+  return RANK_LADDER[Math.min(i + bump, RANK_LADDER.length - 1)];
+}
+
 // --- Section « Caractère » : intitulés VERROUILLÉS côté admin.
 //     Le joueur ne fait que répondre, il ne peut pas changer les questions.
 //     `requiresTrame` : question affichée seulement si une trame est choisie.
@@ -101,6 +120,7 @@ export interface PresentationData {
   subtitle: string;
   avatarUrl: string;
   age: string;
+  rank: string; // "" = non renseigné ; sinon E/D/C (bump +1 si Chakrisme)
   origine: string;
   trame: string; // "" = sans trame
   traits: string;
@@ -126,6 +146,7 @@ export function emptyPresentation(): PresentationData {
     subtitle: "",
     avatarUrl: "",
     age: "",
+    rank: "",
     origine: "",
     trame: "",
     traits: "",
@@ -164,9 +185,18 @@ export function presentationForumHtml(d: PresentationData): string {
     `</div>`;
 
   // Personnage : avatar + identité
+  // Rang : on affiche le rang effectif ; si la trame Chakrisme l'a relevé,
+  // on précise le rang de base et l'origine du bump.
+  const eff = effectiveRank(d.rank, d.trame);
+  const rankDisplay = !d.rank
+    ? ""
+    : eff !== d.rank
+    ? `${eff} (${d.rank} +1 · Chakrisme)`
+    : eff;
   const idRows = [
     ["Nom", name],
     ["Naissance", d.age],
+    ["Rang", rankDisplay],
     ["Origine", d.origine],
     ["Clan", clan.label],
     ["Trame", d.trame],
@@ -294,6 +324,16 @@ export function nodeMultiline(el: Element | null | undefined): string {
   return out.replace(/[ \t]+\n/g, "\n").trim();
 }
 
+// Rang affiché → rang choisi. Forme « bumpée » : "D (E +1 · Chakrisme)" → "E".
+// Forme simple : "C" → "C".
+export function rankFromDisplay(v: string): string {
+  const s = (v ?? "").trim();
+  if (!s) return "";
+  const bumped = s.match(/\(\s*([ESDCBA])\s*\+1/i);
+  if (bumped) return bumped[1].toUpperCase();
+  return s.split(/\s+/)[0].toUpperCase();
+}
+
 export function clanFromRoot(root: Element): ClanKey {
   for (const k of CLAN_KEYS) {
     if (root.classList.contains(`hnk-pres--${k}`)) return k;
@@ -342,6 +382,7 @@ export function parsePresentationForumHtml(html: string): PresentationData | nul
     subtitle: nodeText(root.querySelector(".hnk-pres-sub")),
     avatarUrl: root.querySelector(".hnk-pres-ava img")?.getAttribute("src") ?? "",
     age: id["naissance"] ?? "",
+    rank: rankFromDisplay(id["rang"] ?? ""),
     origine: id["origine"] ?? "",
     trame: id["trame"] ?? "",
     traits: nodeMultiline(root.querySelector(".hnk-pres-traits")),
