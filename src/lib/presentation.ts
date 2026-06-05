@@ -132,6 +132,7 @@ export interface PresentationData {
     found: string;
     parrain: string;
     partenaire: string;
+    avatarOrigine: string;
   };
 }
 
@@ -152,7 +153,7 @@ export function emptyPresentation(): PresentationData {
     traits: "",
     answers: emptyAnswers(),
     chrono: [{ year: "", label: "", text: "" }],
-    hrp: { pseudo: "", found: "", parrain: "", partenaire: "" },
+    hrp: { pseudo: "", found: "", parrain: "", partenaire: "", avatarOrigine: "" },
   };
 }
 
@@ -267,6 +268,7 @@ export function presentationForumHtml(d: PresentationData): string {
     ["Trouvé le forum via", d.hrp.found],
     ["Parrain", d.hrp.parrain],
     ["Forum partenaire / autre", d.hrp.partenaire],
+    ["Origine de l'avatar", d.hrp.avatarOrigine],
   ]
     .filter(([, v]) => (v ?? "").trim() !== "")
     .map(([k, v]) => `<li><span>${k}</span><b>${escapeHtml(v)}</b></li>`)
@@ -393,6 +395,7 @@ export function parsePresentationForumHtml(html: string): PresentationData | nul
       found: hrp["trouvé le forum via"] ?? "",
       parrain: hrp["parrain"] ?? "",
       partenaire: hrp["forum partenaire / autre"] ?? "",
+      avatarOrigine: hrp["origine de l'avatar"] ?? "",
     },
   };
 }

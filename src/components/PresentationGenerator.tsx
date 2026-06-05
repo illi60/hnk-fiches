@@ -332,6 +332,9 @@ export default function PresentationGenerator() {
               <input className="hnk-input" value={d.hrp.partenaire} onChange={(e) => setHrp("partenaire", e.target.value)} placeholder="Non / nom du forum" />
             </Field>
           </div>
+          <Field label="Origine de l'avatar">
+            <input className="hnk-input" value={d.hrp.avatarOrigine} onChange={(e) => setHrp("avatarOrigine", e.target.value)} placeholder="OC / MANGA / Jeu vidéo (Nom + œuvre)" />
+          </Field>
         </section>
       </div>
 
