@@ -3,6 +3,7 @@ import GeneratorNav from "@/components/GeneratorNav";
 
 // Outils du Hub. Pour en ajouter un plus tard : pousse une entrée ici.
 // `auth: true` = carte verrouillée derrière la connexion.
+// `external: true` = lien hors-site (ouvre dans un nouvel onglet).
 interface Tool {
   key: string;
   title: string;
@@ -12,6 +13,7 @@ interface Tool {
   href: string;
   image: string;
   auth?: boolean;
+  external?: boolean;
 }
 
 const TOOLS: Tool[] = [
@@ -42,6 +44,16 @@ const TOOLS: Tool[] = [
     desc: "Personnage, liens, chronologie et accomplissements — 4 blocs à coller dans ton sujet.",
     href: "/carnet",
     image: "https://i.imgur.com/Hwg8Gw4.png",
+  },
+  {
+    key: "wiki",
+    title: "Wiki & Règles",
+    kanji: "巻",
+    accent: "#2E8B7A",
+    desc: "Le contexte, les règles et le lore du forum. Tout ce qu'il faut savoir avant de jouer.",
+    href: "https://hinokuni.forumactif.com/h4-regles-1",
+    image: "https://i.imgur.com/fgxvUJm.png",
+    external: true,
   },
 ];
 
@@ -75,21 +87,73 @@ export default function Home() {
             viendront s&apos;ajouter ici.
           </p>
 
+          {/* Carte principale : le Forum. Le coeur du site, mis en avant. */}
+          <a
+            href="https://hinokuni.forumactif.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group relative block overflow-hidden mb-5 border text-center transition hover:-translate-y-0.5"
+            style={{
+              borderColor: "color-mix(in srgb, #C0392B 45%, transparent)",
+              backgroundColor: "#0b0d11",
+              backgroundImage: `linear-gradient(to top, rgba(7,8,10,0.92) 0%, rgba(7,8,10,0.55) 45%, rgba(7,8,10,0.45) 100%), url("https://i.imgur.com/YmTenS8.png")`,
+              backgroundSize: "cover",
+              backgroundPosition: "center 30%",
+              minHeight: "260px",
+            }}
+          >
+            <span
+              aria-hidden
+              className="absolute inset-x-0 top-0 h-[3px]"
+              style={{ background: "#C0392B" }}
+            />
+            <span
+              aria-hidden
+              className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              style={{ boxShadow: "inset 0 0 120px color-mix(in srgb, #C0392B 35%, transparent)" }}
+            />
+
+            <div className="relative z-10 flex flex-col items-center justify-center text-center px-6 py-12 min-h-[260px]">
+              <span
+                className="grid place-items-center w-14 h-14 border font-jp text-2xl backdrop-blur-sm mb-5"
+                style={{
+                  color: "#C0392B",
+                  borderColor: "color-mix(in srgb, #C0392B 55%, transparent)",
+                  background: "rgba(7,8,10,0.55)",
+                  textShadow: "0 0 16px color-mix(in srgb, #C0392B 60%, transparent)",
+                }}
+              >
+                火
+              </span>
+              <h2 className="hnk-display text-3xl md:text-4xl text-white mb-3">
+                Le Forum Hi no Kuni
+              </h2>
+              <p className="text-sm text-bone/80 leading-relaxed max-w-xl mb-6">
+                Le coeur du jeu : intrigues, RP, événements et toute la communauté. C&apos;est ici
+                que tout se passe.
+              </p>
+              <span
+                className="inline-flex items-center gap-2 px-6 py-2.5 border text-[11px] uppercase tracking-[0.22em] font-bold transition group-hover:bg-[color-mix(in_srgb,#C0392B_18%,transparent)]"
+                style={{ color: "#C0392B", borderColor: "color-mix(in srgb, #C0392B 55%, transparent)" }}
+              >
+                Entrer sur le forum <span aria-hidden>→</span>
+              </span>
+            </div>
+          </a>
+
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {TOOLS.map((t) => {
-              return (
-                <Link
-                  key={t.key}
-                  href={t.href}
-                  className="group relative overflow-hidden flex flex-col justify-end min-h-[300px] p-6 border transition hover:-translate-y-0.5"
-                  style={{
-                    borderColor: "rgba(219,222,226,0.12)",
-                    backgroundColor: "#0b0d11",
-                    backgroundImage: `linear-gradient(to top, rgba(7,8,10,0.97) 6%, rgba(7,8,10,0.78) 38%, rgba(7,8,10,0.30) 72%, rgba(7,8,10,0.10) 100%), url("${t.image}")`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                  }}
-                >
+              const cardClass =
+                "group relative overflow-hidden flex flex-col justify-end min-h-[300px] p-6 border transition hover:-translate-y-0.5";
+              const cardStyle = {
+                borderColor: "rgba(219,222,226,0.12)",
+                backgroundColor: "#0b0d11",
+                backgroundImage: `linear-gradient(to top, rgba(7,8,10,0.97) 6%, rgba(7,8,10,0.78) 38%, rgba(7,8,10,0.30) 72%, rgba(7,8,10,0.10) 100%), url("${t.image}")`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              };
+              const CardInner = (
+                <>
                   {/* Liseré d'accent en haut + halo au survol */}
                   <span
                     aria-hidden
@@ -128,9 +192,26 @@ export default function Home() {
                       className="mt-4 inline-block text-[11px] uppercase tracking-[0.22em] font-bold"
                       style={{ color: t.accent }}
                     >
-                      Ouvrir <span aria-hidden>→</span>
+                      {t.external ? "Y aller" : "Ouvrir"} <span aria-hidden>→</span>
                     </span>
                   </div>
+                </>
+              );
+
+              return t.external ? (
+                <a
+                  key={t.key}
+                  href={t.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={cardClass}
+                  style={cardStyle}
+                >
+                  {CardInner}
+                </a>
+              ) : (
+                <Link key={t.key} href={t.href} className={cardClass} style={cardStyle}>
+                  {CardInner}
                 </Link>
               );
             })}
@@ -142,7 +223,7 @@ export default function Home() {
             >
               <span className="font-jp text-2xl text-smoke mb-3">未</span>
               <p className="hnk-eyebrow">Bientôt</p>
-              <p className="text-xs text-smoke mt-2">D&apos;autres générateurs arrivent.</p>
+              <p className="text-xs text-smoke mt-2">D&apos;autres outils à venir.</p>
             </div>
           </div>
 
