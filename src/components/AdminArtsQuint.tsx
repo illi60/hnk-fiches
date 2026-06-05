@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
-import { ARTS_ALL, getArtState, type ArtsState } from "@/lib/arts";
+import { ARTS_ALL, KUCHIYOSE, getArtState, type ArtsState } from "@/lib/arts";
 import { ART_OPTIONS } from "@/lib/techniques";
 import { KG_NAMES } from "@/lib/kekkei";
 
@@ -149,7 +149,10 @@ export function AdminQuintForm({
   const [target, setTarget] = useState("");
   const [saved, setSaved] = useState(false);
 
-  const targetOptions = kind === "ART" ? [...ART_OPTIONS] : KG_NAMES;
+  const targetOptions =
+    kind === "ART" ? [...ART_OPTIONS] :
+    kind === "KUCHIYOSE" ? [...KUCHIYOSE.specs] :
+    KG_NAMES;
 
   function add() {
     if (!target) return;
@@ -203,6 +206,7 @@ export function AdminQuintForm({
             <option value="ART">Quintessence d&apos;Art</option>
             <option value="KG">Quintessence de KG</option>
             <option value="KG2">Second KG</option>
+            <option value="KUCHIYOSE">Quintessence Kuchiyose</option>
           </select>
         </label>
         <label className="text-xs text-smoke flex flex-col gap-1">

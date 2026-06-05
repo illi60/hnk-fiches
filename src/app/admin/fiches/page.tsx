@@ -19,6 +19,13 @@ export default async function AdminFichesPage({
     ? (sp.status as (typeof allowed)[number])
     : "PENDING";
 
+  const STATUS_LABELS: Record<string, string> = {
+    PENDING: "En attente",
+    VALIDATED: "Validées",
+    REJECTED: "Refusées",
+    DRAFT: "Brouillons",
+  };
+
   const fiches = await prisma.ficheTechnique.findMany({
     where: { status, isActive: true },
     orderBy: { createdAt: "asc" },
@@ -38,6 +45,7 @@ export default async function AdminFichesPage({
       coutXp: true,
       status: true,
       rejectionReason: true,
+      comment: true,
       createdAt: true,
       author: {
         select: { id: true, username: true, xpAvailable: true, clan: true, rang: true },
@@ -50,7 +58,9 @@ export default async function AdminFichesPage({
       <div className="flex items-center justify-between">
         <div>
           <p className="text-[10px] tracking-[0.34em] uppercase text-smoke">Modération</p>
-          <h1 className="font-serif text-3xl text-white2 mt-1">Fiches techniques</h1>
+          <h1 className="font-serif text-3xl text-white2 mt-1">
+            {STATUS_LABELS[status] ?? "Techniques en attente"}
+          </h1>
         </div>
         <nav className="flex gap-2 text-xs tracking-[0.2em] uppercase">
           {allowed.map((s) => (
@@ -63,7 +73,7 @@ export default async function AdminFichesPage({
                   : "border-white/10 text-smoke hover:text-bone"
               }`}
             >
-              {s}
+              {STATUS_LABELS[s]}
             </Link>
           ))}
         </nav>
@@ -113,6 +123,11 @@ export default async function AdminFichesPage({
             <div className="text-sm text-bone whitespace-pre-wrap leading-relaxed border-l-2 border-ember/30 pl-3 text-justify">
               {f.description}
             </div>
+            {f.comment && status === "PENDING" && (
+              <p className="text-xs text-amber-300 mt-2 italic border-l-2 border-amber-400/50 pl-3">
+                Note du joueur : {f.comment}
+              </p>
+            )}
             {f.rejectionReason && (
               <p className="text-xs text-red-400 mt-2 italic">
                 Motif du refus : {f.rejectionReason}
@@ -121,7 +136,7 @@ export default async function AdminFichesPage({
           </li>
         ))}
         {fiches.length === 0 && (
-          <li className="text-sm text-smoke italic">Aucune fiche dans cet état.</li>
+          <li className="text-sm text-smoke italic">Aucune technique dans cet état.</li>
         )}
       </ul>
     </div>

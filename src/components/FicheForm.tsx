@@ -29,6 +29,7 @@ export interface FicheFormInitial {
   secondaryArt?: string;
   secondaryElement?: string;
   secondaryKekkeiGenkai?: string;
+  comment?: string;
 }
 
 export default function FicheForm({
@@ -82,6 +83,7 @@ export default function FicheForm({
     nature: initial?.nature ?? "",
     collab0: initial?.collaborators?.[0] ?? "",
     collab1: initial?.collaborators?.[1] ?? "",
+    comment: initial?.comment ?? "",
   });
   const [error, setError] = useState("");
   const [pending, start] = useTransition();
@@ -180,6 +182,7 @@ export default function FicheForm({
           : null,
       nature: isKuchy ? null : v.nature || null,
       collaborators,
+      comment: v.comment.trim() || null,
       ...(invocationId ? { invocationId } : {}),
     };
 
@@ -501,6 +504,21 @@ export default function FicheForm({
           maxLength={20000}
           rows={10}
         />
+      </Field>
+
+      <Field label="Note pour le modérateur (optionnelle)">
+        <textarea
+          className="hnk-input text-sm"
+          value={v.comment}
+          onChange={(e) => up("comment", e.target.value)}
+          disabled={disabled}
+          maxLength={1000}
+          rows={3}
+          placeholder="Ex : technique gagnée gratuitement suite à un événement, précision sur le contexte RP…"
+        />
+        <p className="text-[10px] text-smoke mt-1">
+          Visible uniquement par le staff. Disparaît automatiquement après validation ou refus.
+        </p>
       </Field>
 
       {error && (

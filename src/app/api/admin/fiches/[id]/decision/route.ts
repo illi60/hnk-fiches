@@ -40,6 +40,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         data: {
           status: "REJECTED",
           rejectionReason: reason.trim(),
+          comment: null,
           validatedById: admin.id,
           validatedAt: new Date(),
         },
@@ -155,6 +156,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           validatedById: admin.id,
           validatedAt: new Date(),
           rejectionReason: null,
+          comment: null,
         },
       });
 

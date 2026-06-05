@@ -68,6 +68,8 @@ export const ficheCreateSchema = z.object({
   collaborators: z.array(z.string().min(1).max(24)).max(2).optional(),
   // Technique de Kuchiyose → rattachée à une invocation du joueur.
   invocationId: z.string().cuid().optional().nullable(),
+  // Commentaire temporaire du joueur (visible par le modérateur, effacé à la décision).
+  comment: z.string().max(1000).optional().nullable(),
   // legacy (gardés optionnels pour compat)
   kinjutsuScope: z.enum(["CLAN", "VILLAGE"]).optional().nullable(),
   type: z.string().max(40).optional().nullable(),
@@ -197,7 +199,7 @@ export const adminArtsSchema = z.object({
 });
 export const adminQuintSchema = z.object({
   quintessences: z
-    .array(z.object({ kind: z.enum(["ART", "KG", "KG2"]), target: z.string().min(1).max(60) }))
+    .array(z.object({ kind: z.enum(["ART", "KG", "KG2", "KUCHIYOSE"]), target: z.string().min(1).max(60) }))
     .max(50),
 });
 

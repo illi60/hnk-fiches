@@ -186,6 +186,7 @@ model FicheTechnique {
 
   status          FicheStatus @default(DRAFT)
   rejectionReason String?
+  comment         String?     @db.Text // note temporaire du joueur (effacée à la décision)
 
   authorId        String
   author          User        @relation("FicheAuthor", fields: [authorId], references: [id], onDelete: Cascade)

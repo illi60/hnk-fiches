@@ -159,6 +159,7 @@ export async function POST(req: Request) {
         clan,
         invocationId,
         collaborators,
+        comment: parsed.data.comment ?? null,
         type: parsed.data.type ?? null,
         rangMin: parsed.data.rangMin ?? null,
         coutXp,

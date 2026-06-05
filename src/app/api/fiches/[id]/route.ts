@@ -110,6 +110,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         ...(parsed.data.kinjutsuScope !== undefined && { kinjutsuScope: parsed.data.kinjutsuScope ?? null }),
         ...clanUpdate,
         ...collaboratorsUpdate,
+        ...(parsed.data.comment !== undefined && { comment: parsed.data.comment ?? null }),
         ...(parsed.data.type !== undefined && { type: parsed.data.type ?? null }),
         ...(parsed.data.rangMin !== undefined && { rangMin: parsed.data.rangMin ?? null }),
         coutXp,

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/permissions";
 import AdminUserPanel from "@/components/AdminUserPanel";
+import { AdminDeleteFicheButton, AdminDeleteInvocationButton } from "@/components/AdminDeleteButtons";
 import { levelProgress } from "@/lib/xp";
 
 export default async function AdminUserDetail({
@@ -14,7 +15,7 @@ export default async function AdminUserDetail({
   const me = await requireAdmin();
   const { id } = await params;
 
-  const [user, history, fiches] = await Promise.all([
+  const [user, history, fiches, invocations] = await Promise.all([
     prisma.user.findUnique({
       where: { id },
       select: {
@@ -69,6 +70,11 @@ export default async function AdminUserDetail({
       take: 50,
       select: { id: true, nom: true, status: true, coutXp: true, createdAt: true },
     }),
+    prisma.invocation.findMany({
+      where: { ownerId: id },
+      orderBy: { createdAt: "asc" },
+      select: { id: true, nom: true, espece: true, artShinobi: true },
+    }),
   ]);
 
   if (!user) notFound();
@@ -99,17 +105,38 @@ export default async function AdminUserDetail({
         </h2>
         <ul className="divide-y divide-white/5 border border-white/5 bg-ink-700">
           {fiches.map((f) => (
-            <li key={f.id} className="px-4 py-2 flex items-center justify-between text-sm">
-              <Link href={`/technique/fiches/${f.id}`} className="text-bone hover:text-ember">
+            <li key={f.id} className="px-4 py-2 flex items-center justify-between text-sm gap-2">
+              <Link href={`/technique/fiches/${f.id}`} className="text-bone hover:text-ember flex-1 min-w-0 truncate">
                 {f.nom}
               </Link>
-              <span className="text-xs text-smoke">
+              <span className="text-xs text-smoke shrink-0">
                 {f.status} · {f.coutXp} XP
               </span>
+              <AdminDeleteFicheButton ficheId={f.id} ficheName={f.nom} />
             </li>
           ))}
           {fiches.length === 0 && (
             <li className="px-4 py-4 text-sm text-smoke italic">Aucune fiche.</li>
+          )}
+        </ul>
+      </section>
+
+      <section>
+        <h2 className="font-serif text-xl text-white2 mb-3 pb-2 border-b border-ember/20">
+          Invocations ({invocations.length})
+        </h2>
+        <ul className="divide-y divide-white/5 border border-white/5 bg-ink-700">
+          {invocations.map((inv) => (
+            <li key={inv.id} className="px-4 py-2 flex items-center justify-between text-sm gap-2">
+              <span className="text-bone flex-1 min-w-0 truncate">{inv.nom}</span>
+              <span className="text-xs text-smoke shrink-0">
+                {inv.espece ?? "—"}{inv.artShinobi ? ` · ${inv.artShinobi}` : ""}
+              </span>
+              <AdminDeleteInvocationButton invocationId={inv.id} invocationName={inv.nom} />
+            </li>
+          ))}
+          {invocations.length === 0 && (
+            <li className="px-4 py-4 text-sm text-smoke italic">Aucune invocation.</li>
           )}
         </ul>
       </section>

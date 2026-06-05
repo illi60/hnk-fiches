@@ -17,6 +17,7 @@ export const QUINTESSENCE_KINDS = [
   { key: "ART", label: "Quintessence d'Art Shinobi" },
   { key: "KG", label: "Quintessence de Kekkei Genkai" },
   { key: "KG2", label: "Second Kekkei Genkai" },
+  { key: "KUCHIYOSE", label: "Quintessence Kuchiyose" },
 ] as const;
 export type QuintessenceKind = (typeof QUINTESSENCE_KINDS)[number]["key"];
 
@@ -31,6 +32,7 @@ export const QUINT_GATE: Record<QuintessenceKind, { rank: Rank; track: RankTrack
   ART: { rank: "A", track: "village" },
   KG: { rank: "B", track: "clan" },
   KG2: { rank: "A", track: "histoire" },
+  KUCHIYOSE: { rank: "C", track: "histoire" }, // gaté par le rang Histoire (admin only)
 };
 
 export interface QuintRanks {
