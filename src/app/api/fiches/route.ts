@@ -107,29 +107,43 @@ export async function POST(req: Request) {
     const isKuchy = !!invocationId;
     const natureEff = isKuchy ? null : parsed.data.nature ?? null;
     let kekkeiGenkaiEff = isKuchy ? null : parsed.data.kekkeiGenkai ?? null;
-    const coutXp = ficheTotalCost(parsed.data.actionType ?? null, natureEff);
 
-    // Nature COLLECTIVE (bibliothèque de clan) : il faut ÊTRE du clan ET posséder
-    // le KG du clan ; le KG associé est imposé (= KG du clan), jamais arbitraire.
+    // Charge le clan du joueur pour les règles COLLECTIVE et surcharge Konoha.
+    // COLLECTIVE : requête complète (KG + progressionState). PERSONNELLE : clan seul.
+    let meUserClan: string | null = null;
+    let isKonoha = false;
     let clan: string | null = null;
+
     if (natureEff === "COLLECTIVE") {
       const u = await prisma.user.findUnique({
         where: { id: me.id },
         select: { clan: true, primaryKg: true, kekkeiGenkai: true, progressionState: true },
       });
-      if (!u?.clan) return NextResponse.json({ error: "CLAN_REQUIS" }, { status: 400 });
-      const ck = clanKg(u.clan);
+      meUserClan = u?.clan ?? null;
+      isKonoha = meUserClan?.toLowerCase().trim() === "konoha";
+
+      if (!meUserClan) return NextResponse.json({ error: "CLAN_REQUIS" }, { status: 400 });
+      // Konoha : pas de technique collective.
+      if (isKonoha) return NextResponse.json({ error: "CLAN_SANS_KG" }, { status: 400 });
+      const ck = clanKg(meUserClan);
       if (!ck) return NextResponse.json({ error: "CLAN_SANS_KG" }, { status: 400 });
       const owned = ownedKgsFull(
-        u.primaryKg,
-        (u.progressionState ?? {}) as unknown as ProgressionState,
-        u.kekkeiGenkai
+        u?.primaryKg ?? null,
+        (u?.progressionState ?? {}) as unknown as ProgressionState,
+        u?.kekkeiGenkai ?? null
       ).map((k) => k.toLowerCase());
       if (!owned.includes(ck.toLowerCase()))
         return NextResponse.json({ error: "KG_CLAN_REQUIS" }, { status: 403 });
-      clan = u.clan;
+      clan = meUserClan;
       kekkeiGenkaiEff = ck; // KG imposé du clan
+    } else if (natureEff === "PERSONNELLE") {
+      const u = await prisma.user.findUnique({ where: { id: me.id }, select: { clan: true } });
+      meUserClan = u?.clan ?? null;
+      isKonoha = meUserClan?.toLowerCase().trim() === "konoha";
     }
+
+    // Konoha : pas de surcharge +10 XP sur les techniques personnelles.
+    const coutXp = ficheTotalCost(parsed.data.actionType ?? null, isKonoha ? null : natureEff);
 
     // Type d'action COLLECTIVE : pseudos des partenaires (résolus à la soumission).
     const collaborators =

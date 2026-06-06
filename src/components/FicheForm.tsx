@@ -98,12 +98,17 @@ export default function FicheForm({
     setV((s) => ({ ...s, [k]: val }));
   }
 
+  // Konoha : pas de technique collective, pas de surcharge personnelle.
+  const isKonoha = (userClan ?? "").toLowerCase().trim() === "konoha";
+  // Natures disponibles selon le clan.
+  const availableNatures = isKonoha ? NATURES.filter((n) => n.key !== "COLLECTIVE") : NATURES;
+
   // Techniques de Kuchiyose : pas de Kekkei Genkai, pas de surcharge personnelle.
   const isKuchy = !!invocationId;
   const manifestationOptions = isKuchy
     ? MANIFESTATIONS.filter((m) => m.key !== "KEKKEI_GENKAI")
     : MANIFESTATIONS;
-  const cost = ficheTotalCost(v.actionType, isKuchy ? null : v.nature);
+  const cost = ficheTotalCost(v.actionType, isKuchy || isKonoha ? null : v.nature);
   const disabled = readOnly || pending;
 
   // KG / affinités : restreints à ceux du joueur, SAUF en Tag Team où l'on peut
@@ -445,7 +450,7 @@ export default function FicheForm({
       <div className="hnk-panel !p-4">
         <span className="hnk-label">Nature</span>
         <div className="flex flex-wrap gap-x-6 gap-y-2 mb-3">
-          {NATURES.map((n) => (
+          {availableNatures.map((n) => (
             <label key={n.key} className="flex items-center gap-2 text-sm text-bone cursor-pointer">
               <input
                 type="radio"
@@ -456,7 +461,7 @@ export default function FicheForm({
                 className="accent-[var(--ember)]"
               />
               {n.label}
-              {n.key === "PERSONNELLE" && (
+              {n.key === "PERSONNELLE" && !isKonoha && (
                 <span className="text-[10px] text-ember">(+{PERSONAL_SURCHARGE} XP)</span>
               )}
             </label>
