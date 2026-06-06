@@ -411,6 +411,123 @@ textarea.hnk-input {
   color: var(--ember);
 }
 
+/* ============================================================
+   Éditeur de texte enrichi (RichEditor)
+   ============================================================ */
+.hnk-rich-wrap {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 87, 34, 0.5);
+  background: var(--ink-800);
+  transition: border-color 0.15s, box-shadow 0.18s, background 0.15s;
+}
+.hnk-rich-wrap:focus-within {
+  border-color: rgba(255, 87, 34, 0.7);
+  box-shadow: 0 4px 22px rgba(255, 87, 34, 0.18);
+  background: #0a0c10;
+}
+.hnk-rich-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 5px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.25);
+  user-select: none;
+}
+.hnk-rich-btn {
+  padding: 3px 8px;
+  min-width: 28px;
+  font: 600 12px/1.4 var(--ui);
+  color: rgba(219, 222, 226, 0.5);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: color 0.12s, background 0.12s, border-color 0.12s;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.hnk-rich-btn:hover {
+  color: var(--bone);
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+.hnk-rich-btn--on {
+  color: var(--ember);
+  background: rgba(255, 87, 34, 0.12);
+  border-color: rgba(255, 87, 34, 0.35);
+}
+.hnk-rich-aln {
+  font-family: monospace;
+  font-size: 13px;
+}
+.hnk-rich-sep {
+  width: 1px;
+  height: 16px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0 4px;
+  flex: none;
+}
+.hnk-rich-editor {
+  padding: 10px 14px;
+  color: var(--bone);
+  font: 500 15px/1.55 var(--ui);
+  outline: none;
+  cursor: text;
+  word-break: break-word;
+}
+.hnk-rich-editor:empty::before {
+  content: attr(data-placeholder);
+  color: var(--smoke);
+  pointer-events: none;
+  display: block;
+}
+.hnk-rich-editor b,
+.hnk-rich-editor strong { font-weight: 700; color: var(--white); }
+.hnk-rich-editor i,
+.hnk-rich-editor em { font-style: italic; }
+.hnk-rich-editor u { text-decoration: underline; }
+.hnk-rich-editor s,
+.hnk-rich-editor strike,
+.hnk-rich-editor del { text-decoration: line-through; color: var(--smoke); }
+
+/* Image bannière insérée via l'éditeur */
+.hnk-rich-editor .hnk-img-banner,
+.hnk-img-banner {
+  display: block;
+  margin: 10px auto;
+  text-align: center;
+}
+.hnk-rich-editor .hnk-img-banner img,
+.hnk-img-banner img {
+  display: inline-block;
+  max-width: 100%;
+  max-height: 220px;
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  border-radius: 3px;
+  box-shadow: 3px 4px 14px rgba(0, 0, 0, 0.65);
+  object-fit: cover;
+}
+
+/* Dialog d'insertion d'image */
+.hnk-rich-img-dialog {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-top: 1px solid rgba(255, 87, 34, 0.2);
+  background: rgba(0, 0, 0, 0.3);
+}
+.hnk-rich-img-dialog .hnk-input {
+  flex: 1;
+  font-size: 13px;
+  padding: 7px 10px;
+  min-height: unset;
+}
+
 /* ---------- Carte Technique (export forum) ---------- */
 .hnk-tech {
   margin: 18px 0;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { RichEditor } from "./RichEditor";
 import {
   ACC_CATEGORIES,
   CLAN_EMBLEMS,
@@ -408,9 +409,10 @@ function PersonnageForm({
         <Field label="Signes distinctifs">
           <input className="hnk-input" value={p.signes} onChange={(e) => setPerso("signes", e.target.value)} placeholder="Cicatrice à l'œil, tatouage…" />
         </Field>
-        <Field label="Autres détails (texte libre)">
-          <textarea className="hnk-input min-h-[80px]" value={p.traitsLibre} onChange={(e) => setPerso("traitsLibre", e.target.value)} placeholder="Tics, accessoires, parfum…" />
-        </Field>
+        <div>
+          <span className="hnk-label block mb-1">Autres détails (texte libre)</span>
+          <RichEditor value={p.traitsLibre} onChange={(html) => setPerso("traitsLibre", html)} minHeight="80px" placeholder="Tics, accessoires, parfum…" />
+        </div>
       </div>
 
       <div className="border-t border-white/10 pt-4 space-y-4">
@@ -434,9 +436,10 @@ function PersonnageForm({
       </div>
 
       <div className="border-t border-white/10 pt-4">
-        <Field label="Ambitions (résumé)">
-          <textarea className="hnk-input min-h-[90px]" value={p.ambitions} onChange={(e) => setPerso("ambitions", e.target.value)} placeholder="Ce que vise ton personnage, en quelques phrases." />
-        </Field>
+        <div>
+          <span className="hnk-label block mb-1">Ambitions (résumé)</span>
+          <RichEditor value={p.ambitions} onChange={(html) => setPerso("ambitions", html)} minHeight="90px" placeholder="Ce que vise ton personnage, en quelques phrases." />
+        </div>
       </div>
     </div>
   );
@@ -562,9 +565,10 @@ function LiensForm({ c, setC }: { c: CarnetData; setC: React.Dispatch<React.SetS
               />
             </Field>
           </div>
-          <Field label="Description">
-            <textarea className="hnk-input min-h-[70px]" value={l.desc} onChange={(e) => patchLien(i, { desc: e.target.value })} placeholder="Quelques mots sur la relation…" />
-          </Field>
+          <div>
+            <span className="hnk-label block mb-1">Description</span>
+            <RichEditor value={l.desc} onChange={(html) => patchLien(i, { desc: html })} minHeight="70px" placeholder="Quelques mots sur la relation…" />
+          </div>
 
           <div className="space-y-2">
             <span className="hnk-label block">RP communs (titre + lien)</span>
@@ -668,18 +672,20 @@ function ChronoForm({ c, setC }: { c: CarnetData; setC: React.Dispatch<React.Set
               <Field label="Lien du RP">
                 <input className="hnk-input" value={it.url} onChange={(e) => patch(i, { url: e.target.value })} placeholder="https://hi-no-kuni.forumactif.com/t…" />
               </Field>
-              <Field label="Description">
-                <textarea className="hnk-input min-h-[60px]" value={it.text} onChange={(e) => patch(i, { text: e.target.value })} placeholder="Ce qui s'y joue, en bref…" />
-              </Field>
+              <div>
+                <span className="hnk-label block mb-1">Description</span>
+                <RichEditor value={it.text} onChange={(html) => patch(i, { text: html })} minHeight="60px" placeholder="Ce qui s'y joue, en bref…" />
+              </div>
             </>
           ) : (
             <>
               <Field label="Titre de l'interlude (arc)">
                 <input className="hnk-input" value={it.title} onChange={(e) => patch(i, { title: e.target.value })} placeholder="— Arc I : Les cendres —" />
               </Field>
-              <Field label="Texte">
-                <textarea className="hnk-input min-h-[70px]" value={it.text} onChange={(e) => patch(i, { text: e.target.value })} placeholder="Quelques lignes stylisées de transition…" />
-              </Field>
+              <div>
+                <span className="hnk-label block mb-1">Texte</span>
+                <RichEditor value={it.text} onChange={(html) => patch(i, { text: html })} minHeight="70px" placeholder="Quelques lignes stylisées de transition…" />
+              </div>
             </>
           )}
         </div>
@@ -751,9 +757,10 @@ function AccForm({ c, setC }: { c: CarnetData; setC: React.Dispatch<React.SetSta
           <Field label="Titre">
             <input className="hnk-input" value={a.title} onChange={(e) => patch(i, { title: e.target.value })} placeholder="Défense du mur Est" />
           </Field>
-          <Field label="Description">
-            <textarea className="hnk-input min-h-[60px]" value={a.text} onChange={(e) => patch(i, { text: e.target.value })} placeholder="Ce qui a été accompli, et son impact…" />
-          </Field>
+          <div>
+            <span className="hnk-label block mb-1">Description</span>
+            <RichEditor value={a.text} onChange={(html) => patch(i, { text: html })} minHeight="60px" placeholder="Ce qui a été accompli, et son impact…" />
+          </div>
         </div>
       ))}
       <button

@@ -169,6 +169,17 @@ function multiline(s: string): string {
   return escapeHtml(s).replace(/\n/g, "<br>");
 }
 
+// Vérifie qu'un champ HTML riche n'est pas vide (texte ou image présent).
+function richNotEmpty(html: string): boolean {
+  if (!(html ?? "").trim()) return false;
+  return html.replace(/<[^>]*>/g, "").trim().length > 0 || /<img\b/i.test(html);
+}
+
+// Retourne le innerHTML brut d'un élément (inverse de nodeMultiline pour les champs riches).
+export function nodeInnerHtml(el: Element | null | undefined): string {
+  return el?.innerHTML ?? "";
+}
+
 export function presentationForumHtml(d: PresentationData): string {
   const clan = FOUNDING_CLANS[d.clan] ?? FOUNDING_CLANS.uchiha;
   const name = d.name.trim() || "Nom du personnage";
@@ -217,22 +228,22 @@ export function presentationForumHtml(d: PresentationData): string {
     `</div>`;
 
   // Traits particuliers
-  const traitsSec = d.traits.trim()
+  const traitsSec = richNotEmpty(d.traits)
     ? `<div class="hnk-pres-sec">` +
       `<h2 class="hnk-pres-title">Traits particuliers</h2>` +
-      `<div class="hnk-pres-traits">${multiline(d.traits)}</div>` +
+      `<div class="hnk-pres-traits">${d.traits}</div>` +
       `</div>`
     : "";
 
   // Caractère : questions verrouillées (Q "Trame" affichée seulement si trame).
   const qaItems = CHARACTER_QUESTIONS.map((q) => {
     if (q.requiresTrame && !d.trame.trim()) return "";
-    const a = (d.answers[q.id] ?? "").trim();
-    if (!a) return "";
+    const a = d.answers[q.id] ?? "";
+    if (!richNotEmpty(a)) return "";
     return (
       `<div class="hnk-pres-q">` +
       `<p class="q">${escapeHtml(q.label)}</p>` +
-      `<p class="a">${multiline(d.answers[q.id])}</p>` +
+      `<p class="a">${a}</p>` +
       `</div>`
     );
   }).join("");
@@ -251,7 +262,7 @@ export function presentationForumHtml(d: PresentationData): string {
         `<div class="ev">` +
         (e.year.trim() ? `<span class="yr">${escapeHtml(e.year)}</span>` : "") +
         (e.label.trim() ? `<span class="lab">${escapeHtml(e.label)}</span>` : "") +
-        (e.text.trim() ? `<p>${multiline(e.text)}</p>` : "") +
+        (richNotEmpty(e.text) ? `<p>${e.text}</p>` : "") +
         `</div>`
     )
     .join("");
@@ -367,13 +378,13 @@ export function parsePresentationForumHtml(html: string): PresentationData | nul
   root.querySelectorAll(".hnk-pres-qa .hnk-pres-q").forEach((q) => {
     const label = nodeText(q.querySelector(".q"));
     const match = CHARACTER_QUESTIONS.find((cq) => cq.label === label);
-    if (match) answers[match.id] = nodeMultiline(q.querySelector(".a"));
+    if (match) answers[match.id] = nodeInnerHtml(q.querySelector(".a"));
   });
 
   const chrono = Array.from(root.querySelectorAll(".hnk-pres-chrono .ev")).map((ev) => ({
     year: nodeText(ev.querySelector(".yr")),
     label: nodeText(ev.querySelector(".lab")),
-    text: nodeMultiline(ev.querySelector("p")),
+    text: nodeInnerHtml(ev.querySelector("p")),
   }));
 
   const hrp = idPairs(root.querySelectorAll(".hnk-pres-hrp li"));
@@ -387,7 +398,7 @@ export function parsePresentationForumHtml(html: string): PresentationData | nul
     rank: rankFromDisplay(id["rang"] ?? ""),
     origine: id["origine"] ?? "",
     trame: id["trame"] ?? "",
-    traits: nodeMultiline(root.querySelector(".hnk-pres-traits")),
+    traits: nodeInnerHtml(root.querySelector(".hnk-pres-traits")),
     answers,
     chrono: chrono.length ? chrono : base.chrono,
     hrp: {

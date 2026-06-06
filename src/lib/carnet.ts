@@ -24,7 +24,7 @@ import {
   TRAMES,
   parseHnkRoot,
   nodeText,
-  nodeMultiline,
+  nodeInnerHtml,
   clanFromRoot,
   idPairs,
   type ClanKey,
@@ -169,6 +169,10 @@ function escapeHtml(s: string): string {
 function multiline(s: string): string {
   return escapeHtml(s).replace(/\n/g, "<br>");
 }
+function richNotEmpty(html: string): boolean {
+  if (!(html ?? "").trim()) return false;
+  return html.replace(/<[^>]*>/g, "").trim().length > 0 || /<img\b/i.test(html);
+}
 // Sécurise une URL collée dans un href (anti javascript:, data:, etc.).
 function safeUrl(s: string): string {
   const u = (s ?? "").trim();
@@ -255,13 +259,13 @@ export function personnageForumHtml(c: CarnetData): string {
     .filter(([, v]) => (v ?? "").trim() !== "")
     .map(([k, v]) => `<li><span>${k}</span><b>${escapeHtml(v)}</b></li>`)
     .join("");
-  const hasTraits = traitRows || p.traitsLibre.trim();
+  const hasTraits = traitRows || richNotEmpty(p.traitsLibre);
   const traitsSec = hasTraits
     ? `<div class="hnk-pres-sec">` +
       `<h2 class="hnk-pres-title">Traits particuliers</h2>` +
       (traitRows ? `<ul class="hnk-pres-id hnk-cb-id-full">${traitRows}</ul>` : "") +
-      (p.traitsLibre.trim()
-        ? `<div class="hnk-pres-traits"${traitRows ? ' style="margin-top:14px"' : ""}>${multiline(p.traitsLibre)}</div>`
+      (richNotEmpty(p.traitsLibre)
+        ? `<div class="hnk-pres-traits"${traitRows ? ' style="margin-top:14px"' : ""}>${p.traitsLibre}</div>`
         : "") +
       `</div>`
     : "";
@@ -284,10 +288,10 @@ export function personnageForumHtml(c: CarnetData): string {
       : "";
 
   // Ambitions : bloc citation.
-  const ambSec = p.ambitions.trim()
+  const ambSec = richNotEmpty(p.ambitions)
     ? `<div class="hnk-pres-sec">` +
       `<h2 class="hnk-pres-title">Ambitions</h2>` +
-      `<div class="hnk-cb-amb">${multiline(p.ambitions)}</div>` +
+      `<div class="hnk-cb-amb">${p.ambitions}</div>` +
       `</div>`
     : "";
 
@@ -332,7 +336,7 @@ function lienCard(l: LienItem): string {
     `</div>` +
     stars(l.force, l.sentiment) +
     `</div>` +
-    (l.desc.trim() ? `<p class="hnk-cb-link-desc">${multiline(l.desc)}</p>` : "") +
+    (richNotEmpty(l.desc) ? `<p class="hnk-cb-link-desc">${l.desc}</p>` : "") +
     rpBox +
     `</div>` +
     `</div>`
@@ -341,7 +345,7 @@ function lienCard(l: LienItem): string {
 
 export function liensForumHtml(c: CarnetData): string {
   const cards = c.liens
-    .filter((l) => l.pseudo.trim() || l.nature.trim() || l.desc.trim() || l.avatarUrl.trim())
+    .filter((l) => l.pseudo.trim() || l.nature.trim() || richNotEmpty(l.desc) || l.avatarUrl.trim())
     .map(lienCard)
     .join("");
   const body = cards
@@ -358,17 +362,17 @@ export function chronoForumHtml(c: CarnetData): string {
   const items = c.chrono
     .map((it) => {
       if (it.kind === "interlude") {
-        if (!it.title.trim() && !it.text.trim()) return "";
+        if (!it.title.trim() && !richNotEmpty(it.text)) return "";
         return (
           `<div class="hnk-cb-interlude">` +
           `<span class="orn">◈</span>` +
           (it.title.trim() ? `<div class="t">${escapeHtml(it.title)}</div>` : "") +
-          (it.text.trim() ? `<div class="x">${multiline(it.text)}</div>` : "") +
+          (richNotEmpty(it.text) ? `<div class="x">${it.text}</div>` : "") +
           `</div>`
         );
       }
       // RP
-      if (!it.date.trim() && !it.title.trim() && !it.text.trim()) return "";
+      if (!it.date.trim() && !it.title.trim() && !richNotEmpty(it.text)) return "";
       const title = escapeHtml(it.title.trim() || "RP sans titre");
       const url = safeUrl(it.url);
       const lab = url
@@ -380,7 +384,7 @@ export function chronoForumHtml(c: CarnetData): string {
         (it.date.trim() ? `<span class="yr">${escapeHtml(it.date)}</span>` : "") +
         lab +
         `</div>` +
-        (it.text.trim() ? `<p>${multiline(it.text)}</p>` : "") +
+        (richNotEmpty(it.text) ? `<p>${it.text}</p>` : "") +
         `</div>`
       );
     })
@@ -398,7 +402,7 @@ export function chronoForumHtml(c: CarnetData): string {
 
 export function accomplissementsForumHtml(c: CarnetData): string {
   const items = c.accomplissements
-    .filter((a) => a.title.trim() || a.text.trim())
+    .filter((a) => a.title.trim() || richNotEmpty(a.text))
     .map((a) => {
       const cat = ACC_CATEGORIES[a.category] ?? ACC_CATEGORIES.autre;
       return (
@@ -408,7 +412,7 @@ export function accomplissementsForumHtml(c: CarnetData): string {
         `<div class="t">${escapeHtml(a.title.trim() || "Accomplissement")}` +
         (a.date.trim() ? ` <span class="dt">${escapeHtml(a.date)}</span>` : "") +
         `</div>` +
-        (a.text.trim() ? `<p>${multiline(a.text)}</p>` : "") +
+        (richNotEmpty(a.text) ? `<p>${a.text}</p>` : "") +
         `</div>` +
         `</div>`
       );
@@ -490,10 +494,10 @@ function parsePersonnageBlock(root: Element): PersonnageData {
     voix: tr["timbre de voix"] ?? "",
     demarche: tr["démarche"] ?? "",
     signes: tr["signes distinctifs"] ?? "",
-    traitsLibre: nodeMultiline(root.querySelector(".hnk-pres-traits")),
+    traitsLibre: nodeInnerHtml(root.querySelector(".hnk-pres-traits")),
     qualites: qualites.length ? qualites : ["", ""],
     defauts: defauts.length ? defauts : ["", ""],
-    ambitions: nodeMultiline(root.querySelector(".hnk-cb-amb")),
+    ambitions: nodeInnerHtml(root.querySelector(".hnk-cb-amb")),
   };
 }
 
@@ -522,7 +526,7 @@ function parseLiensBlock(root: Element): LienItem[] {
       nature: nodeText(card.querySelector(".nature")),
       sentiment,
       force: starsEl ? starsEl.querySelectorAll("span.on").length : 0,
-      desc: nodeMultiline(card.querySelector(".hnk-cb-link-desc")),
+      desc: nodeInnerHtml(card.querySelector(".hnk-cb-link-desc")),
       rps: rps.length ? rps : [{ title: "", url: "" }],
     });
   });
@@ -538,7 +542,7 @@ function parseChronoBlock(root: Element): ChronoItem[] {
         items.push({
           kind: "interlude",
           title: nodeText(node.querySelector(".t")),
-          text: nodeMultiline(node.querySelector(".x")),
+          text: nodeInnerHtml(node.querySelector(".x")),
         });
       } else {
         const lab = node.querySelector(".lab");
@@ -547,7 +551,7 @@ function parseChronoBlock(root: Element): ChronoItem[] {
           date: nodeText(node.querySelector(".yr")),
           title: nodeText(lab),
           url: lab?.getAttribute("href") ?? "",
-          text: nodeMultiline(node.querySelector("p")),
+          text: nodeInnerHtml(node.querySelector("p")),
         });
       }
     });
@@ -572,7 +576,7 @@ function parseAccBlock(root: Element): AccItem[] {
       clone.querySelector(".dt")?.remove();
       title = nodeText(clone);
     }
-    out.push({ category, date, title, text: nodeMultiline(item.querySelector("p")) });
+    out.push({ category, date, title, text: nodeInnerHtml(item.querySelector("p")) });
   });
   return out.length ? out : [{ category: "village", date: "", title: "", text: "" }];
 }

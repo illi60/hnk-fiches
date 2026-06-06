@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { RichEditor } from "./RichEditor";
 import {
   CHAKRISME_TRAME,
   CHARACTER_QUESTIONS,
@@ -264,7 +265,7 @@ export default function PresentationGenerator() {
         {/* Traits */}
         <section className="hnk-panel p-5 space-y-3">
           <h2 className="hnk-section-title mb-1">Traits particuliers</h2>
-          <textarea className="hnk-input min-h-[90px]" value={d.traits} onChange={(e) => set("traits", e.target.value)} placeholder="Cicatrice, posture, signe distinctif…" />
+          <RichEditor value={d.traits} onChange={(html) => set("traits", html)} minHeight="90px" placeholder="Cicatrice, posture, signe distinctif…" />
         </section>
 
         {/* Caractère : questions verrouillées */}
@@ -272,9 +273,10 @@ export default function PresentationGenerator() {
           <h2 className="hnk-section-title mb-1">Regards sur le Monde</h2>
           <p className="text-smoke text-xs">Questions imposées — tu n'as qu'à répondre.</p>
           {CHARACTER_QUESTIONS.filter((q) => !q.requiresTrame || d.trame).map((q) => (
-            <Field key={q.id} label={q.label}>
-              <textarea className="hnk-input min-h-[70px]" value={d.answers[q.id] ?? ""} onChange={(e) => setAnswer(q.id, e.target.value)} />
-            </Field>
+            <div key={q.id}>
+              <span className="hnk-label block mb-1">{q.label}</span>
+              <RichEditor value={d.answers[q.id] ?? ""} onChange={(html) => setAnswer(q.id, html)} minHeight="70px" />
+            </div>
           ))}
         </section>
 
@@ -303,7 +305,7 @@ export default function PresentationGenerator() {
                   </button>
                 )}
               </div>
-              <textarea className="hnk-input min-h-[60px]" value={e.text} onChange={(ev) => setEvent(i, { text: ev.target.value })} placeholder="Récit de l'événement…" />
+              <RichEditor value={e.text} onChange={(html) => setEvent(i, { text: html })} minHeight="60px" placeholder="Récit de l'événement…" />
             </div>
           ))}
           <button

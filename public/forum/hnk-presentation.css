@@ -778,6 +778,21 @@ a.hnk-cb-ev .lab,
   text-align: center;
 }
 
+/* ---------- Image bannière (éditeur de texte enrichi) ---------- */
+.hnk-pres .hnk-img-banner {
+  display: block;
+  margin: 12px auto;
+  text-align: center;
+}
+.hnk-pres .hnk-img-banner img {
+  display: inline-block;
+  max-width: 100%;
+  max-width: 480px;
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  border-radius: 3px;
+  box-shadow: 3px 4px 16px rgba(0, 0, 0, 0.65);
+}
+
 /* ---------- Responsive carnet ---------- */
 @media (max-width: 560px) {
   .hnk-cb-link { flex-direction: column; }
