@@ -95,6 +95,33 @@ export function RichEditor({ value, onChange, placeholder = "", minHeight = "80p
     emit();
   }
 
+  // Collage : on N'IMPORTE JAMAIS la mise en forme de la source (polices,
+  // couleurs, tailles inline collées depuis Word/Discord/un autre forum
+  // écraseraient le rendu de la fiche). On ne garde que le TEXTE BRUT ;
+  // l'utilisateur applique ensuite gras/italique/etc. via la barre d'outils.
+  function handlePaste(e: React.ClipboardEvent) {
+    e.preventDefault();
+    const text = e.clipboardData.getData("text/plain");
+    if (!text) return;
+    // Réinjecte le texte en préservant uniquement les sauts de ligne.
+    const frag = document.createDocumentFragment();
+    const lines = text.replace(/\r\n?/g, "\n").split("\n");
+    lines.forEach((line, i) => {
+      if (i > 0) frag.appendChild(document.createElement("br"));
+      if (line) frag.appendChild(document.createTextNode(line));
+    });
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      const range = sel.getRangeAt(0);
+      range.deleteContents();
+      range.insertNode(frag);
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+    handleInput();
+  }
+
   function saveRange() {
     const sel = window.getSelection();
     if (sel && sel.rangeCount > 0) savedRange.current = sel.getRangeAt(0).cloneRange();
@@ -165,6 +192,7 @@ export function RichEditor({ value, onChange, placeholder = "", minHeight = "80p
         contentEditable
         suppressContentEditableWarning
         onInput={handleInput}
+        onPaste={handlePaste}
         onKeyUp={refreshFmt}
         onMouseUp={refreshFmt}
         onSelect={refreshFmt}
