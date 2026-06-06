@@ -9,6 +9,35 @@ interface Props {
   minHeight?: string;
 }
 
+// Nettoyage du HTML émis par l'éditeur. On ne garde que :
+//  - les balises de mise en forme (b, i, u, s, br, div, span, figure, img…) ;
+//  - le style inline `text-align` (alignement voulu par l'utilisateur) ;
+//  - `class="hnk-img-banner"` sur les figures et `src`/`alt` sur les images.
+// Tout le reste (couleurs, polices, tailles, fonds collés ou injectés par
+// Chrome via execCommand) est SUPPRIMÉ : c'est ce qui faisait « sauter » la
+// police de la fiche sur le forum. Fonction idempotente (sanitize(sanitize(x))
+// == sanitize(x)) : indispensable pour la synchro DOM ↔ valeur React.
+function sanitizeHtml(raw: string): string {
+  if (typeof document === "undefined") return raw;
+  const box = document.createElement("div");
+  box.innerHTML = raw;
+  box.querySelectorAll("*").forEach((el) => {
+    const tag = el.tagName.toLowerCase();
+    const align = (el as HTMLElement).style.textAlign;
+    const src = tag === "img" ? el.getAttribute("src") : null;
+    const alt = tag === "img" ? el.getAttribute("alt") : null;
+    // Purge tous les attributs, puis on réintroduit uniquement ceux autorisés.
+    [...el.attributes].forEach((a) => el.removeAttribute(a.name));
+    if (align) (el as HTMLElement).style.textAlign = align;
+    if (tag === "figure") el.setAttribute("class", "hnk-img-banner");
+    if (tag === "img") {
+      if (src) el.setAttribute("src", src);
+      if (alt) el.setAttribute("alt", alt);
+    }
+  });
+  return box.innerHTML;
+}
+
 // Patterns that represent a "truly empty" contenteditable state.
 const EMPTY_PATTERNS = new Set([
   "",
@@ -53,20 +82,27 @@ export function RichEditor({ value, onChange, placeholder = "", minHeight = "80p
   const savedRange = useRef<Range | null>(null);
   const [fmt, setFmt] = useState<Record<string, boolean>>({});
 
-  // Sync external value into the editor (only when it genuinely changed).
+  // Sync external value into the editor (uniquement si le contenu diffère
+  // réellement). On compare la version NETTOYÉE du DOM à `value` : ainsi, après
+  // une frappe, la valeur sanitizée renvoyée au parent ne provoque pas de
+  // réécriture du DOM (qui déplacerait le curseur).
   useEffect(() => {
-    if (editorRef.current && editorRef.current.innerHTML !== value) {
-      editorRef.current.innerHTML = value;
-      lastHtml.current = value;
+    const ed = editorRef.current;
+    if (ed && sanitizeHtml(ed.innerHTML) !== value) {
+      ed.innerHTML = value;
+      lastHtml.current = ed.innerHTML;
     }
   }, [value]);
 
+  // On ne stocke JAMAIS le HTML brut de l'éditeur : execCommand/Chrome y
+  // injecte des artefacts (spans de fond, styles de police inline) qui
+  // écraseraient le rendu de la fiche sur le forum. On ne conserve que le
+  // strict nécessaire : balises de mise en forme + `text-align`. → sortie fiable.
   const emit = useCallback(() => {
-    const html = editorRef.current?.innerHTML ?? "";
-    if (html !== lastHtml.current) {
-      lastHtml.current = html;
-      onChange(html);
-    }
+    const raw = editorRef.current?.innerHTML ?? "";
+    if (raw === lastHtml.current) return;
+    lastHtml.current = raw;
+    onChange(sanitizeHtml(raw));
   }, [onChange]);
 
   function refreshFmt() {
@@ -82,10 +118,48 @@ export function RichEditor({ value, onChange, placeholder = "", minHeight = "80p
   }
 
   function exec(cmd: string) {
+    const isAlign = cmd.startsWith("justify");
     editorRef.current?.focus();
+    // styleWithCSS=false partout : gras/italique → balises sémantiques (<b>,<i>),
+    // alignement → <div style="text-align:…"> propre (sans <span> parasite que
+    // Chrome injecte quand styleWithCSS=true). Tout est capturé par innerHTML.
+    try {
+      // Valeur en chaîne : les navigateurs n'activent styleWithCSS que si la
+      // valeur vaut "true" → "false" le désactive (balises sémantiques + style
+      // text-align propre, sans <span> parasite).
+      document.execCommand("styleWithCSS", false, "false");
+    } catch {
+      /* navigateurs anciens : ignore */
+    }
     document.execCommand(cmd, false);
+    if (isAlign) hoistRootAlign();
     emit();
     setTimeout(refreshFmt, 0);
+  }
+
+  // Quand TOUT le contenu est sélectionné, execCommand pose `text-align` sur la
+  // racine éditable elle-même — un style qui N'EST PAS dans innerHTML, donc
+  // perdu à l'enregistrement (« le justify saute »). On le déplace dans un <div>
+  // wrapper pour qu'il soit persistant. Si execCommand a déjà créé un <div>
+  // d'alignement (sélection partielle), la racine n'a pas de style → no-op.
+  function hoistRootAlign() {
+    const ed = editorRef.current;
+    if (!ed) return;
+    const align = ed.style.textAlign;
+    if (!align) return;
+    const wrap = document.createElement("div");
+    wrap.style.textAlign = align;
+    while (ed.firstChild) wrap.appendChild(ed.firstChild);
+    ed.appendChild(wrap);
+    ed.style.textAlign = "";
+    const sel = window.getSelection();
+    if (sel) {
+      const range = document.createRange();
+      range.selectNodeContents(wrap);
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
   }
 
   function handleInput() {

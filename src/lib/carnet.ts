@@ -336,7 +336,7 @@ function lienCard(l: LienItem): string {
     `</div>` +
     stars(l.force, l.sentiment) +
     `</div>` +
-    (richNotEmpty(l.desc) ? `<p class="hnk-cb-link-desc">${l.desc}</p>` : "") +
+    (richNotEmpty(l.desc) ? `<div class="hnk-cb-link-desc">${l.desc}</div>` : "") +
     rpBox +
     `</div>` +
     `</div>`
@@ -384,7 +384,7 @@ export function chronoForumHtml(c: CarnetData): string {
         (it.date.trim() ? `<span class="yr">${escapeHtml(it.date)}</span>` : "") +
         lab +
         `</div>` +
-        (richNotEmpty(it.text) ? `<p>${it.text}</p>` : "") +
+        (richNotEmpty(it.text) ? `<div class="tx">${it.text}</div>` : "") +
         `</div>`
       );
     })
@@ -412,7 +412,7 @@ export function accomplissementsForumHtml(c: CarnetData): string {
         `<div class="t">${escapeHtml(a.title.trim() || "Accomplissement")}` +
         (a.date.trim() ? ` <span class="dt">${escapeHtml(a.date)}</span>` : "") +
         `</div>` +
-        (richNotEmpty(a.text) ? `<p>${a.text}</p>` : "") +
+        (richNotEmpty(a.text) ? `<div class="tx">${a.text}</div>` : "") +
         `</div>` +
         `</div>`
       );
@@ -551,7 +551,7 @@ function parseChronoBlock(root: Element): ChronoItem[] {
           date: nodeText(node.querySelector(".yr")),
           title: nodeText(lab),
           url: lab?.getAttribute("href") ?? "",
-          text: nodeInnerHtml(node.querySelector("p")),
+          text: nodeInnerHtml(node.querySelector(".tx, p")),
         });
       }
     });
@@ -576,7 +576,7 @@ function parseAccBlock(root: Element): AccItem[] {
       clone.querySelector(".dt")?.remove();
       title = nodeText(clone);
     }
-    out.push({ category, date, title, text: nodeInnerHtml(item.querySelector("p")) });
+    out.push({ category, date, title, text: nodeInnerHtml(item.querySelector(".tx, p")) });
   });
   return out.length ? out : [{ category: "village", date: "", title: "", text: "" }];
 }

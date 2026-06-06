@@ -67,6 +67,44 @@
   background: none !important;
 }
 
+/* ---------- Anti-conflit Forumactif : zones de TEXTE ENRICHI ----------
+   Les champs édités via l'éditeur (traits, réponses, chrono, liens, ambitions,
+   accomplissements…) peuvent contenir des <div>/<span>/<p> générés par l'éditeur
+   — typiquement un <div style="text-align:center"> quand on centre/justifie une
+   ligne. Le thème Forumactif applique sa police GÉNÉRIQUE à ces <div>/<p> (règle
+   directe qui bat l'héritage), ce qui faisait « sauter » la police de la fiche
+   sur la portion alignée. On force donc TOUS les descendants de ces zones à
+   hériter police/taille/interligne/couleur de leur conteneur, et on neutralise
+   les marges/fonds que le thème ajoute. La double classe .hnk-pres.hnk-pres
+   gonfle la spécificité pour gagner même si le thème utilise !important.
+   Les couleurs spécifiques (em → clan, strong → blanc) restent prioritaires
+   car portées par des sélecteurs plus spécifiques. */
+/* Conteneurs riches : on verrouille la police « story » même si un thème
+   agressif tente de la forcer sur les <div> génériques avec !important. */
+.hnk-pres.hnk-pres :where(
+  .hnk-pres-traits, .hnk-pres-q .a, .hnk-pres-chrono .ev .tx,
+  .hnk-cb-amb, .hnk-cb-link-desc, .hnk-cb-ev .tx,
+  .hnk-cb-interlude .x, .hnk-cb-acc-item .tx
+) {
+  font-family: var(--story) !important;
+}
+/* … et tous leurs descendants héritent (police/taille/interligne/couleur),
+   ce qui neutralise les <div>/<span> d'alignement habillés par le thème. */
+.hnk-pres.hnk-pres :where(
+  .hnk-pres-traits, .hnk-pres-q .a, .hnk-pres-chrono .ev .tx,
+  .hnk-cb-amb, .hnk-cb-link-desc, .hnk-cb-ev .tx,
+  .hnk-cb-interlude .x, .hnk-cb-acc-item .tx
+) * {
+  font-family: inherit !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+  color: inherit;
+  background: none !important;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
 /* ---------- En-tête ---------- */
 .hnk-pres-head {
   position: relative;
@@ -336,7 +374,8 @@
   text-transform: uppercase;
   color: var(--white);
 }
-.hnk-pres-chrono .ev p {
+.hnk-pres-chrono .ev p,
+.hnk-pres-chrono .ev .tx {
   margin: 6px 0 0;
   font-family: var(--story);
   font-size: 15.5px;
@@ -667,7 +706,8 @@
 a.hnk-cb-ev .lab,
 .hnk-cb-ev a.lab { color: var(--white); border-bottom: 1px solid color-mix(in srgb, var(--clan) 55%, transparent); }
 .hnk-cb-ev a.lab:hover { color: var(--clan); }
-.hnk-cb-ev p {
+.hnk-cb-ev p,
+.hnk-cb-ev .tx {
   margin: 6px 0 0;
   font-family: var(--story);
   font-size: 15.5px;
@@ -749,7 +789,8 @@ a.hnk-cb-ev .lab,
   color: var(--smoke);
   margin-left: 8px;
 }
-.hnk-cb-acc-item p {
+.hnk-cb-acc-item p,
+.hnk-cb-acc-item .tx {
   margin: 6px 0 0;
   font-family: var(--story);
   font-size: 15px;

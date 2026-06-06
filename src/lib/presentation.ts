@@ -243,7 +243,11 @@ export function presentationForumHtml(d: PresentationData): string {
     return (
       `<div class="hnk-pres-q">` +
       `<p class="q">${escapeHtml(q.label)}</p>` +
-      `<p class="a">${a}</p>` +
+      // Conteneur en <div> (et non <p>) : le texte enrichi peut contenir des
+      // blocs d'alignement (<div style="text-align…">) qui « casseraient » un
+      // <p> (un <div> ne peut pas vivre dans un <p>) et sortiraient du cadre
+      // stylé, perdant la police de la fiche.
+      `<div class="a">${a}</div>` +
       `</div>`
     );
   }).join("");
@@ -262,7 +266,7 @@ export function presentationForumHtml(d: PresentationData): string {
         `<div class="ev">` +
         (e.year.trim() ? `<span class="yr">${escapeHtml(e.year)}</span>` : "") +
         (e.label.trim() ? `<span class="lab">${escapeHtml(e.label)}</span>` : "") +
-        (richNotEmpty(e.text) ? `<p>${e.text}</p>` : "") +
+        (richNotEmpty(e.text) ? `<div class="tx">${e.text}</div>` : "") +
         `</div>`
     )
     .join("");
@@ -384,7 +388,7 @@ export function parsePresentationForumHtml(html: string): PresentationData | nul
   const chrono = Array.from(root.querySelectorAll(".hnk-pres-chrono .ev")).map((ev) => ({
     year: nodeText(ev.querySelector(".yr")),
     label: nodeText(ev.querySelector(".lab")),
-    text: nodeInnerHtml(ev.querySelector("p")),
+    text: nodeInnerHtml(ev.querySelector(".tx, p")),
   }));
 
   const hrp = idPairs(root.querySelectorAll(".hnk-pres-hrp li"));
