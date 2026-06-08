@@ -42,7 +42,9 @@ export default async function AdminFichesPage({
       secondarySpec: true,
       actionType: true,
       element: true,
+      secondaryElement: true,
       kekkeiGenkai: true,
+      secondaryKekkeiGenkai: true,
       nature: true,
       kinjutsuScope: true,
       clan: true,
@@ -139,12 +141,26 @@ export default async function AdminFichesPage({
                   )}
                   {f.actionType && <span className="hnk-chip">{actionLabel(f.actionType)}</span>}
                   {f.element && <span className="hnk-chip">Élément · {f.element}</span>}
+                  {f.secondaryElement && (
+                    <span className="hnk-chip">Élément · {f.secondaryElement}</span>
+                  )}
                   {f.kekkeiGenkai && (
                     <span
                       className="hnk-chip"
                       style={{ color: kgColor(f.kekkeiGenkai), borderColor: kgColor(f.kekkeiGenkai) }}
                     >
                       KG · {f.kekkeiGenkai}
+                    </span>
+                  )}
+                  {f.secondaryKekkeiGenkai && (
+                    <span
+                      className="hnk-chip"
+                      style={{
+                        color: kgColor(f.secondaryKekkeiGenkai),
+                        borderColor: kgColor(f.secondaryKekkeiGenkai),
+                      }}
+                    >
+                      KG · {f.secondaryKekkeiGenkai}
                     </span>
                   )}
                   {f.nature && (
