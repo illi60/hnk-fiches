@@ -230,10 +230,10 @@ export default function ProgressionManager({
                   <span className="hnk-chip">Voie empruntée · stade {stage}/3</span>
                 ) : (
                   <span
-                    className="hnk-chip opacity-60"
+                    className="hnk-chip"
                     title="Voie débloquée par le staff (RP / arrangement)"
                   >
-                    Réservé au staff
+                    À débloquer IRP
                   </span>
                 )}
               </div>
