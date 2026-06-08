@@ -40,6 +40,7 @@ export const ficheCreateSchema = z.object({
   nom: z.string().min(2).max(120),
   description: z.string().min(10).max(20000),
   art: z.string().max(40).optional().nullable(),
+  spec: z.string().max(40).optional().nullable(),
   // 2e Art Shinobi (type d'action COMBINEE).
   secondaryArt: z.string().max(40).optional().nullable(),
   actionType: z

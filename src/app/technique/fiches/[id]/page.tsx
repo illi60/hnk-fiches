@@ -9,6 +9,7 @@ import TechniqueExport from "@/components/TechniqueExport";
 import { actionLabel, natureLabel, ART_KANJI } from "@/lib/techniques";
 import { kgColor, kgCardStyle } from "@/lib/kekkei";
 import { ownedKgsFull, ownedAffinities, type ProgressionState } from "@/lib/quintessence";
+import { ARTS_ALL, specRank, type ArtsState } from "@/lib/arts";
 
 const STATUS_LABEL: Record<string, string> = {
   DRAFT: "Brouillon",
@@ -34,6 +35,7 @@ export default async function FicheDetailPage({
       nom: true,
       description: true,
       art: true,
+      spec: true,
       secondaryArt: true,
       actionType: true,
       element: true,
@@ -70,11 +72,27 @@ export default async function FicheDetailPage({
       clan: true,
       rangClan: true,
       kekkeiGenkai: true,
+      artsState: true,
+      rangVillage: true,
     },
   });
   const authorState = ((author?.progressionState ?? {}) as unknown) as ProgressionState;
   const allowedKg = ownedKgsFull(author?.primaryKg, authorState, author?.kekkeiGenkai);
   const allowedElements = ownedAffinities(author?.primaryAffinity, author?.affinites);
+
+  // Rang de la spécialisation (calculé depuis l'état Arts de l'auteur).
+  const authorArts = (author?.artsState ?? {}) as ArtsState;
+  const artKey = fiche.art
+    ? fiche.art.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
+    : null;
+  const artDef = artKey ? ARTS_ALL.find((a) => a.key === artKey) : null;
+  const specIdx = artDef && fiche.spec
+    ? (artDef.specs as string[]).indexOf(fiche.spec)
+    : -1;
+  const ficheSpecRank =
+    artDef && specIdx >= 0 && author?.artsState != null && author?.rangVillage != null
+      ? specRank(artDef.key, specIdx, authorArts, author.rangVillage)
+      : null;
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -110,7 +128,11 @@ export default async function FicheDetailPage({
             <div className="hnk-tech-name">{fiche.nom}</div>
             <div className="hnk-tech-chips">
               {fiche.art && (
-                <span className="hnk-tech-chip">{`${ART_KANJI[fiche.art] ?? ""} ${fiche.art}`}</span>
+                <span className="hnk-tech-chip">
+                  {`${ART_KANJI[fiche.art] ?? ""} ${fiche.art}`}
+                  {fiche.spec ? ` · ${fiche.spec}` : ""}
+                  {ficheSpecRank ? ` · ${ficheSpecRank}` : ""}
+                </span>
               )}
               {fiche.secondaryArt && (
                 <span className="hnk-tech-chip">{`${ART_KANJI[fiche.secondaryArt] ?? ""} ${fiche.secondaryArt}`}</span>
@@ -166,6 +188,8 @@ export default async function FicheDetailPage({
               data={{
                 nom: fiche.nom,
                 art: fiche.art,
+                spec: fiche.spec ?? null,
+                specRank: ficheSpecRank ?? null,
                 secondaryArt: fiche.secondaryArt,
                 actionType: fiche.actionType,
                 element: fiche.element,
@@ -189,10 +213,13 @@ export default async function FicheDetailPage({
           allowedElements={allowedElements}
           userClan={author?.clan ?? null}
           rangClan={author?.rangClan ?? null}
+          artsState={(author?.artsState ?? null) as import("@/lib/arts").ArtsState | null}
+          villageRank={author?.rangVillage ?? null}
           initial={{
             nom: fiche.nom,
             description: fiche.description,
             art: fiche.art ?? "",
+            spec: fiche.spec ?? "",
             secondaryArt: fiche.secondaryArt ?? "",
             actionType: fiche.actionType ?? "",
             element: fiche.element ?? "",

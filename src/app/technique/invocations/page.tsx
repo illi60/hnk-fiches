@@ -24,6 +24,7 @@ export default async function InvocationsPage() {
       pactAffinities: true,
       clan: true,
       rangClan: true,
+      rangVillage: true,
       primaryKg: true,
       primaryAffinity: true,
       affinites: true,
@@ -96,6 +97,8 @@ export default async function InvocationsPage() {
           allowedElements: ownedAffinities(dbUser?.primaryAffinity, dbUser?.affinites),
           userClan: dbUser?.clan ?? null,
           rangClan: dbUser?.rangClan ?? null,
+          artsState: (dbUser?.artsState ?? null) as import("@/lib/arts").ArtsState | null,
+          villageRank: dbUser?.rangVillage ?? null,
         }}
       />
     </div>

@@ -4,11 +4,19 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import TechniquesView, { type MyTech } from "@/components/TechniquesView";
+import { ARTS_ALL, specRank, type ArtsState } from "@/lib/arts";
 
 export default async function MyFichesPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
   const meId = session.user.id;
+
+  const me = await prisma.user.findUnique({
+    where: { id: meId },
+    select: { artsState: true, rangVillage: true },
+  });
+  const meArts = (me?.artsState ?? null) as ArtsState | null;
+  const meVillageRank = me?.rangVillage ?? null;
 
   // Mes fiches + celles où je suis participant (type d'action COLLECTIVE).
   const fiches = await prisma.ficheTechnique.findMany({
@@ -19,6 +27,7 @@ export default async function MyFichesPage() {
       nom: true,
       description: true,
       art: true,
+      spec: true,
       secondaryArt: true,
       actionType: true,
       element: true,
@@ -35,11 +44,23 @@ export default async function MyFichesPage() {
     },
   });
 
-  const techniques: MyTech[] = fiches.map((f) => ({
+  const techniques: MyTech[] = fiches.map((f) => {
+    const artKey = f.art
+      ? f.art.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
+      : null;
+    const artDef = artKey ? ARTS_ALL.find((a) => a.key === artKey) : null;
+    const specIdx = artDef && f.spec ? (artDef.specs as string[]).indexOf(f.spec) : -1;
+    const ficheSpecRank =
+      artDef && specIdx >= 0 && meArts != null && meVillageRank != null
+        ? specRank(artDef.key, specIdx, meArts, meVillageRank)
+        : null;
+    return {
     id: f.id,
     nom: f.nom,
     description: f.description,
     art: f.art,
+    spec: f.spec,
+    specRank: ficheSpecRank,
     secondaryArt: f.secondaryArt,
     actionType: f.actionType,
     element: f.element,
@@ -54,7 +75,8 @@ export default async function MyFichesPage() {
     mine: f.authorId === meId,
     invocationNom: f.invocation?.nom ?? null,
     invocationEspece: f.invocation?.espece ?? null,
-  }));
+    };
+  });
 
   return (
     <div className="space-y-6">

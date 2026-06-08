@@ -37,6 +37,7 @@ export default async function ClanLibraryPage() {
       nom: true,
       description: true,
       art: true,
+      spec: true,
       secondaryArt: true,
       actionType: true,
       element: true,

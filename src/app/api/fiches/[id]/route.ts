@@ -101,6 +101,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         ...(parsed.data.nom !== undefined && { nom: parsed.data.nom }),
         ...(parsed.data.description !== undefined && { description: parsed.data.description }),
         ...(parsed.data.art !== undefined && { art: parsed.data.art ?? null }),
+        ...(parsed.data.spec !== undefined && { spec: parsed.data.spec ?? null }),
         ...secondaryArtUpdate,
         ...secondaryManifUpdate,
         ...(parsed.data.actionType !== undefined && { actionType: parsed.data.actionType ?? null }),

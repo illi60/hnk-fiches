@@ -157,6 +157,7 @@ export async function POST(req: Request) {
         nom: parsed.data.nom,
         description: parsed.data.description,
         art: parsed.data.art ?? null,
+        spec: parsed.data.spec ?? null,
         secondaryArt:
           parsed.data.actionType === "COMBINEE" ? parsed.data.secondaryArt ?? null : null,
         actionType: parsed.data.actionType ?? null,

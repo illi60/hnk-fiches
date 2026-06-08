@@ -104,6 +104,8 @@ export const ART_KANJI: Record<string, string> = {
 export interface TechniqueExportData {
   nom: string;
   art: string | null;
+  spec?: string | null;
+  specRank?: string | null;
   secondaryArt?: string | null;
   actionType: string | null;
   element: string | null;
@@ -136,7 +138,12 @@ export function techniqueForumHtml(t: TechniqueExportData): string {
     `<span class="hnk-tech-chip${kg ? " hnk-tech-chip--kg" : ""}">${escapeHtml(txt)}</span>`;
 
   const chips: string[] = [];
-  if (t.art) chips.push(chip(`${ART_KANJI[t.art] ?? ""} ${t.art}`.trim()));
+  if (t.art) {
+    let artLabel = `${ART_KANJI[t.art] ?? ""} ${t.art}`.trim();
+    if (t.spec) artLabel += ` · ${t.spec}`;
+    if (t.specRank) artLabel += ` · ${t.specRank}`;
+    chips.push(chip(artLabel));
+  }
   if (t.secondaryArt) chips.push(chip(`${ART_KANJI[t.secondaryArt] ?? ""} ${t.secondaryArt}`.trim()));
   if (t.espece) chips.push(chip(`口 ${t.espece}`));
   if (t.actionType) chips.push(chip(actionLabel(t.actionType)));

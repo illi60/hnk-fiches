@@ -5,6 +5,7 @@ import { requireFicheModerator } from "@/lib/permissions";
 import AdminFicheDecision from "@/components/AdminFicheDecision";
 import { actionLabel, natureLabel, ART_KANJI } from "@/lib/techniques";
 import { kgColor } from "@/lib/kekkei";
+import { ARTS_ALL, specRank, type ArtsState } from "@/lib/arts";
 
 export default async function AdminFichesPage({
   searchParams,
@@ -36,6 +37,7 @@ export default async function AdminFichesPage({
       nom: true,
       description: true,
       art: true,
+      spec: true,
       actionType: true,
       element: true,
       kekkeiGenkai: true,
@@ -48,9 +50,22 @@ export default async function AdminFichesPage({
       comment: true,
       createdAt: true,
       author: {
-        select: { id: true, username: true, xpAvailable: true, clan: true, rang: true },
+        select: { id: true, username: true, xpAvailable: true, clan: true, rang: true, artsState: true, rangVillage: true },
       },
     },
+  });
+
+  const fichesWithSpec = fiches.map((f) => {
+    const artKey = f.art
+      ? f.art.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
+      : null;
+    const artDef = artKey ? ARTS_ALL.find((a) => a.key === artKey) : null;
+    const specIdx = artDef && f.spec ? (artDef.specs as string[]).indexOf(f.spec) : -1;
+    const ficheSpecRank =
+      artDef && specIdx >= 0 && f.author.artsState != null && f.author.rangVillage != null
+        ? specRank(artDef.key, specIdx, f.author.artsState as ArtsState, f.author.rangVillage)
+        : null;
+    return { ...f, ficheSpecRank };
   });
 
   return (
@@ -80,7 +95,7 @@ export default async function AdminFichesPage({
       </div>
 
       <ul className="space-y-3">
-        {fiches.map((f) => (
+        {fichesWithSpec.map((f) => (
           <li key={f.id} className="border border-white/5 bg-ink-700 p-4">
             <div className="flex items-start justify-between gap-4 mb-3">
               <div>
@@ -97,7 +112,13 @@ export default async function AdminFichesPage({
                   ({f.author.xpAvailable} XP dispo)
                 </p>
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {f.art && <span className="hnk-chip">{`${ART_KANJI[f.art] ?? ""} ${f.art}`}</span>}
+                  {f.art && (
+                    <span className="hnk-chip">
+                      {`${ART_KANJI[f.art] ?? ""} ${f.art}`}
+                      {f.spec ? ` · ${f.spec}` : ""}
+                      {f.ficheSpecRank ? ` · ${f.ficheSpecRank}` : ""}
+                    </span>
+                  )}
                   {f.actionType && <span className="hnk-chip">{actionLabel(f.actionType)}</span>}
                   {f.element && <span className="hnk-chip">Élément · {f.element}</span>}
                   {f.kekkeiGenkai && (

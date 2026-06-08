@@ -14,12 +14,14 @@ import {
   type ManifestationKey,
 } from "@/lib/techniques";
 import { KG_NAMES, kgColor, clanKg } from "@/lib/kekkei";
+import { ARTS_ALL, specRank, type ArtsState } from "@/lib/arts";
 
 export interface FicheFormInitial {
   slug?: string;
   nom?: string;
   description?: string;
   art?: string;
+  spec?: string;
   actionType?: string;
   element?: string;
   kekkeiGenkai?: string;
@@ -43,6 +45,8 @@ export default function FicheForm({
   invocationId,
   invocationArt,
   kuchyAllArts = false,
+  artsState = null,
+  villageRank = null,
 }: {
   initial?: FicheFormInitial;
   ficheId?: string;
@@ -54,6 +58,8 @@ export default function FicheForm({
   invocationId?: string; // si défini : technique de Kuchiyose rattachée à cette invocation
   invocationArt?: string | null; // Art Shinobi de l'invocation (verrouille l'Art de la technique)
   kuchyAllArts?: boolean; // Mode Ermite parfait : le kuchy accède à TOUS tes arts
+  artsState?: ArtsState | null; // état des Arts du joueur (pour afficher les rangs de spés)
+  villageRank?: string | null; // rang de village du joueur
 }) {
   const router = useRouter();
 
@@ -67,6 +73,7 @@ export default function FicheForm({
     nom: initial?.nom ?? "",
     description: initial?.description ?? "",
     art: invocationId ? invocationArt ?? "" : initial?.art ?? "",
+    spec: initial?.spec ?? "",
     secondaryArt: initial?.secondaryArt ?? "",
     actionType: initial?.actionType ?? "",
     manifestation: initialManifestation as ManifestationKey,
@@ -97,6 +104,13 @@ export default function FicheForm({
   function up<K extends keyof typeof v>(k: K, val: (typeof v)[K]) {
     setV((s) => ({ ...s, [k]: val }));
   }
+
+  // Art sélectionné → ArtDef correspondant (pour les spés + rangs).
+  const artKey = v.art
+    ? v.art.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
+    : null;
+  const artDef = artKey ? ARTS_ALL.find((a) => a.key === artKey) : null;
+  const showSpecRanks = artsState != null && villageRank != null;
 
   // Konoha : pas de technique collective, pas de surcharge personnelle.
   const isKonoha = (userClan ?? "").toLowerCase().trim() === "konoha";
@@ -167,6 +181,7 @@ export default function FicheForm({
       nom: v.nom.trim(),
       description: v.description.trim(),
       art: v.art || null,
+      spec: v.spec || null,
       secondaryArt: v.actionType === "COMBINEE" ? v.secondaryArt || null : null,
       actionType: v.actionType || null,
       element: v.manifestation === "ELEMENT" ? v.element || null : null,
@@ -237,7 +252,7 @@ export default function FicheForm({
           <select
             className="hnk-input"
             value={v.art}
-            onChange={(e) => up("art", e.target.value)}
+            onChange={(e) => setV((s) => ({ ...s, art: e.target.value, spec: "" }))}
             disabled={disabled || artLocked}
           >
             <option value="">—</option>
@@ -265,6 +280,32 @@ export default function FicheForm({
           </select>
         </Field>
       </div>
+
+      {/* Spécialisation : s'affiche quand un art est sélectionné */}
+      {artDef && (
+        <div className="grid sm:grid-cols-2 gap-4">
+          <Field label="Spécialisation">
+            <select
+              className="hnk-input"
+              value={v.spec}
+              onChange={(e) => up("spec", e.target.value)}
+              disabled={disabled}
+            >
+              <option value="">—</option>
+              {artDef.specs.map((specName, i) => {
+                const rank = showSpecRanks
+                  ? specRank(artDef.key, i, artsState!, villageRank!)
+                  : null;
+                return (
+                  <option key={specName} value={specName}>
+                    {rank ? `${specName} — Rang ${rank}` : specName}
+                  </option>
+                );
+              })}
+            </select>
+          </Field>
+        </div>
+      )}
 
       {/* Genjutsu : rappel informatif (pas de hard-lock) */}
       {v.art === "Genjutsu" && (

@@ -11,6 +11,7 @@ export interface LibTech {
   nom: string;
   description: string | null;
   art: string | null;
+  spec?: string | null;
   secondaryArt?: string | null;
   actionType: string | null;
   element: string | null;
@@ -110,7 +111,11 @@ export default function ClanLibraryView({
                   )}
                 </div>
                 <div className="flex flex-wrap gap-1.5 mt-2">
-                  {t.art && <span className="hnk-tech-chip">{t.art}</span>}
+                  {t.art && (
+                    <span className="hnk-tech-chip">
+                      {t.art}{t.spec ? ` · ${t.spec}` : ""}
+                    </span>
+                  )}
                   {t.secondaryArt && <span className="hnk-tech-chip">+ {t.secondaryArt}</span>}
                   {t.actionType && <span className="hnk-tech-chip">{actionLabel(t.actionType)}</span>}
                   {t.element && <span className="hnk-tech-chip">{t.element}</span>}

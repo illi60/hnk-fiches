@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { ART_OPTIONS, ELEMENTS } from "@/lib/techniques";
 import FicheForm from "@/components/FicheForm";
+import { type ArtsState } from "@/lib/arts";
 
 export interface InvTech {
   nom: string;
@@ -33,6 +34,8 @@ export interface FicheFormCtx {
   allowedElements: string[];
   userClan: string | null;
   rangClan: string | null;
+  artsState?: ArtsState | null;
+  villageRank?: string | null;
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -319,6 +322,8 @@ function InvocationCard({
             allowedElements={pactAffinities}
             userClan={ficheCtx.userClan}
             rangClan={ficheCtx.rangClan}
+            artsState={ficheCtx.artsState}
+            villageRank={ficheCtx.villageRank}
           />
           <button
             type="button"

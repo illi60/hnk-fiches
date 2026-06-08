@@ -12,6 +12,8 @@ export interface MyTech {
   nom: string;
   description: string | null;
   art: string | null;
+  spec?: string | null;
+  specRank?: string | null;
   secondaryArt: string | null;
   actionType: string | null;
   element: string | null;
@@ -120,7 +122,11 @@ export default function TechniquesView({ techniques }: { techniques: MyTech[] })
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-1.5 mt-2">
-                  {t.art && <span className="hnk-tech-chip">{t.art}</span>}
+                  {t.art && (
+                    <span className="hnk-tech-chip">
+                      {t.art}{t.spec ? ` · ${t.spec}` : ""}{t.specRank ? ` · ${t.specRank}` : ""}
+                    </span>
+                  )}
                   {t.secondaryArt && <span className="hnk-tech-chip">+ {t.secondaryArt}</span>}
                   {t.actionType && <span className="hnk-tech-chip">{actionLabel(t.actionType)}</span>}
                   {t.element && <span className="hnk-tech-chip">{t.element}</span>}
@@ -171,6 +177,8 @@ export default function TechniquesView({ techniques }: { techniques: MyTech[] })
                         data={{
                           nom: t.nom,
                           art: t.art,
+                          spec: t.spec ?? null,
+                          specRank: t.specRank ?? null,
                           secondaryArt: t.secondaryArt,
                           actionType: t.actionType,
                           element: t.element,
