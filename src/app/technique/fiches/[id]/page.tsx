@@ -74,7 +74,7 @@ export default async function FicheDetailPage({
       rangClan: true,
       kekkeiGenkai: true,
       artsState: true,
-      rangVillage: true,
+      rang: true,
     },
   });
   const authorState = ((author?.progressionState ?? {}) as unknown) as ProgressionState;
@@ -91,8 +91,8 @@ export default async function FicheDetailPage({
     ? (artDef.specs as string[]).indexOf(fiche.spec)
     : -1;
   const ficheSpecRank =
-    artDef && specIdx >= 0 && author?.artsState != null && author?.rangVillage != null
-      ? specRank(artDef.key, specIdx, authorArts, author.rangVillage)
+    artDef && specIdx >= 0 && author?.artsState != null && author?.rang != null
+      ? specRank(artDef.key, specIdx, authorArts, author.rang)
       : null;
 
   const secondaryArtKey = fiche.secondaryArt
@@ -103,8 +103,8 @@ export default async function FicheDetailPage({
     ? (secondaryArtDef.specs as string[]).indexOf(fiche.secondarySpec)
     : -1;
   const ficheSecondarySpecRank =
-    secondaryArtDef && secondarySpecIdx >= 0 && author?.artsState != null && author?.rangVillage != null
-      ? specRank(secondaryArtDef.key, secondarySpecIdx, authorArts, author.rangVillage)
+    secondaryArtDef && secondarySpecIdx >= 0 && author?.artsState != null && author?.rang != null
+      ? specRank(secondaryArtDef.key, secondarySpecIdx, authorArts, author.rang)
       : null;
 
   return (
@@ -233,7 +233,7 @@ export default async function FicheDetailPage({
           userClan={author?.clan ?? null}
           rangClan={author?.rangClan ?? null}
           artsState={(author?.artsState ?? null) as import("@/lib/arts").ArtsState | null}
-          villageRank={author?.rangVillage ?? null}
+          villageRank={author?.rang ?? null}
           initial={{
             nom: fiche.nom,
             description: fiche.description,

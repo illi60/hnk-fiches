@@ -22,7 +22,7 @@ export default async function NewFichePage() {
       rangClan: true,
       kekkeiGenkai: true,
       artsState: true,
-      rangVillage: true,
+      rang: true,
     },
   });
   const state = ((user?.progressionState ?? {}) as unknown) as ProgressionState;
@@ -45,7 +45,7 @@ export default async function NewFichePage() {
         userClan={user?.clan ?? null}
         rangClan={user?.rangClan ?? null}
         artsState={(user?.artsState ?? null) as import("@/lib/arts").ArtsState | null}
-        villageRank={user?.rangVillage ?? null}
+        villageRank={user?.rang ?? null}
       />
     </div>
   );

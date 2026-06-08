@@ -52,7 +52,7 @@ export default async function AdminFichesPage({
       comment: true,
       createdAt: true,
       author: {
-        select: { id: true, username: true, xpAvailable: true, clan: true, rang: true, artsState: true, rangVillage: true },
+        select: { id: true, username: true, xpAvailable: true, clan: true, rang: true, artsState: true },
       },
     },
   });
@@ -64,8 +64,8 @@ export default async function AdminFichesPage({
     const artDef = artKey ? ARTS_ALL.find((a) => a.key === artKey) : null;
     const specIdx = artDef && f.spec ? (artDef.specs as string[]).indexOf(f.spec) : -1;
     const ficheSpecRank =
-      artDef && specIdx >= 0 && f.author.artsState != null && f.author.rangVillage != null
-        ? specRank(artDef.key, specIdx, f.author.artsState as ArtsState, f.author.rangVillage)
+      artDef && specIdx >= 0 && f.author.artsState != null && f.author.rang != null
+        ? specRank(artDef.key, specIdx, f.author.artsState as ArtsState, f.author.rang)
         : null;
     const secArtKey = f.secondaryArt
       ? f.secondaryArt.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
@@ -73,8 +73,8 @@ export default async function AdminFichesPage({
     const secArtDef = secArtKey ? ARTS_ALL.find((a) => a.key === secArtKey) : null;
     const secSpecIdx = secArtDef && f.secondarySpec ? (secArtDef.specs as string[]).indexOf(f.secondarySpec) : -1;
     const ficheSecondarySpecRank =
-      secArtDef && secSpecIdx >= 0 && f.author.artsState != null && f.author.rangVillage != null
-        ? specRank(secArtDef.key, secSpecIdx, f.author.artsState as ArtsState, f.author.rangVillage)
+      secArtDef && secSpecIdx >= 0 && f.author.artsState != null && f.author.rang != null
+        ? specRank(secArtDef.key, secSpecIdx, f.author.artsState as ArtsState, f.author.rang)
         : null;
     return { ...f, ficheSpecRank, ficheSecondarySpecRank };
   });

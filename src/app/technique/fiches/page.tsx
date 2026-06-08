@@ -13,10 +13,10 @@ export default async function MyFichesPage() {
 
   const me = await prisma.user.findUnique({
     where: { id: meId },
-    select: { artsState: true, rangVillage: true },
+    select: { artsState: true, rang: true },
   });
   const meArts = (me?.artsState ?? null) as ArtsState | null;
-  const meVillageRank = me?.rangVillage ?? null;
+  const meVillageRank = me?.rang ?? null;
 
   // Mes fiches + celles où je suis participant (type d'action COLLECTIVE).
   const fiches = await prisma.ficheTechnique.findMany({

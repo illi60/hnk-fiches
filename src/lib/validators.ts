@@ -226,7 +226,9 @@ export const adminFicheCreateSchema = z.object({
   nom: z.string().min(2).max(120),
   description: z.string().min(1).max(20000),
   art: z.string().max(40).optional().nullable(),
+  spec: z.string().max(40).optional().nullable(),
   secondaryArt: z.string().max(40).optional().nullable(),
+  secondarySpec: z.string().max(40).optional().nullable(),
   actionType: z
     .enum([
       "EVOLUTIVE",

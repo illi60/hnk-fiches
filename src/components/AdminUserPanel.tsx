@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { KG_NAMES } from "@/lib/kekkei";
 import { ELEMENTS, ART_OPTIONS, ACTION_TYPES } from "@/lib/techniques";
-import { type ArtsState } from "@/lib/arts";
+import { ARTS_ALL, specRank, type ArtsState } from "@/lib/arts";
 import { AdminArtsForm, AdminQuintForm } from "@/components/AdminArtsQuint";
 
 type Rang = "E" | "D" | "C" | "B" | "A" | "S";
@@ -63,7 +63,12 @@ export default function AdminUserPanel({
       <XpForm userId={user.id} />
       <ProfilForm user={user} />
       <PactAffinityAdminForm userId={user.id} current={user.pactAffinities ?? []} />
-      <AddTechniqueForm userId={user.id} userClan={user.clan} />
+      <AddTechniqueForm
+        userId={user.id}
+        userClan={user.clan}
+        artsState={(user.artsState ?? {}) as ArtsState}
+        villageRank={user.rang}
+      />
       <AdminArtsForm userId={user.id} artsState={(user.artsState ?? {}) as ArtsState} />
       <AdminQuintForm
         userId={user.id}
@@ -541,12 +546,23 @@ function PactAffinityAdminForm({ userId, current }: { userId: string; current: s
 
 // ===== Ajout manuel d'une technique =====
 
-function AddTechniqueForm({ userId, userClan }: { userId: string; userClan: string | null }) {
+function AddTechniqueForm({
+  userId,
+  userClan,
+  artsState,
+  villageRank,
+}: {
+  userId: string;
+  userClan: string | null;
+  artsState: ArtsState;
+  villageRank: string | null;
+}) {
   const router = useRouter();
   const [v, setV] = useState({
     nom: "",
     description: "",
     art: "",
+    spec: "",
     actionType: "",
     element: "",
     kekkeiGenkai: "",
@@ -562,6 +578,12 @@ function AddTechniqueForm({ userId, userClan }: { userId: string; userClan: stri
     setMsg(null);
   }
 
+  // Spés de l'art sélectionné (avec rang calculé depuis l'état Arts du joueur).
+  const artKey = v.art
+    ? v.art.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
+    : null;
+  const artDef = artKey ? ARTS_ALL.find((a) => a.key === artKey) : null;
+
   function submit() {
     if (v.nom.trim().length < 2 || v.description.trim().length < 1) {
       setMsg("Nom et description requis.");
@@ -575,6 +597,7 @@ function AddTechniqueForm({ userId, userClan }: { userId: string; userClan: stri
       nom: v.nom.trim(),
       description: v.description.trim(),
       art: v.art || null,
+      spec: v.spec || null,
       actionType: v.actionType || null,
       element: v.element || null,
       kekkeiGenkai: v.kekkeiGenkai || null,
@@ -593,7 +616,7 @@ function AddTechniqueForm({ userId, userClan }: { userId: string; userClan: stri
         setMsg("Erreur lors de l'ajout.");
         return;
       }
-      setV((s) => ({ ...s, nom: "", description: "", kekkeiGenkai: "", element: "" }));
+      setV((s) => ({ ...s, nom: "", description: "", kekkeiGenkai: "", element: "", spec: "" }));
       setMsg("Technique ajoutée (validée).");
       router.refresh();
     });
@@ -610,7 +633,37 @@ function AddTechniqueForm({ userId, userClan }: { userId: string; userClan: stri
       </p>
       <div className="grid sm:grid-cols-3 gap-3">
         <Inp label="Nom" v={v.nom} on={(x) => up("nom", x)} />
-        <Sel label="Art" v={v.art} on={(x) => up("art", x)} options={[...ART_OPTIONS]} />
+        <Sel
+          label="Art"
+          v={v.art}
+          on={(x) => {
+            setV((s) => ({ ...s, art: x, spec: "" }));
+            setMsg(null);
+          }}
+          options={[...ART_OPTIONS]}
+        />
+        {artDef && (
+          <label className="block">
+            <span className="block text-[10px] uppercase text-smoke mb-1">Spécialisation</span>
+            <select
+              value={v.spec}
+              onChange={(e) => up("spec", e.target.value)}
+              className="w-full bg-ink-900 border border-white/10 px-3 py-2 text-bone text-sm"
+            >
+              <option value="">—</option>
+              {artDef.specs.map((specName, i) => {
+                const rank = artsState != null && villageRank != null
+                  ? specRank(artDef.key, i, artsState, villageRank)
+                  : null;
+                return (
+                  <option key={specName} value={specName}>
+                    {rank ? `${specName} — Rang ${rank}` : specName}
+                  </option>
+                );
+              })}
+            </select>
+          </label>
+        )}
         <Sel
           label="Type d'action"
           v={v.actionType}
