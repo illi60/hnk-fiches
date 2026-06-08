@@ -33,6 +33,8 @@ function humanError(e?: string): string {
       return "Rang maximum atteint.";
     case "DEJA_EXPERTISE":
       return "Art déjà expertisé.";
+    case "RANG_B_REQUIS":
+      return "Rang B requis (l'expertise n'a d'effet qu'au-delà de B).";
     case "SPE_PRINCIPALE_AUTO":
       return "Spé principale (suit l'art, gratuite).";
     case "DEJA_CHOISIE":

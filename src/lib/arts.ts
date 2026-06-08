@@ -237,6 +237,10 @@ export function quoteAction(
     if (!art) return { ok: false, cost: 0, error: "ART_INCONNU" };
     if (!isArtOwned(state, art.key, ctx.villageRank))
       return { ok: false, cost: 0, error: "ART_NON_DEBLOQUE" };
+    // L'expertise ne sert qu'au-delà de B (B→A→S) : inutile avant le Rang B,
+    // on bloque pour éviter de gâcher de l'XP.
+    if (rankIndex(ctx.villageRank) < RANKS.indexOf("B"))
+      return { ok: false, cost: 0, error: "RANG_B_REQUIS" };
     if (isExpertised(state, art.key)) return { ok: false, cost: 0, error: "DEJA_EXPERTISE" };
     const count = expertiseCount(state);
     if (count >= MAX_EXPERTISE) return { ok: false, cost: 0, error: "MAX_EXPERTISE" };
