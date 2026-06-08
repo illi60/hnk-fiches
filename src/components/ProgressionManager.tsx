@@ -10,10 +10,8 @@ import {
   MODES,
   quoteQuintessence,
   quintessenceKindLabel,
-  canEngageMode,
   QUINTESSENCE_COST,
   type ProgressionState,
-  type ModePath,
   type QuintessenceKind,
 } from "@/lib/quintessence";
 
@@ -202,8 +200,6 @@ export default function ProgressionManager({
         {MODES.map((m) => {
           const engaged = progression.mode?.path === m.key;
           const stage = engaged ? progression.mode?.stage ?? 0 : 0;
-          const can = canEngageMode(m.key as ModePath, histoireRank);
-          const otherEngaged = !!progression.mode && progression.mode.path !== m.key;
           return (
             <div key={m.key} className="hnk-panel" data-kanji={m.kanji}>
               <h3 className="font-display uppercase tracking-wider text-lg text-white">{m.name}</h3>
@@ -233,21 +229,12 @@ export default function ProgressionManager({
                 {engaged ? (
                   <span className="hnk-chip">Voie empruntée · stade {stage}/3</span>
                 ) : (
-                  <button
-                    type="button"
-                    className="hnk-btn-ghost !py-2 !px-3 !text-[10px] w-full justify-center disabled:opacity-40"
-                    disabled={pending || !can.ok || otherEngaged}
-                    title={
-                      otherEngaged
-                        ? "Une autre voie est déjà empruntée"
-                        : !can.ok
-                        ? humanErr(can.error)
-                        : undefined
-                    }
-                    onClick={() => run({ type: "engageMode", path: m.key })}
+                  <span
+                    className="hnk-chip opacity-60"
+                    title="Voie débloquée par le staff (RP / arrangement)"
                   >
-                    {otherEngaged ? "Voie verrouillée" : `Emprunter · Histoire ${m.histoireMin}+`}
-                  </button>
+                    Réservé au staff
+                  </span>
                 )}
               </div>
             </div>

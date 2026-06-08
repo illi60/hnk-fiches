@@ -8,11 +8,8 @@ import { progressionActionSchema } from "@/lib/validators";
 import {
   quoteQuintessence,
   applyQuintessence,
-  canEngageMode,
-  engageMode,
   type ProgressionState,
   type QuintessenceKind,
-  type ModePath,
 } from "@/lib/quintessence";
 
 export async function POST(req: Request) {
@@ -43,16 +40,10 @@ export async function POST(req: Request) {
 
     const state = ((user.progressionState ?? {}) as unknown) as ProgressionState;
 
-    // Emprunter une voie (gaté Rang Histoire, gratuit).
+    // Emprunter une voie : désormais réservé au staff (débloqué à la main via le
+    // panel admin). Le joueur ne peut plus engager un mode lui-même.
     if (action.type === "engageMode") {
-      const can = canEngageMode(action.path as ModePath, user.rangHistoire);
-      if (!can.ok) return NextResponse.json({ ok: false, error: can.error }, { status: 400 });
-      const next = engageMode(action.path as ModePath, state);
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { progressionState: next as unknown as Prisma.InputJsonValue },
-      });
-      return NextResponse.json({ ok: true });
+      return NextResponse.json({ ok: false, error: "RESERVE_STAFF" }, { status: 403 });
     }
 
     // Achat de Quintessence (XP).
