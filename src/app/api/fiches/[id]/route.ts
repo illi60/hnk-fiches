@@ -59,11 +59,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
 
     // Type d'action COMBINEE → 2e Art ; sinon on l'efface.
-    let secondaryArtUpdate: { secondaryArt?: string | null } = {};
-    if (parsed.data.secondaryArt !== undefined || parsed.data.actionType !== undefined) {
+    let secondaryArtUpdate: { secondaryArt?: string | null; secondarySpec?: string | null } = {};
+    if (parsed.data.secondaryArt !== undefined || parsed.data.secondarySpec !== undefined || parsed.data.actionType !== undefined) {
       secondaryArtUpdate = {
         secondaryArt:
           newActionType === "COMBINEE" ? parsed.data.secondaryArt ?? null : null,
+        secondarySpec:
+          newActionType === "COMBINEE" ? parsed.data.secondarySpec ?? null : null,
       };
     }
 

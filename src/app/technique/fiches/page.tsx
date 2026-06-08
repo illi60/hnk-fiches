@@ -29,6 +29,7 @@ export default async function MyFichesPage() {
       art: true,
       spec: true,
       secondaryArt: true,
+      secondarySpec: true,
       actionType: true,
       element: true,
       kekkeiGenkai: true,
@@ -54,6 +55,15 @@ export default async function MyFichesPage() {
       artDef && specIdx >= 0 && meArts != null && meVillageRank != null
         ? specRank(artDef.key, specIdx, meArts, meVillageRank)
         : null;
+    const secArtKey = f.secondaryArt
+      ? f.secondaryArt.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
+      : null;
+    const secArtDef = secArtKey ? ARTS_ALL.find((a) => a.key === secArtKey) : null;
+    const secSpecIdx = secArtDef && f.secondarySpec ? (secArtDef.specs as string[]).indexOf(f.secondarySpec) : -1;
+    const ficheSecondarySpecRank =
+      secArtDef && secSpecIdx >= 0 && meArts != null && meVillageRank != null
+        ? specRank(secArtDef.key, secSpecIdx, meArts, meVillageRank)
+        : null;
     return {
     id: f.id,
     nom: f.nom,
@@ -62,6 +72,8 @@ export default async function MyFichesPage() {
     spec: f.spec,
     specRank: ficheSpecRank,
     secondaryArt: f.secondaryArt,
+    secondarySpec: f.secondarySpec,
+    secondarySpecRank: ficheSecondarySpecRank,
     actionType: f.actionType,
     element: f.element,
     kekkeiGenkai: f.kekkeiGenkai,

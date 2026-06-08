@@ -164,6 +164,7 @@ model FicheTechnique {
   art             String?     // Art Shinobi : Ninjutsu, Taijutsu, Bukijutsu, Genjutsu, Fūinjutsu, Kanchijutsu, Kuchiyose
   spec            String?     // Spécialisation de l'Art Shinobi (ex : Clanique, Affinitaire, Neutre…)
   secondaryArt    String?     // 2e Art Shinobi (techniques de type COMBINEE)
+  secondarySpec   String?     // Spécialisation du 2e Art (COMBINEE)
   actionType      String?     // Type d'action : EVOLUTIVE..SUPREME (drive le coût)
   element         String?     // affinité : Katon, Suiton, Doton, Raiton, Futon
   secondaryElement String?    // 2e affinité (COMBINEE : x2 affi ou KG/affi)

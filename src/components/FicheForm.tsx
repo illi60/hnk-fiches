@@ -23,6 +23,7 @@ export interface FicheFormInitial {
   art?: string;
   spec?: string;
   actionType?: string;
+  secondarySpec?: string;
   element?: string;
   kekkeiGenkai?: string;
   nature?: string;
@@ -75,6 +76,7 @@ export default function FicheForm({
     art: invocationId ? invocationArt ?? "" : initial?.art ?? "",
     spec: initial?.spec ?? "",
     secondaryArt: initial?.secondaryArt ?? "",
+    secondarySpec: initial?.secondarySpec ?? "",
     actionType: initial?.actionType ?? "",
     manifestation: initialManifestation as ManifestationKey,
     element: initial?.element ?? "",
@@ -110,6 +112,10 @@ export default function FicheForm({
     ? v.art.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
     : null;
   const artDef = artKey ? ARTS_ALL.find((a) => a.key === artKey) : null;
+  const secondaryArtKey = v.secondaryArt
+    ? v.secondaryArt.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
+    : null;
+  const secondaryArtDef = secondaryArtKey ? ARTS_ALL.find((a) => a.key === secondaryArtKey) : null;
   const showSpecRanks = artsState != null && villageRank != null;
 
   // Konoha : pas de technique collective, pas de surcharge personnelle.
@@ -183,6 +189,7 @@ export default function FicheForm({
       art: v.art || null,
       spec: v.spec || null,
       secondaryArt: v.actionType === "COMBINEE" ? v.secondaryArt || null : null,
+      secondarySpec: v.actionType === "COMBINEE" ? v.secondarySpec || null : null,
       actionType: v.actionType || null,
       element: v.manifestation === "ELEMENT" ? v.element || null : null,
       kekkeiGenkai: isKuchy
@@ -330,7 +337,7 @@ export default function FicheForm({
             <select
               className="hnk-input max-w-xs"
               value={v.secondaryArt}
-              onChange={(e) => up("secondaryArt", e.target.value)}
+              onChange={(e) => setV((s) => ({ ...s, secondaryArt: e.target.value, secondarySpec: "" }))}
               disabled={disabled}
             >
               <option value="">—</option>
@@ -341,6 +348,29 @@ export default function FicheForm({
               ))}
             </select>
           </Field>
+
+          {secondaryArtDef && (
+            <Field label="Spécialisation du 2e Art">
+              <select
+                className="hnk-input max-w-xs"
+                value={v.secondarySpec}
+                onChange={(e) => up("secondarySpec", e.target.value)}
+                disabled={disabled}
+              >
+                <option value="">—</option>
+                {secondaryArtDef.specs.map((specName, i) => {
+                  const rank = showSpecRanks
+                    ? specRank(secondaryArtDef.key, i, artsState!, villageRank!)
+                    : null;
+                  return (
+                    <option key={specName} value={specName}>
+                      {rank ? `${specName} — Rang ${rank}` : specName}
+                    </option>
+                  );
+                })}
+              </select>
+            </Field>
+          )}
 
           <div>
             <span className="hnk-label">2e manifestation</span>

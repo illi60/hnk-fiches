@@ -37,6 +37,7 @@ export default async function FicheDetailPage({
       art: true,
       spec: true,
       secondaryArt: true,
+      secondarySpec: true,
       actionType: true,
       element: true,
       kekkeiGenkai: true,
@@ -94,6 +95,18 @@ export default async function FicheDetailPage({
       ? specRank(artDef.key, specIdx, authorArts, author.rangVillage)
       : null;
 
+  const secondaryArtKey = fiche.secondaryArt
+    ? fiche.secondaryArt.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
+    : null;
+  const secondaryArtDef = secondaryArtKey ? ARTS_ALL.find((a) => a.key === secondaryArtKey) : null;
+  const secondarySpecIdx = secondaryArtDef && fiche.secondarySpec
+    ? (secondaryArtDef.specs as string[]).indexOf(fiche.secondarySpec)
+    : -1;
+  const ficheSecondarySpecRank =
+    secondaryArtDef && secondarySpecIdx >= 0 && author?.artsState != null && author?.rangVillage != null
+      ? specRank(secondaryArtDef.key, secondarySpecIdx, authorArts, author.rangVillage)
+      : null;
+
   return (
     <div className="space-y-6 max-w-3xl">
       <div className="flex items-start justify-between gap-4">
@@ -135,7 +148,11 @@ export default async function FicheDetailPage({
                 </span>
               )}
               {fiche.secondaryArt && (
-                <span className="hnk-tech-chip">{`${ART_KANJI[fiche.secondaryArt] ?? ""} ${fiche.secondaryArt}`}</span>
+                <span className="hnk-tech-chip">
+                  {`${ART_KANJI[fiche.secondaryArt] ?? ""} ${fiche.secondaryArt}`}
+                  {fiche.secondarySpec ? ` · ${fiche.secondarySpec}` : ""}
+                  {ficheSecondarySpecRank ? ` · ${ficheSecondarySpecRank}` : ""}
+                </span>
               )}
               {fiche.invocation?.espece && (
                 <span className="hnk-tech-chip">口 {fiche.invocation.espece}</span>
@@ -191,6 +208,8 @@ export default async function FicheDetailPage({
                 spec: fiche.spec ?? null,
                 specRank: ficheSpecRank ?? null,
                 secondaryArt: fiche.secondaryArt,
+                secondarySpec: fiche.secondarySpec ?? null,
+                secondarySpecRank: ficheSecondarySpecRank ?? null,
                 actionType: fiche.actionType,
                 element: fiche.element,
                 kekkeiGenkai: fiche.kekkeiGenkai,
@@ -221,6 +240,7 @@ export default async function FicheDetailPage({
             art: fiche.art ?? "",
             spec: fiche.spec ?? "",
             secondaryArt: fiche.secondaryArt ?? "",
+            secondarySpec: fiche.secondarySpec ?? "",
             actionType: fiche.actionType ?? "",
             element: fiche.element ?? "",
             kekkeiGenkai: fiche.kekkeiGenkai ?? "",

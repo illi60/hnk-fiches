@@ -43,6 +43,7 @@ export const ficheCreateSchema = z.object({
   spec: z.string().max(40).optional().nullable(),
   // 2e Art Shinobi (type d'action COMBINEE).
   secondaryArt: z.string().max(40).optional().nullable(),
+  secondarySpec: z.string().max(40).optional().nullable(),
   actionType: z
     .enum([
       "EVOLUTIVE",

@@ -160,6 +160,8 @@ export async function POST(req: Request) {
         spec: parsed.data.spec ?? null,
         secondaryArt:
           parsed.data.actionType === "COMBINEE" ? parsed.data.secondaryArt ?? null : null,
+        secondarySpec:
+          parsed.data.actionType === "COMBINEE" ? parsed.data.secondarySpec ?? null : null,
         actionType: parsed.data.actionType ?? null,
         element: parsed.data.element ?? null,
         kekkeiGenkai: kekkeiGenkaiEff,

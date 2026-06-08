@@ -15,6 +15,8 @@ export interface MyTech {
   spec?: string | null;
   specRank?: string | null;
   secondaryArt: string | null;
+  secondarySpec?: string | null;
+  secondarySpecRank?: string | null;
   actionType: string | null;
   element: string | null;
   kekkeiGenkai: string | null;
@@ -127,7 +129,11 @@ export default function TechniquesView({ techniques }: { techniques: MyTech[] })
                       {t.art}{t.spec ? ` · ${t.spec}` : ""}{t.specRank ? ` · ${t.specRank}` : ""}
                     </span>
                   )}
-                  {t.secondaryArt && <span className="hnk-tech-chip">+ {t.secondaryArt}</span>}
+                  {t.secondaryArt && (
+                    <span className="hnk-tech-chip">
+                      + {t.secondaryArt}{t.secondarySpec ? ` · ${t.secondarySpec}` : ""}{t.secondarySpecRank ? ` · ${t.secondarySpecRank}` : ""}
+                    </span>
+                  )}
                   {t.actionType && <span className="hnk-tech-chip">{actionLabel(t.actionType)}</span>}
                   {t.element && <span className="hnk-tech-chip">{t.element}</span>}
                   {t.secondaryElement && <span className="hnk-tech-chip">{t.secondaryElement}</span>}
@@ -180,6 +186,8 @@ export default function TechniquesView({ techniques }: { techniques: MyTech[] })
                           spec: t.spec ?? null,
                           specRank: t.specRank ?? null,
                           secondaryArt: t.secondaryArt,
+                          secondarySpec: t.secondarySpec ?? null,
+                          secondarySpecRank: t.secondarySpecRank ?? null,
                           actionType: t.actionType,
                           element: t.element,
                           kekkeiGenkai: t.kekkeiGenkai,

@@ -13,6 +13,7 @@ export interface LibTech {
   art: string | null;
   spec?: string | null;
   secondaryArt?: string | null;
+  secondarySpec?: string | null;
   actionType: string | null;
   element: string | null;
   kekkeiGenkai: string | null;
@@ -116,7 +117,11 @@ export default function ClanLibraryView({
                       {t.art}{t.spec ? ` · ${t.spec}` : ""}
                     </span>
                   )}
-                  {t.secondaryArt && <span className="hnk-tech-chip">+ {t.secondaryArt}</span>}
+                  {t.secondaryArt && (
+                    <span className="hnk-tech-chip">
+                      + {t.secondaryArt}{t.secondarySpec ? ` · ${t.secondarySpec}` : ""}
+                    </span>
+                  )}
                   {t.actionType && <span className="hnk-tech-chip">{actionLabel(t.actionType)}</span>}
                   {t.element && <span className="hnk-tech-chip">{t.element}</span>}
                   {t.secondaryElement && <span className="hnk-tech-chip">{t.secondaryElement}</span>}

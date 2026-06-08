@@ -39,6 +39,7 @@ export default async function ClanLibraryPage() {
       art: true,
       spec: true,
       secondaryArt: true,
+      secondarySpec: true,
       actionType: true,
       element: true,
       kekkeiGenkai: true,

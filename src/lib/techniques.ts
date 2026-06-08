@@ -107,6 +107,8 @@ export interface TechniqueExportData {
   spec?: string | null;
   specRank?: string | null;
   secondaryArt?: string | null;
+  secondarySpec?: string | null;
+  secondarySpecRank?: string | null;
   actionType: string | null;
   element: string | null;
   kekkeiGenkai: string | null;
@@ -144,7 +146,12 @@ export function techniqueForumHtml(t: TechniqueExportData): string {
     if (t.specRank) artLabel += ` · ${t.specRank}`;
     chips.push(chip(artLabel));
   }
-  if (t.secondaryArt) chips.push(chip(`${ART_KANJI[t.secondaryArt] ?? ""} ${t.secondaryArt}`.trim()));
+  if (t.secondaryArt) {
+    let secondaryLabel = `${ART_KANJI[t.secondaryArt] ?? ""} ${t.secondaryArt}`.trim();
+    if (t.secondarySpec) secondaryLabel += ` · ${t.secondarySpec}`;
+    if (t.secondarySpecRank) secondaryLabel += ` · ${t.secondarySpecRank}`;
+    chips.push(chip(secondaryLabel));
+  }
   if (t.espece) chips.push(chip(`口 ${t.espece}`));
   if (t.actionType) chips.push(chip(actionLabel(t.actionType)));
   if (t.element) chips.push(chip(t.element));

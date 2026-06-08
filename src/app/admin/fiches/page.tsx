@@ -38,6 +38,8 @@ export default async function AdminFichesPage({
       description: true,
       art: true,
       spec: true,
+      secondaryArt: true,
+      secondarySpec: true,
       actionType: true,
       element: true,
       kekkeiGenkai: true,
@@ -65,7 +67,16 @@ export default async function AdminFichesPage({
       artDef && specIdx >= 0 && f.author.artsState != null && f.author.rangVillage != null
         ? specRank(artDef.key, specIdx, f.author.artsState as ArtsState, f.author.rangVillage)
         : null;
-    return { ...f, ficheSpecRank };
+    const secArtKey = f.secondaryArt
+      ? f.secondaryArt.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
+      : null;
+    const secArtDef = secArtKey ? ARTS_ALL.find((a) => a.key === secArtKey) : null;
+    const secSpecIdx = secArtDef && f.secondarySpec ? (secArtDef.specs as string[]).indexOf(f.secondarySpec) : -1;
+    const ficheSecondarySpecRank =
+      secArtDef && secSpecIdx >= 0 && f.author.artsState != null && f.author.rangVillage != null
+        ? specRank(secArtDef.key, secSpecIdx, f.author.artsState as ArtsState, f.author.rangVillage)
+        : null;
+    return { ...f, ficheSpecRank, ficheSecondarySpecRank };
   });
 
   return (
@@ -117,6 +128,13 @@ export default async function AdminFichesPage({
                       {`${ART_KANJI[f.art] ?? ""} ${f.art}`}
                       {f.spec ? ` · ${f.spec}` : ""}
                       {f.ficheSpecRank ? ` · ${f.ficheSpecRank}` : ""}
+                    </span>
+                  )}
+                  {f.secondaryArt && (
+                    <span className="hnk-chip">
+                      {`${ART_KANJI[f.secondaryArt] ?? ""} ${f.secondaryArt}`}
+                      {f.secondarySpec ? ` · ${f.secondarySpec}` : ""}
+                      {f.ficheSecondarySpecRank ? ` · ${f.ficheSecondarySpecRank}` : ""}
                     </span>
                   )}
                   {f.actionType && <span className="hnk-chip">{actionLabel(f.actionType)}</span>}
