@@ -9,7 +9,7 @@
    boîte de texte Forumactif.
    ============================================================ */
 
-@import url("https://fonts.googleapis.com/css2?family=Anton&family=Cinzel:wght@600;700&family=Cormorant+Garamond:ital@0;1&family=Inter:wght@400;500;600;700&family=Noto+Serif+JP:wght@500;700;900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Anton&family=Cinzel:wght@600;700&family=Cormorant+Garamond:ital@0;1&family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Noto+Serif+JP:wght@500;700;900&display=swap");
 
 /* ---------- Conteneur racine ---------- */
 .hnk-pres {
@@ -25,6 +25,7 @@
   --display: "Anton", Impact, sans-serif;
   --serif: "Cinzel", Georgia, serif;
   --story: "Cormorant Garamond", Georgia, serif;
+  --read: "Lora", Georgia, serif;
   --ui: "Inter", ui-sans-serif, system-ui, sans-serif;
   --jp: "Noto Serif JP", "Yu Mincho", serif;
 
@@ -84,10 +85,14 @@
 .hnk-pres.hnk-pres :where(
   .hnk-pres-traits, .hnk-pres-q .a, .hnk-pres-chrono .ev .tx,
   .hnk-cb-amb, .hnk-cb-link-desc, .hnk-cb-ev .tx,
-  .hnk-cb-interlude .x, .hnk-cb-acc-item .tx,
-  .hnk-rp-body, .hnk-rp-actions .tx
+  .hnk-cb-interlude .x, .hnk-cb-acc-item .tx
 ) {
   font-family: var(--story) !important;
+}
+/* Zones du POST RP : police de LECTURE (Lora) — la police « story »
+   (Cormorant) est trop fine pour de longs pavés sur fond sombre. */
+.hnk-pres.hnk-pres :where(.hnk-rp-body, .hnk-rp-actions .tx) {
+  font-family: var(--read) !important;
 }
 /* … et tous leurs descendants héritent (police/taille/interligne/couleur),
    ce qui neutralise les <div>/<span> d'alignement habillés par le thème. */
@@ -975,9 +980,9 @@ a.hnk-cb-ev .lab,
   background: var(--line-strong);
 }
 .hnk-rp-body {
-  font-family: var(--story);
-  font-size: 16.5px;
-  line-height: 1.78;
+  font-family: var(--read);
+  font-size: 15.5px;
+  line-height: 1.85;
   color: var(--bone);
   text-align: justify;
 }
@@ -1134,9 +1139,9 @@ a.hnk-cb-ev .lab,
   clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
 }
 .hnk-rp-actions .tx {
-  font-family: var(--story);
-  font-size: 16px;
-  line-height: 1.7;
+  font-family: var(--read);
+  font-size: 15px;
+  line-height: 1.75;
   color: var(--bone);
   text-align: justify;
 }
@@ -1169,16 +1174,16 @@ a.hnk-cb-ev .lab,
   border: 1px solid var(--line-strong);
   border-left: 2px solid var(--clan);
 }
-/* Avatar rond VERROUILLÉ (52×52) — bridé comme les autres avatars. */
+/* Avatar carré VERROUILLÉ (72×72) — icône bridée comme les autres avatars. */
 .hnk-pres.hnk-pres .hnk-rp-bubble-ava {
-  flex: 0 0 52px;
+  flex: 0 0 72px;
   display: block;
-  width: 52px !important;
-  height: 52px !important;
-  max-width: 52px !important;
-  max-height: 52px !important;
-  border-radius: 50%;
-  border: 1px solid color-mix(in srgb, var(--clan) 55%, transparent);
+  width: 72px !important;
+  height: 72px !important;
+  max-width: 72px !important;
+  max-height: 72px !important;
+  border: 1px solid var(--line-strong);
+  border-bottom: 2px solid var(--clan);
   background: #000 !important;
   overflow: hidden !important;
 }
@@ -1203,21 +1208,76 @@ a.hnk-cb-ev .lab,
   align-self: center;
 }
 
-/* ---------- Player YouTube discret (inséré via l'éditeur de texte) ----------
-   Iframe d'embed en bandeau étroit : la vidéo n'est pas mise en avant, on
-   clique pour lancer / mettre en pause (contrôles natifs YouTube). */
-.hnk-pres.hnk-pres .hnk-rp-yt {
-  margin: 14px 0;
+/* ---------- Lecteur d'ambiance YouTube (inséré via l'éditeur de texte) ----------
+   <a class="hnk-rp-player" href="https://www.youtube.com/watch?v=…"> : un
+   simple LIEN (les href survivent au nettoyage Forumactif, contrairement aux
+   iframes). Sans script, le clic ouvre YouTube dans un onglet ; avec le script
+   hnk-player.js (hébergé à côté de cette feuille, installé UNE fois dans les
+   codes JavaScript du forum), le clic lance / met en pause l'audio via une
+   iframe d'embed invisible créée à la volée. La classe .hnk-rp-player--on est
+   posée par le script pendant la lecture. */
+.hnk-pres.hnk-pres .hnk-rp-player {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0;
+  padding: 7px 14px 7px 9px;
+  background: rgba(7, 8, 10, 0.55) !important;
   border: 1px solid var(--line-strong);
   border-left: 2px solid var(--clan);
-  background: rgba(7, 8, 10, 0.5) !important;
-  overflow: hidden;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
 }
-.hnk-pres.hnk-pres .hnk-rp-yt iframe {
-  display: block;
-  width: 100% !important;
-  height: 80px !important;
-  border: 0 !important;
+.hnk-pres.hnk-pres .hnk-rp-player-btn {
+  width: 22px;
+  height: 22px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--clan) 55%, transparent);
+  color: var(--clan);
+}
+.hnk-pres.hnk-pres .hnk-rp-player-btn::before {
+  content: "▶";
+  font-size: 9px;
+  line-height: 1;
+  transform: translateX(1px);
+}
+.hnk-pres.hnk-pres .hnk-rp-player--on .hnk-rp-player-btn::before {
+  content: "❚❚";
+  font-size: 8px;
+  letter-spacing: -1px;
+  transform: none;
+}
+.hnk-pres.hnk-pres .hnk-rp-player-lab {
+  font: 700 10px/1 var(--ui) !important;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--smoke);
+}
+.hnk-pres.hnk-pres .hnk-rp-player--on .hnk-rp-player-lab { color: var(--clan); }
+.hnk-pres.hnk-pres .hnk-rp-player-eq {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 12px;
+}
+.hnk-pres.hnk-pres .hnk-rp-player-eq i {
+  width: 2px;
+  height: 4px;
+  background: var(--clan) !important;
+  opacity: 0.35;
+}
+.hnk-pres.hnk-pres .hnk-rp-player--on .hnk-rp-player-eq i {
+  opacity: 1;
+  animation: hnk-eq 0.9s ease-in-out infinite;
+}
+.hnk-pres.hnk-pres .hnk-rp-player--on .hnk-rp-player-eq i:nth-child(2) { animation-delay: 0.18s; }
+.hnk-pres.hnk-pres .hnk-rp-player--on .hnk-rp-player-eq i:nth-child(3) { animation-delay: 0.36s; }
+@keyframes hnk-eq {
+  0%, 100% { height: 4px; }
+  50% { height: 12px; }
 }
 
 /* ---------- Responsive RP ---------- */
