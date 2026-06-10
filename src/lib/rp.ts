@@ -6,7 +6,7 @@
 //   2. une box « Résumé du tour » (.hnk-rp-turn), optionnelle.
 // Aucun <style> ni <script> dans le message → 100% compatible boîte de
 // texte Forumactif. La zone « Techniques utilisées » est un passe-plat
-// (HTML brut) émis tel quel sous balises BBCode [HIDE]…[/HIDE].
+// (HTML brut) émis tel quel sous balises BBCode [hide]…[/hide].
 // ============================================================
 
 import {
@@ -45,7 +45,7 @@ export interface RpPostData {
   sante: string; // état de santé du personnage
   chakra: string; // « chakra » = nombre d'actions envoyées dans le combat
   actions: string; // résumé des actions (HTML enrichi sanitizé)
-  techniques: string; // codes de techniques (HTML BRUT, passe-plat) → sous [HIDE]
+  techniques: string; // codes de techniques (HTML BRUT, passe-plat) → sous [hide]
 }
 
 export function emptyRpPost(): RpPostData {
@@ -180,13 +180,13 @@ export function rpForumHtml(d: RpPostData): string {
     ? `<div class="hnk-rp-actions"><h3 class="hnk-rp-sub">Résumé des actions</h3><div class="tx">${d.actions}</div></div>`
     : "";
 
-  // Techniques : passe-plat HTML brut, émis tel quel et MASQUÉ sous [HIDE].
-  // Les balises BBCode [HIDE]…[/HIDE] enveloppent le <div> stylé DEPUIS
+  // Techniques : passe-plat HTML brut, émis tel quel et MASQUÉ sous [hide].
+  // Les balises BBCode [hide]…[/hide] enveloppent le <div> stylé DEPUIS
   // L'EXTÉRIEUR (et non depuis l'intérieur) : c'est la position la plus sûre
   // pour que le parseur Forumactif reconnaisse le tag autour du bloc HTML.
   const techBlock = rawNotEmpty(d.techniques)
     ? `<div class="hnk-rp-tech"><h3 class="hnk-rp-sub">Techniques utilisées</h3>` +
-      `[HIDE]<div class="codes">${d.techniques}</div>[/HIDE]</div>`
+      `[hide]<div class="codes">${d.techniques}</div>[/hide]</div>`
     : "";
 
   const turnBox =

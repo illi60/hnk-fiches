@@ -373,7 +373,7 @@ export default function RpGenerator() {
             />
             <p className="text-smoke text-[11px] mt-1">
               Zone de passe-plat : les codes sont insérés <strong className="text-bone">tels quels</strong> et{" "}
-              <strong className="text-bone">masqués sous balises [HIDE]</strong> sur le forum.
+              <strong className="text-bone">masqués sous balises [hide]</strong> sur le forum.
             </p>
           </Field>
         </section>
