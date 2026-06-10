@@ -84,7 +84,8 @@
 .hnk-pres.hnk-pres :where(
   .hnk-pres-traits, .hnk-pres-q .a, .hnk-pres-chrono .ev .tx,
   .hnk-cb-amb, .hnk-cb-link-desc, .hnk-cb-ev .tx,
-  .hnk-cb-interlude .x, .hnk-cb-acc-item .tx
+  .hnk-cb-interlude .x, .hnk-cb-acc-item .tx,
+  .hnk-rp-body, .hnk-rp-actions .tx
 ) {
   font-family: var(--story) !important;
 }
@@ -93,7 +94,8 @@
 .hnk-pres.hnk-pres :where(
   .hnk-pres-traits, .hnk-pres-q .a, .hnk-pres-chrono .ev .tx,
   .hnk-cb-amb, .hnk-cb-link-desc, .hnk-cb-ev .tx,
-  .hnk-cb-interlude .x, .hnk-cb-acc-item .tx
+  .hnk-cb-interlude .x, .hnk-cb-acc-item .tx,
+  .hnk-rp-body, .hnk-rp-actions .tx
 ) * {
   font-family: inherit !important;
   font-size: inherit !important;
@@ -840,5 +842,393 @@ a.hnk-cb-ev .lab,
   .hnk-cb-link-ava { flex-basis: auto; }
   .hnk-cb-carac { flex-direction: column; }
   .hnk-cb-interlude { margin-left: -30px; padding: 18px; }
+}
+
+/* ============================================================
+   POST RP IN-GAME — classes additionnelles (.hnk-rp*).
+   Réutilise le conteneur .hnk-pres (mêmes variables --clan, fonts,
+   frame). Aucun second @import à ajouter sur le forum : tout vit
+   dans cette même feuille.
+   ============================================================ */
+
+/* ---------- Bannière (image bridée + voile + kanji filigrane) ---------- */
+.hnk-rp-banner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 360px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #14171c 0%, #07080a 100%);
+  border-bottom: 1px solid var(--line-strong);
+}
+.hnk-rp-banner--empty {
+  background:
+    repeating-linear-gradient(135deg, rgba(108,112,121,0.07) 0 16px, rgba(108,112,121,0.02) 16px 32px),
+    linear-gradient(180deg, #14171c 0%, #07080a 100%);
+}
+/* Image VERROUILLÉE : remplit la bannière (cover). Les !important écrasent
+   les styles inline que Forumactif peut injecter sur les images de message. */
+.hnk-rp-banner-img {
+  position: absolute !important;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  min-width: 0 !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  margin: 0 !important;
+  display: block !important;
+  filter: saturate(1.05) contrast(1.02);
+}
+.hnk-rp-veil {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(7, 8, 10, 0.12) 0%,
+    rgba(7, 8, 10, 0) 28%,
+    rgba(7, 8, 10, 0.55) 70%,
+    rgba(7, 8, 10, 0.92) 100%
+  );
+  pointer-events: none;
+}
+.hnk-rp-kanji {
+  position: absolute;
+  top: 14px;
+  right: 22px;
+  z-index: 2;
+  writing-mode: vertical-rl;
+  font-family: var(--jp);
+  font-weight: 900;
+  font-size: 40px;
+  line-height: 1.05;
+  letter-spacing: 0.08em;
+  color: color-mix(in srgb, var(--clan) 80%, transparent);
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+  user-select: none;
+}
+.hnk-rp-head {
+  position: relative;
+  z-index: 2;
+  padding: 30px 36px 26px;
+}
+.hnk-rp-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  font: 700 10px/1 var(--ui);
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--clan);
+}
+.hnk-rp-eyebrow .loc {
+  position: relative;
+  padding-left: 46px;
+}
+.hnk-rp-eyebrow .loc::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 34px;
+  height: 1px;
+  background: var(--clan);
+}
+.hnk-rp-eyebrow .sep {
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  background: var(--clan);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--clan) 55%, transparent);
+}
+.hnk-rp-eyebrow .tag { color: var(--clan); }
+.hnk-rp-title {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 64px;
+  line-height: 0.92;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--white);
+  text-shadow: 0 2px 26px rgba(0, 0, 0, 0.55);
+}
+.hnk-rp-cite {
+  margin-top: 10px;
+  font-family: var(--story);
+  font-style: italic;
+  font-size: 20px;
+  color: var(--bone);
+  opacity: 0.92;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.7);
+}
+
+/* ---------- Contenu (rule + corps + pied) ---------- */
+.hnk-rp-content { padding: 26px 36px 30px; }
+.hnk-rp-rule {
+  height: 1px;
+  margin: 0 0 24px;
+  background: var(--line-strong);
+}
+.hnk-rp-body {
+  font-family: var(--story);
+  font-size: 16.5px;
+  line-height: 1.78;
+  color: var(--bone);
+  text-align: justify;
+}
+.hnk-rp-body em { color: var(--clan); font-style: italic; }
+.hnk-rp-body strong { color: var(--white); font-weight: 600; }
+
+/* ---------- Pied : distribution (emblèmes + pseudos) + type ---------- */
+.hnk-rp-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-top: 32px;
+}
+.hnk-rp-cast { display: flex; align-items: center; }
+/* Pastille ronde = avatar du joueur (image bridée, cover). */
+.hnk-rp-emblem {
+  flex: 0 0 auto;
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--clan) 60%, transparent);
+  background: #000;
+  box-shadow: 0 0 14px color-mix(in srgb, var(--clan) 32%, transparent);
+  overflow: hidden !important;
+}
+.hnk-rp-emblem img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  min-width: 0 !important;
+  object-fit: cover !important;
+  object-position: center top;
+  display: block !important;
+  margin: 0 !important;
+  filter: saturate(1.05) contrast(1.05);
+}
+.hnk-rp-emblem--empty {
+  background: repeating-linear-gradient(135deg, rgba(108, 112, 121, 0.16) 0 7px, rgba(108, 112, 121, 0.05) 7px 14px);
+}
+.hnk-rp-emblem + .hnk-rp-emblem { margin-left: -12px; }
+.hnk-rp-names {
+  margin-left: 14px;
+  font: 700 12px/1.45 var(--ui);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--white);
+}
+.hnk-rp-names b { color: var(--white); font-weight: 700; }
+.hnk-rp-names i { color: var(--smoke); font-style: normal; margin: 0 5px; }
+.hnk-rp-type {
+  flex: 0 0 auto;
+  padding: 9px 15px;
+  border: 1px solid color-mix(in srgb, var(--clan) 55%, transparent);
+  background: rgba(7, 8, 10, 0.4);
+  font: 700 11px/1 var(--ui);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--clan);
+}
+
+/* ---------- Deuxième box : « Résumé du tour » ---------- */
+.hnk-rp-turn-head {
+  position: relative;
+  padding: 22px 36px;
+  border-bottom: 1px solid var(--line-strong);
+  overflow: hidden;
+}
+.hnk-rp-turn-head .kanji {
+  position: absolute;
+  right: 18px;
+  top: -30px;
+  font-family: var(--jp);
+  font-weight: 900;
+  font-size: 120px;
+  line-height: 1;
+  color: color-mix(in srgb, var(--clan) 9%, transparent);
+  pointer-events: none;
+  user-select: none;
+}
+.hnk-rp-turn-title {
+  position: relative;
+  margin: 0;
+  padding-left: 22px;
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: 19px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--white);
+}
+.hnk-rp-turn-title::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 5px;
+  width: 10px;
+  height: 10px;
+  background: var(--clan);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--clan) 55%, transparent);
+}
+.hnk-rp-turn-body {
+  padding: 24px 36px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.hnk-rp-stats { display: flex; gap: 14px; flex-wrap: wrap; }
+.hnk-rp-stat {
+  flex: 1 1 200px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 18px;
+  background: linear-gradient(180deg, rgba(28, 32, 38, 0.55), rgba(14, 16, 20, 0.55));
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--clan);
+}
+.hnk-rp-stat .k {
+  font: 700 10px/1 var(--ui);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--smoke);
+}
+.hnk-rp-stat .v {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  color: var(--white);
+}
+.hnk-rp-sub {
+  position: relative;
+  margin: 0 0 10px;
+  padding-left: 18px;
+  font: 700 11px/1.3 var(--ui);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--clan);
+}
+.hnk-rp-sub::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 3px;
+  width: 6px;
+  height: 6px;
+  background: var(--clan);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+.hnk-rp-actions .tx {
+  font-family: var(--story);
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--bone);
+  text-align: justify;
+}
+.hnk-rp-actions .tx em { color: var(--clan); font-style: italic; }
+.hnk-rp-actions .tx strong { color: var(--white); font-weight: 600; }
+/* Bloc « codes » : encadré pointillé pour signaler une zone masquée [HIDE].
+   (Sur le forum il vit À L'INTÉRIEUR du [HIDE] : ce style n'apparaît qu'une
+   fois le spoiler déplié — en aperçu, il matérialise la zone cachée.) */
+.hnk-rp-tech .codes {
+  font-size: 13px;
+  color: var(--bone);
+  padding: 12px 14px;
+  border: 1px dashed color-mix(in srgb, var(--clan) 35%, transparent);
+  background: rgba(7, 8, 10, 0.4);
+}
+
+/* ---------- Bulle de dialogue (insérée via l'éditeur de texte) ----------
+   Vit DANS une zone de texte enrichi (.hnk-rp-body / .hnk-rp-actions .tx)
+   dont la règle anti-conflit ci-dessus remet à zéro fonds/marges/bordures de
+   TOUS les descendants. La double classe .hnk-pres.hnk-pres + un sélecteur de
+   classe (spécificité supérieure) restaure nos styles ; les fonds reprennent
+   un !important pour battre le `background:none !important` du reset. */
+.hnk-pres.hnk-pres .hnk-rp-bubble {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin: 14px 0;
+  padding: 12px 16px;
+  background: linear-gradient(180deg, rgba(28, 32, 38, 0.55), rgba(14, 16, 20, 0.55)) !important;
+  border: 1px solid var(--line-strong);
+  border-left: 2px solid var(--clan);
+}
+/* Avatar rond VERROUILLÉ (52×52) — bridé comme les autres avatars. */
+.hnk-pres.hnk-pres .hnk-rp-bubble-ava {
+  flex: 0 0 52px;
+  display: block;
+  width: 52px !important;
+  height: 52px !important;
+  max-width: 52px !important;
+  max-height: 52px !important;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--clan) 55%, transparent);
+  background: #000 !important;
+  overflow: hidden !important;
+}
+.hnk-pres.hnk-pres .hnk-rp-bubble-ava img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  min-width: 0 !important;
+  object-fit: cover !important;
+  object-position: center top;
+  display: block !important;
+  margin: 0 !important;
+  filter: saturate(1.05) contrast(1.05);
+}
+.hnk-pres.hnk-pres .hnk-rp-bubble-ava--empty {
+  background: repeating-linear-gradient(135deg, rgba(108, 112, 121, 0.16) 0 7px, rgba(108, 112, 121, 0.05) 7px 14px) !important;
+}
+.hnk-pres.hnk-pres .hnk-rp-bubble-tx {
+  flex: 1 1 auto;
+  min-width: 0;
+  align-self: center;
+}
+
+/* ---------- Player YouTube discret (inséré via l'éditeur de texte) ----------
+   Iframe d'embed en bandeau étroit : la vidéo n'est pas mise en avant, on
+   clique pour lancer / mettre en pause (contrôles natifs YouTube). */
+.hnk-pres.hnk-pres .hnk-rp-yt {
+  margin: 14px 0;
+  border: 1px solid var(--line-strong);
+  border-left: 2px solid var(--clan);
+  background: rgba(7, 8, 10, 0.5) !important;
+  overflow: hidden;
+}
+.hnk-pres.hnk-pres .hnk-rp-yt iframe {
+  display: block;
+  width: 100% !important;
+  height: 80px !important;
+  border: 0 !important;
+}
+
+/* ---------- Responsive RP ---------- */
+@media (max-width: 560px) {
+  .hnk-rp-banner { min-height: 280px; }
+  .hnk-rp-title { font-size: 42px; }
+  .hnk-rp-head { padding: 22px 20px 18px; }
+  .hnk-rp-content { padding: 22px 20px 24px; }
+  .hnk-rp-foot { flex-direction: column; align-items: flex-start; }
+  .hnk-rp-turn-head { padding: 18px 20px; }
+  .hnk-rp-turn-body { padding: 20px 20px 22px; }
+  .hnk-rp-stat { flex-basis: 100%; }
 }
 
