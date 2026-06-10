@@ -834,8 +834,7 @@ a.hnk-cb-ev .lab,
 }
 .hnk-pres .hnk-img-banner img {
   display: inline-block;
-  max-width: 100%;
-  max-width: 480px;
+  max-width: min(100%, 650px);
   border: 2px solid rgba(255, 255, 255, 0.18);
   border-radius: 3px;
   box-shadow: 3px 4px 16px rgba(0, 0, 0, 0.65);
