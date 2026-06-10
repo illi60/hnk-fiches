@@ -528,6 +528,114 @@ textarea.hnk-input {
   min-height: unset;
 }
 
+/* Palette de couleurs de texte */
+.hnk-rich-colors { flex-wrap: wrap; gap: 6px; }
+.hnk-rich-swatch {
+  width: 22px;
+  height: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 2px;
+  cursor: pointer;
+  padding: 0;
+  flex: none;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.hnk-rich-swatch:hover {
+  transform: scale(1.12);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.25);
+}
+.hnk-rich-swatch--custom { background: transparent; }
+.hnk-rich-color-ico {
+  font-weight: 700;
+  background: linear-gradient(90deg, #ff5722, #8E7CC3, #3FA34D);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Bulle de dialogue insérée via l'éditeur (rendu en zone d'édition) */
+.hnk-rich-editor .hnk-rp-bubble {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 10px 0;
+  padding: 10px 12px;
+  background: rgba(28, 32, 38, 0.55);
+  border: 1px solid rgba(219, 222, 226, 0.18);
+  border-left: 2px solid var(--ember);
+}
+.hnk-rich-editor .hnk-rp-bubble-ava {
+  flex: 0 0 56px;
+  width: 56px;
+  height: 56px;
+  overflow: hidden;
+  background: #000;
+  border: 1px solid rgba(219, 222, 226, 0.18);
+  border-bottom: 2px solid var(--ember);
+}
+.hnk-rich-editor .hnk-rp-bubble-ava img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  max-height: none;
+}
+.hnk-rich-editor .hnk-rp-bubble-ava--empty {
+  background: repeating-linear-gradient(135deg, rgba(108, 112, 121, 0.18) 0 6px, rgba(108, 112, 121, 0.06) 6px 12px);
+}
+.hnk-rich-editor .hnk-rp-bubble-tx { flex: 1 1 auto; min-width: 0; }
+
+/* Lecteur d'ambiance YouTube inséré via l'éditeur (rendu statique en zone
+   d'édition — la lecture ne se fait que sur l'aperçu et le forum). */
+.hnk-rich-editor .hnk-rp-player {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+  padding: 5px 12px 5px 7px;
+  background: rgba(7, 8, 10, 0.55);
+  border: 1px solid rgba(219, 222, 226, 0.18);
+  border-left: 2px solid var(--ember);
+  text-decoration: none;
+  cursor: default;
+}
+.hnk-rich-editor .hnk-rp-player-btn {
+  width: 18px;
+  height: 18px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 87, 34, 0.5);
+  color: var(--ember);
+}
+.hnk-rich-editor .hnk-rp-player-btn::before {
+  content: "▶";
+  font-size: 8px;
+  line-height: 1;
+}
+.hnk-rich-editor .hnk-rp-player-lab {
+  font: 700 9px/1 var(--ui);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--smoke);
+}
+.hnk-rich-editor .hnk-rp-player-eq {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 10px;
+}
+.hnk-rich-editor .hnk-rp-player-eq i {
+  width: 2px;
+  height: 4px;
+  background: var(--ember);
+  opacity: 0.4;
+}
+
 /* ---------- Carte Technique (export forum) ---------- */
 .hnk-tech {
   margin: 18px 0;

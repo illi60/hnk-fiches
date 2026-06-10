@@ -46,6 +46,15 @@ const TOOLS: Tool[] = [
     image: "https://i.imgur.com/Hwg8Gw4.png",
   },
   {
+    key: "rp",
+    title: "Post RP in-game",
+    kanji: "文",
+    accent: "#ff5722",
+    desc: "Bannière, titre, citation et texte : mets en forme ton post de RP et colle le code dans ton message.",
+    href: "/rp",
+    image: "https://i.imgur.com/YmTenS8.png",
+  },
+  {
     key: "wiki",
     title: "Wiki & Règles",
     kanji: "巻",

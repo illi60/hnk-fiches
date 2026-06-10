@@ -371,6 +371,9 @@ export function idPairs(nodes: NodeListOf<Element> | Element[]): Record<string, 
 export function parsePresentationForumHtml(html: string): PresentationData | null {
   const root = parseHnkRoot(html);
   if (!root) return null;
+  // Garde-fou : un POST RP (.hnk-rp) réutilise le conteneur .hnk-pres mais n'est
+  // pas une présentation → on le rejette explicitement.
+  if (root.classList.contains("hnk-rp")) return null;
   // Garde-fou : un bloc de CARNET (« Carnet de bord · … ») n'est pas une présentation.
   const eyebrow = nodeText(root.querySelector(".hnk-pres-eyebrow")).toLowerCase();
   if (eyebrow.includes("carnet")) return null;
