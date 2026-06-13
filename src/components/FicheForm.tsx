@@ -14,7 +14,7 @@ import {
   type ManifestationKey,
 } from "@/lib/techniques";
 import { KG_NAMES, kgColor, clanKg } from "@/lib/kekkei";
-import { ARTS_ALL, specRank, type ArtsState } from "@/lib/arts";
+import { ARTS_ALL, specRank, invocationSpecRank, type ArtsState } from "@/lib/arts";
 
 export interface FicheFormInitial {
   slug?: string;
@@ -300,7 +300,13 @@ export default function FicheForm({
             >
               <option value="">—</option>
               {artDef.specs.map((specName, i) => {
-                const rank = showSpecRanks
+                // Kuchy : la spé suit le rang global du joueur (auto, plafond B),
+                // sans dépendre de l'artsState — l'invocation est une entité propre.
+                const rank = isKuchy
+                  ? villageRank != null
+                    ? invocationSpecRank(villageRank)
+                    : null
+                  : showSpecRanks
                   ? specRank(artDef.key, i, artsState!, villageRank!)
                   : null;
                 return (
@@ -359,7 +365,11 @@ export default function FicheForm({
               >
                 <option value="">—</option>
                 {secondaryArtDef.specs.map((specName, i) => {
-                  const rank = showSpecRanks
+                  const rank = isKuchy
+                    ? villageRank != null
+                      ? invocationSpecRank(villageRank)
+                      : null
+                    : showSpecRanks
                     ? specRank(secondaryArtDef.key, i, artsState!, villageRank!)
                     : null;
                   return (

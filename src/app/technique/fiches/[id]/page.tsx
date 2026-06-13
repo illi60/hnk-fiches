@@ -9,7 +9,7 @@ import TechniqueExport from "@/components/TechniqueExport";
 import { actionLabel, natureLabel, ART_KANJI } from "@/lib/techniques";
 import { kgColor, kgCardStyle } from "@/lib/kekkei";
 import { ownedKgsFull, ownedAffinities, type ProgressionState } from "@/lib/quintessence";
-import { ARTS_ALL, specRank, type ArtsState } from "@/lib/arts";
+import { ARTS_ALL, specRank, invocationSpecRank, type ArtsState } from "@/lib/arts";
 
 const STATUS_LABEL: Record<string, string> = {
   DRAFT: "Brouillon",
@@ -90,9 +90,15 @@ export default async function FicheDetailPage({
   const specIdx = artDef && fiche.spec
     ? (artDef.specs as string[]).indexOf(fiche.spec)
     : -1;
+  // Kuchy : la spé suit le rang global de l'auteur (auto, plafond B), pas l'artsState.
+  const isKuchy = fiche.invocation != null;
   const ficheSpecRank =
-    artDef && specIdx >= 0 && author?.artsState != null && author?.rang != null
-      ? specRank(artDef.key, specIdx, authorArts, author.rang)
+    artDef && specIdx >= 0 && author?.rang != null
+      ? isKuchy
+        ? invocationSpecRank(author.rang)
+        : author?.artsState != null
+        ? specRank(artDef.key, specIdx, authorArts, author.rang)
+        : null
       : null;
 
   const secondaryArtKey = fiche.secondaryArt
@@ -103,8 +109,12 @@ export default async function FicheDetailPage({
     ? (secondaryArtDef.specs as string[]).indexOf(fiche.secondarySpec)
     : -1;
   const ficheSecondarySpecRank =
-    secondaryArtDef && secondarySpecIdx >= 0 && author?.artsState != null && author?.rang != null
-      ? specRank(secondaryArtDef.key, secondarySpecIdx, authorArts, author.rang)
+    secondaryArtDef && secondarySpecIdx >= 0 && author?.rang != null
+      ? isKuchy
+        ? invocationSpecRank(author.rang)
+        : author?.artsState != null
+        ? specRank(secondaryArtDef.key, secondarySpecIdx, authorArts, author.rang)
+        : null
       : null;
 
   return (

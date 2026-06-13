@@ -5,7 +5,7 @@ import { requireFicheModerator } from "@/lib/permissions";
 import AdminFicheDecision from "@/components/AdminFicheDecision";
 import { actionLabel, natureLabel, ART_KANJI } from "@/lib/techniques";
 import { kgColor } from "@/lib/kekkei";
-import { ARTS_ALL, specRank, type ArtsState } from "@/lib/arts";
+import { ARTS_ALL, specRank, invocationSpecRank, type ArtsState } from "@/lib/arts";
 
 export default async function AdminFichesPage({
   searchParams,
@@ -53,6 +53,7 @@ export default async function AdminFichesPage({
       rejectionReason: true,
       comment: true,
       createdAt: true,
+      invocationId: true,
       author: {
         select: { id: true, username: true, xpAvailable: true, clan: true, rang: true, artsState: true },
       },
@@ -65,9 +66,15 @@ export default async function AdminFichesPage({
       : null;
     const artDef = artKey ? ARTS_ALL.find((a) => a.key === artKey) : null;
     const specIdx = artDef && f.spec ? (artDef.specs as string[]).indexOf(f.spec) : -1;
+    // Kuchy : la spé suit le rang global de l'auteur (auto, plafond B), pas l'artsState.
+    const isKuchy = f.invocationId != null;
     const ficheSpecRank =
-      artDef && specIdx >= 0 && f.author.artsState != null && f.author.rang != null
-        ? specRank(artDef.key, specIdx, f.author.artsState as ArtsState, f.author.rang)
+      artDef && specIdx >= 0 && f.author.rang != null
+        ? isKuchy
+          ? invocationSpecRank(f.author.rang)
+          : f.author.artsState != null
+          ? specRank(artDef.key, specIdx, f.author.artsState as ArtsState, f.author.rang)
+          : null
         : null;
     const secArtKey = f.secondaryArt
       ? f.secondaryArt.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
@@ -75,8 +82,12 @@ export default async function AdminFichesPage({
     const secArtDef = secArtKey ? ARTS_ALL.find((a) => a.key === secArtKey) : null;
     const secSpecIdx = secArtDef && f.secondarySpec ? (secArtDef.specs as string[]).indexOf(f.secondarySpec) : -1;
     const ficheSecondarySpecRank =
-      secArtDef && secSpecIdx >= 0 && f.author.artsState != null && f.author.rang != null
-        ? specRank(secArtDef.key, secSpecIdx, f.author.artsState as ArtsState, f.author.rang)
+      secArtDef && secSpecIdx >= 0 && f.author.rang != null
+        ? isKuchy
+          ? invocationSpecRank(f.author.rang)
+          : f.author.artsState != null
+          ? specRank(secArtDef.key, secSpecIdx, f.author.artsState as ArtsState, f.author.rang)
+          : null
         : null;
     return { ...f, ficheSpecRank, ficheSecondarySpecRank };
   });

@@ -182,6 +182,22 @@ export function specRank(
   return rankIndex(stored) > rankIndex(ar) ? ar : stored;
 }
 
+/**
+ * Rang d'une spé d'INVOCATION (Kuchiyose).
+ *
+ * L'invocation est une entité propre : son Art Shinobi — et donc la spé choisie
+ * pour l'une de ses techniques — monte AUTOMATIQUEMENT avec le rang global du
+ * joueur, plafonné à AUTO_RANK_CAP (B), exactement comme la spé de base d'un Art.
+ *
+ * Contrairement à specRank(), ce calcul NE dépend PAS de l'artsState du joueur :
+ * l'invocation ne « possède » ni n'« expertise » d'Art au nom du joueur, donc
+ * pas de montée A/S et pas de blocage à E faute d'investissement personnel.
+ * C'est ce qui fait scaler les spés d'invocation sur le rang global, à l'identique
+ * des règles appliquées aux spés du joueur. */
+export function invocationSpecRank(globalRank: string | null): Rank {
+  return autoArtRank(globalRank);
+}
+
 export type ArtAction =
   | { type: "rankSpec"; art: string; spec: number }
   | { type: "expertise"; art: string }

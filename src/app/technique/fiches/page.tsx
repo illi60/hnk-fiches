@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import TechniquesView, { type MyTech } from "@/components/TechniquesView";
-import { ARTS_ALL, specRank, type ArtsState } from "@/lib/arts";
+import { ARTS_ALL, specRank, invocationSpecRank, type ArtsState } from "@/lib/arts";
 
 export default async function MyFichesPage() {
   const session = await auth();
@@ -51,9 +51,15 @@ export default async function MyFichesPage() {
       : null;
     const artDef = artKey ? ARTS_ALL.find((a) => a.key === artKey) : null;
     const specIdx = artDef && f.spec ? (artDef.specs as string[]).indexOf(f.spec) : -1;
+    // Kuchy : la spé suit le rang global du joueur (auto, plafond B), pas l'artsState.
+    const isKuchy = f.invocation != null;
     const ficheSpecRank =
-      artDef && specIdx >= 0 && meArts != null && meVillageRank != null
-        ? specRank(artDef.key, specIdx, meArts, meVillageRank)
+      artDef && specIdx >= 0 && meVillageRank != null
+        ? isKuchy
+          ? invocationSpecRank(meVillageRank)
+          : meArts != null
+          ? specRank(artDef.key, specIdx, meArts, meVillageRank)
+          : null
         : null;
     const secArtKey = f.secondaryArt
       ? f.secondaryArt.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
@@ -61,8 +67,12 @@ export default async function MyFichesPage() {
     const secArtDef = secArtKey ? ARTS_ALL.find((a) => a.key === secArtKey) : null;
     const secSpecIdx = secArtDef && f.secondarySpec ? (secArtDef.specs as string[]).indexOf(f.secondarySpec) : -1;
     const ficheSecondarySpecRank =
-      secArtDef && secSpecIdx >= 0 && meArts != null && meVillageRank != null
-        ? specRank(secArtDef.key, secSpecIdx, meArts, meVillageRank)
+      secArtDef && secSpecIdx >= 0 && meVillageRank != null
+        ? isKuchy
+          ? invocationSpecRank(meVillageRank)
+          : meArts != null
+          ? specRank(secArtDef.key, secSpecIdx, meArts, meVillageRank)
+          : null
         : null;
     return {
     id: f.id,
