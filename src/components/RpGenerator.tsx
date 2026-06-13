@@ -259,6 +259,7 @@ export default function RpGenerator() {
             value={d.corps}
             onChange={(html) => set("corps", html)}
             minHeight="260px"
+            maxHeight="460px"
             placeholder="Lorem ipsum dolor sit amet…"
             withColor
             withBlocks

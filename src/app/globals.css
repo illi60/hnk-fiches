@@ -478,7 +478,16 @@ textarea.hnk-input {
   outline: none;
   cursor: text;
   word-break: break-word;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 87, 34, 0.55) transparent;
 }
+.hnk-rich-editor::-webkit-scrollbar { width: 8px; }
+.hnk-rich-editor::-webkit-scrollbar-thumb {
+  background: rgba(255, 87, 34, 0.5);
+  border-radius: 4px;
+}
+.hnk-rich-editor::-webkit-scrollbar-thumb:hover { background: rgba(255, 87, 34, 0.75); }
+.hnk-rich-editor::-webkit-scrollbar-track { background: transparent; }
 .hnk-rich-editor:empty::before {
   content: attr(data-placeholder);
   color: var(--smoke);

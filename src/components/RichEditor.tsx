@@ -7,6 +7,8 @@ interface Props {
   onChange: (html: string) => void;
   placeholder?: string;
   minHeight?: string;
+  /** Hauteur max : au-delà, la zone défile au lieu de s'agrandir. */
+  maxHeight?: string;
   /** Active la palette de couleurs de texte. */
   withColor?: boolean;
   /** Active les blocs spéciaux : bulle de dialogue + player YouTube. */
@@ -146,6 +148,7 @@ export function RichEditor({
   onChange,
   placeholder = "",
   minHeight = "80px",
+  maxHeight,
   withColor = false,
   withBlocks = false,
 }: Props) {
@@ -503,7 +506,7 @@ export function RichEditor({
         onSelect={refreshFmt}
         data-placeholder={placeholder}
         className="hnk-rich-editor"
-        style={{ minHeight }}
+        style={{ minHeight, maxHeight, overflowY: maxHeight ? "auto" : undefined }}
       />
 
       {/* ---- Dialog d'insertion (image / bulle / YouTube) ---- */}
