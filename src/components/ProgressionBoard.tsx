@@ -3,6 +3,8 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
+import SubmitRpModal from "./SubmitRpModal";
+
 // ---- View models (construits côté serveur dans /technique/progression) ----
 export type CondMode = "count" | "oneshot" | "xp_pool" | "xp_self";
 export type SubStatus = "PENDING" | "VALIDATED" | "REJECTED";
@@ -94,6 +96,10 @@ function humanErr(e?: string): string {
       return "Palier déjà atteint.";
     case "AUTO":
       return "Condition automatique (XP).";
+    case "RP_DEJA_CONDITION":
+      return "Ce RP a déjà été soumis pour cette condition.";
+    case "RP_AUTRE_VOIE":
+      return "Ce RP est déjà utilisé dans l'autre voie (Village ⊕ Clan).";
     case "INVALID_STATE":
       return "Action impossible dans cet état.";
     default:
@@ -103,11 +109,12 @@ function humanErr(e?: string): string {
 
 export default function ProgressionBoard({ tracks }: { tracks: TrackView[] }) {
   const [tab, setTab] = useState<string>(tracks[0]?.key ?? "VILLAGE");
+  const [rpOpen, setRpOpen] = useState(false);
   const active = tracks.find((t) => t.key === tab) ?? tracks[0];
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {tracks.map((t) => (
           <button
             key={t.key}
@@ -123,9 +130,18 @@ export default function ProgressionBoard({ tracks }: { tracks: TrackView[] }) {
             {t.label}
           </button>
         ))}
+        <button
+          type="button"
+          onClick={() => setRpOpen(true)}
+          className="ml-auto hnk-btn !py-2.5 !px-5 !text-[11px]"
+        >
+          <span className="font-jp mr-2">文</span> Soumettre un RP
+        </button>
       </div>
 
       {active && <TrackPanel track={active} />}
+
+      {rpOpen && <SubmitRpModal tracks={tracks} onClose={() => setRpOpen(false)} />}
     </div>
   );
 }

@@ -197,6 +197,15 @@ export const progressionSubmitSchema = z.object({
 });
 export type ProgressionSubmitInput = z.infer<typeof progressionSubmitSchema>;
 
+// Un seul RP coché sur plusieurs conditions à la fois.
+export const progressionBatchSchema = z.object({
+  condIds: z.array(z.string().min(3).max(80)).min(1).max(60),
+  rpTitle: z.string().max(160).optional().nullable(),
+  rpUrl: z.string().max(500).optional().nullable(),
+  comment: z.string().max(2000).optional().nullable(),
+});
+export type ProgressionBatchInput = z.infer<typeof progressionBatchSchema>;
+
 // Joueur : « Dépenser X XP pour monter en Rang » sur une voie.
 export const progressionLevelupSchema = z.object({
   track: z.enum(["VILLAGE", "CLAN", "HISTOIRE"]),

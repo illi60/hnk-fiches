@@ -13,9 +13,13 @@ import {
   RANKS,
   VILLAGE_SCOPE_KEY,
   clanScopeKey,
+  condMeta,
   effectiveCommunityRank,
   highestPersonalRank,
+  normalizeRpUrl,
   rankIndex,
+  scopeKeyFor,
+  submissionGate,
   type ProgTrack,
   type Rank,
   type ScopeProgress,
@@ -229,4 +233,133 @@ export async function recomputeRanks(userIds: string[] | "all"): Promise<number>
 export async function clanMemberIds(scopeKey: string): Promise<string[]> {
   const users = await prisma.user.findMany({ select: { id: true, clan: true } });
   return users.filter((u) => clanScopeKey(u.clan) === scopeKey).map((u) => u.id);
+}
+
+// ------------------------------------------------------------
+// Soumission d'UNE condition (cœur partagé par /submit et /submit-batch).
+// Applique : condition gérée par staff, clan requis, gating ACTIVE, anti-
+// réutilisation de RP (même condition + Village⊕Clan), anti-empilement
+// (oneshot unique / count plein), puis crée la soumission PENDING.
+// L'état de réutilisation du RP (conditions + voie déjà touchées) est passé
+// par référence pour fonctionner aussi en lot (plusieurs conditions, 1 RP).
+// ------------------------------------------------------------
+export interface SubmitUser {
+  clan: string | null;
+  rangVillage: Rank | null;
+  rangClan: Rank | null;
+  rangHistoire: Rank | null;
+}
+export interface RpReuseState {
+  condIds: Set<string>; // conditions déjà liées à ce RP (par le joueur)
+  voie: "VILLAGE" | "CLAN" | null; // voie communautaire déjà engagée par ce RP
+}
+
+export async function attemptSubmission(opts: {
+  userId: string;
+  user: SubmitUser;
+  condId: string;
+  rpKey: string | null;
+  rpTitle: string | null;
+  comment: string | null;
+  effCommRank: (track: ProgTrack) => Promise<Rank>;
+  reuse: RpReuseState;
+}): Promise<{ ok: boolean; error?: string }> {
+  const { condId, user, rpKey, reuse } = opts;
+
+  const meta = condMeta(condId);
+  if (!meta) return { ok: false, error: "CONDITION_INCONNUE" };
+  if (meta.adminManaged) return { ok: false, error: "STAFF_ONLY" };
+  if (meta.track === "CLAN" && !user.clan?.trim()) return { ok: false, error: "CLAN_REQUIS" };
+
+  const communityScope =
+    meta.tier === "COMMUNITY" ? scopeKeyFor(meta.track, meta.tier, user.clan) : null;
+  if (meta.tier === "COMMUNITY" && !communityScope) return { ok: false, error: "SCOPE_INTROUVABLE" };
+  const scopeKey = communityScope ?? "self";
+
+  const personalRank = (
+    meta.track === "VILLAGE" ? user.rangVillage : meta.track === "CLAN" ? user.rangClan : user.rangHistoire
+  ) as Rank | null;
+  const effComm = await opts.effCommRank(meta.track);
+  const gate = submissionGate(meta, { personalRank: personalRank ?? "E", effectiveCommRank: effComm });
+  if (!gate.ok) return { ok: false, error: gate.reason };
+
+  // Réutilisation du RP : pas 2× la même condition ; Village ⊕ Clan.
+  if (rpKey) {
+    if (reuse.condIds.has(condId)) return { ok: false, error: "RP_DEJA_CONDITION" };
+    if (
+      (meta.track === "VILLAGE" && reuse.voie === "CLAN") ||
+      (meta.track === "CLAN" && reuse.voie === "VILLAGE")
+    ) {
+      return { ok: false, error: "RP_AUTRE_VOIE" };
+    }
+  }
+
+  // Anti-empilement (identique au flux unitaire).
+  if (meta.mode === "oneshot") {
+    const active = await prisma.progressionSubmission.findFirst({
+      where:
+        meta.tier === "COMMUNITY"
+          ? { track: meta.track, tier: "COMMUNITY", condId, scopeKey, status: { in: ["PENDING", "VALIDATED"] } }
+          : { userId: opts.userId, tier: "INDIVIDUAL", condId, status: { in: ["PENDING", "VALIDATED"] } },
+      select: { status: true },
+    });
+    if (active) {
+      return { ok: false, error: active.status === "VALIDATED" ? "DEJA_VALIDEE" : "DEJA_SOUMISE" };
+    }
+  } else if (meta.mode === "count") {
+    const validated = await prisma.progressionSubmission.count({
+      where:
+        meta.tier === "COMMUNITY"
+          ? { track: meta.track, tier: "COMMUNITY", condId, scopeKey, status: "VALIDATED" }
+          : { userId: opts.userId, tier: "INDIVIDUAL", condId, status: "VALIDATED" },
+    });
+    if (validated >= meta.target) return { ok: false, error: "DEJA_ATTEINT" };
+  }
+
+  await prisma.progressionSubmission.create({
+    data: {
+      userId: opts.userId,
+      track: meta.track,
+      tier: meta.tier,
+      targetRank: meta.rank,
+      condId,
+      scopeKey,
+      rpTitle: opts.rpTitle,
+      rpUrl: rpKey,
+      comment: opts.comment,
+    },
+  });
+
+  // Met à jour l'état de réutilisation pour les conditions suivantes du lot.
+  if (rpKey) {
+    reuse.condIds.add(condId);
+    if ((meta.track === "VILLAGE" || meta.track === "CLAN") && !reuse.voie) reuse.voie = meta.track;
+  }
+  return { ok: true };
+}
+
+// Charge l'état de réutilisation d'un RP pour un joueur (conditions + voie déjà
+// engagées par ce lien), depuis ses soumissions PENDING/VALIDATED.
+export async function loadRpReuseState(userId: string, rpKey: string | null): Promise<RpReuseState> {
+  const state: RpReuseState = { condIds: new Set(), voie: null };
+  if (!rpKey) return state;
+  const rows = await prisma.progressionSubmission.findMany({
+    where: { userId, status: { in: ["PENDING", "VALIDATED"] }, rpUrl: { not: null } },
+    select: { track: true, condId: true, rpUrl: true },
+  });
+  for (const r of rows) {
+    if (normalizeRpUrl(r.rpUrl) !== rpKey) continue;
+    state.condIds.add(r.condId);
+    if ((r.track === "VILLAGE" || r.track === "CLAN") && !state.voie) state.voie = r.track;
+  }
+  return state;
+}
+
+// Fabrique un résolveur de rang communautaire effectif, mis en cache par voie.
+export function makeCommRankResolver(clan: string | null): (track: ProgTrack) => Promise<Rank> {
+  const cache: Partial<Record<ProgTrack, Rank>> = {};
+  return async (track: ProgTrack) => {
+    if (cache[track] === undefined) cache[track] = await effectiveCommRankForUserTrack(track, clan);
+    return cache[track]!;
+  };
 }

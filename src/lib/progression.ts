@@ -800,6 +800,16 @@ export function palierAt(track: ProgTrack, rank: Rank): ProgPalier | undefined {
   return PROGRESSION[track].paliers.find((p) => p.rank === rank);
 }
 
+// Normalise un lien de RP → clé stable d'identité (anti-réutilisation).
+// Tolère une URL sans schéma, minuscule, sans slash final.
+export function normalizeRpUrl(raw?: string | null): string | null {
+  if (!raw) return null;
+  let u = raw.trim();
+  if (!u) return null;
+  if (!/^https?:\/\//i.test(u)) u = `https://${u}`;
+  return u.toLowerCase().replace(/\/+$/, "");
+}
+
 // ------------------------------------------------------------
 // Contexte d'évaluation (compteurs validés + XP) → conditions remplies.
 // ------------------------------------------------------------
