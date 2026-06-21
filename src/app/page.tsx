@@ -38,6 +38,15 @@ const TOOLS: Tool[] = [
     auth: true,
   },
   {
+    key: "ladder",
+    title: "Ladder",
+    kanji: "番",
+    accent: "#FFC23C",
+    desc: "Le classement des shinobi et des clans : XP, contribution, rang. Clique sur un nom pour son aperçu.",
+    href: "/ladder",
+    image: "https://i.imgur.com/yIq4C1h.png",
+  },
+  {
     key: "generateurs",
     title: "Générateurs forum",
     kanji: "筆",

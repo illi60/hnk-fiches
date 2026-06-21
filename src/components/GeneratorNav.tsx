@@ -8,6 +8,7 @@ import NavAuthLink from "./NavAuthLink";
 
 const LINKS = [
   { key: "hub", href: "/", label: "Hub" },
+  { key: "ladder", href: "/ladder", label: "Ladder" },
   { key: "editeur", href: "/editeur", label: "Présentation" },
   { key: "carnet", href: "/carnet", label: "Carnet" },
   { key: "rp", href: "/rp", label: "Post RP" },
