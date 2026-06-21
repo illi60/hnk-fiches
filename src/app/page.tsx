@@ -34,7 +34,7 @@ const TOOLS: Tool[] = [
     accent: "#2E8B7A",
     desc: "Tes trois voies — Village, Clan, Histoire. Suis tes conditions de rang et soumets-les au staff pour validation.",
     href: "/technique/progression",
-    image: "https://i.imgur.com/GTIfOkA.png",
+    image: "https://i.imgur.com/9mEqHHs.jpeg",
     auth: true,
   },
   {
