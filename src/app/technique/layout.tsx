@@ -30,6 +30,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <nav className="hnk-nav">
           <Link href="/">Hub</Link>
           <Link href="/technique">Profil</Link>
+          <Link href="/technique/progression">Progression</Link>
           <Link href="/technique/fiches">Mes techniques</Link>
           {hasClan && <Link href="/technique/clan">Bibliothèque clan</Link>}
           {hasKuchiyose && <Link href="/technique/invocations">Invocations</Link>}

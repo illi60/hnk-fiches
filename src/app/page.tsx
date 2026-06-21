@@ -28,6 +28,16 @@ const TOOLS: Tool[] = [
     auth: true,
   },
   {
+    key: "progression",
+    title: "Progression",
+    kanji: "道",
+    accent: "#2E8B7A",
+    desc: "Tes trois voies — Village, Clan, Histoire. Suis tes conditions de rang et soumets-les au staff pour validation.",
+    href: "/technique/progression",
+    image: "https://i.imgur.com/GTIfOkA.png",
+    auth: true,
+  },
+  {
     key: "editeur",
     title: "Générateur de présentation",
     kanji: "火",

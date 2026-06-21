@@ -9,10 +9,11 @@ export default async function AdminHome() {
   const me = await requireFicheModerator();
   if (me.role !== "ADMIN") redirect("/admin/fiches");
 
-  const [users, pending, validated, recent] = await Promise.all([
+  const [users, pending, validated, progPending, recent] = await Promise.all([
     prisma.user.count(),
     prisma.ficheTechnique.count({ where: { status: "PENDING", isActive: true } }),
     prisma.ficheTechnique.count({ where: { status: "VALIDATED", isActive: true } }),
+    prisma.progressionSubmission.count({ where: { status: "PENDING" } }),
     prisma.xPTransaction.findMany({
       orderBy: { createdAt: "desc" },
       take: 10,
@@ -34,7 +35,7 @@ export default async function AdminHome() {
         <h1 className="font-serif text-3xl text-white2 mt-1">Vigie du Pays du Feu</h1>
       </div>
 
-      <div className="grid sm:grid-cols-3 gap-3">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <Kpi label="Joueurs" value={users} />
         <Kpi
           label="Fiches en attente"
@@ -43,6 +44,12 @@ export default async function AdminHome() {
           accent={pending > 0}
         />
         <Kpi label="Fiches validées" value={validated} />
+        <Kpi
+          label="Progression en attente"
+          value={progPending}
+          href="/admin/progression"
+          accent={progPending > 0}
+        />
       </div>
 
       <section>

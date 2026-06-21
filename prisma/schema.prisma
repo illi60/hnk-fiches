@@ -51,6 +51,26 @@ enum FicheStatus {
   REJECTED   // refusée (motif obligatoire)
 }
 
+// Voie de progression (3 axes parallèles : Village / Clan / Histoire)
+enum ProgressionTrack {
+  VILLAGE
+  CLAN
+  HISTOIRE
+}
+
+// Degré d'une condition de progression
+enum ProgressionTier {
+  COMMUNITY  // communautaire (échelle village / clan)
+  INDIVIDUAL // personnelle (propre au joueur)
+}
+
+// Workflow d'une soumission de condition de progression
+enum SubmissionStatus {
+  PENDING
+  VALIDATED
+  REJECTED
+}
+
 // Raison d'un mouvement d'XP (audit immuable)
 enum XPReason {
   ADMIN_GRANT             // admin crédite manuellement
@@ -61,6 +81,7 @@ enum XPReason {
   FICHE_REJECTED_REFUND   // remboursement éventuel si validation annulée
   ARTS_SPEND              // dépense XP : expertise d'art, montée de spé, Kuchiyose
   QUINTESSENCE_SPEND      // dépense XP : quintessence d'art/KG, second KG
+  PROGRESSION_SPEND       // dépense XP : « Dépenser X XP pour monter en Rang » (voie de progression)
 }
 
 // ============================================================
@@ -125,6 +146,8 @@ model User {
   xpHistory       XPTransaction[]  @relation("UserXP")
   xpActedOn       XPTransaction[]  @relation("ActorXP")
   invocations     Invocation[]     @relation("UserInvocations")
+  progressionSubmissions ProgressionSubmission[] @relation("ProgSubmitter")
+  progressionReviewed    ProgressionSubmission[] @relation("ProgReviewer")
 
   @@index([forumUserId])
 }
@@ -223,4 +246,64 @@ model XPTransaction {
 
   @@index([userId, createdAt])
   @@index([reason, createdAt])
+}
+
+// ============================================================
+// Progression — soumission d'un RP pour UNE condition (Village/Clan/Histoire).
+//
+// Une ligne = un RP soumis pour faire avancer une condition (id stable défini
+// dans lib/progression.ts). Compteur incrémental : une condition de type
+// `count` est remplie quand le nombre de soumissions VALIDATED atteint sa cible.
+//   - tier COMMUNITY  → partagée : scopeKey = "konoha" (village) ou nom du clan.
+//                       Les soumissions VALIDATED du scope s'additionnent pour tous.
+//   - tier INDIVIDUAL → scopeKey "self" : rattachée au seul joueur (userId).
+//
+// `condId` n'est pas une FK (les conditions vivent en config, pas en base).
+// Plusieurs soumissions par condition sont autorisées (pas de contrainte
+// d'unicité) — c'est le compteur incrémental.
+// ============================================================
+model ProgressionSubmission {
+  id          String           @id @default(cuid())
+  userId      String
+  user        User             @relation("ProgSubmitter", fields: [userId], references: [id], onDelete: Cascade)
+
+  track       ProgressionTrack
+  tier        ProgressionTier
+  targetRank  Rang             // palier visé (D..S)
+  condId      String           // id de condition (cf. lib/progression.ts COND_CATALOG)
+  scopeKey    String           // COMMUNITY : "konoha" | nom de clan ; INDIVIDUAL : "self"
+
+  // Détail du RP soumis (justificatif).
+  rpTitle     String?          // titre du RP
+  rpUrl       String?          // lien vers le RP
+  comment     String?          @db.Text // commentaire libre pour le staff
+
+  status      SubmissionStatus @default(PENDING)
+  rejectionReason String?
+
+  reviewedById String?
+  reviewedBy   User?           @relation("ProgReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt   DateTime?
+
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([status, createdAt])
+  @@index([track, tier, scopeKey, status])
+  @@index([userId, status])
+  @@index([condId, status])
+}
+
+// Rang communautaire de base (« définir de base » côté staff).
+// Le rang EFFECTIF = max(baseRank, rang dérivé des conditions remplies).
+//   - scopeType VILLAGE → scopeKey "konoha" (une seule ligne).
+//   - scopeType CLAN    → scopeKey = nom du clan normalisé (une ligne par clan).
+model CommunityRank {
+  id        String           @id @default(cuid())
+  scopeType ProgressionTrack // VILLAGE | CLAN
+  scopeKey  String
+  baseRank  Rang             @default(E)
+  updatedAt DateTime         @updatedAt
+
+  @@unique([scopeType, scopeKey])
 }

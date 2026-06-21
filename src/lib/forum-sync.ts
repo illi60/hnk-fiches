@@ -18,6 +18,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { fetchForumProfile } from "@/lib/forum-parser";
+import { recomputeRanks } from "@/lib/progression-server";
 
 export interface SyncOutcome {
   userId: string;
@@ -146,6 +147,7 @@ export async function syncUserFromForum(
         },
       });
     } else {
+      // (pas de delta XP — rien de plus à faire pour la progression)
       await tx.user.update({
         where: { id: userId },
         data: {
@@ -160,6 +162,16 @@ export async function syncUserFromForum(
       });
     }
   });
+
+  // L'XP a changé (delta > 0) → recalcule les rangs auto basés sur l'XP
+  // (conditions « XP générés » + pool XP du scope). Best-effort, jamais bloquant.
+  if (delta > 0) {
+    try {
+      await recomputeRanks([userId]);
+    } catch (err) {
+      console.error("[forum-sync] recompute failed", err);
+    }
+  }
 
   return { userId, ok: true, delta, newXp: currXp };
 }

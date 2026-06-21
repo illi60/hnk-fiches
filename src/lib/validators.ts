@@ -185,6 +185,45 @@ export const progressionActionSchema = z.discriminatedUnion("type", [
 ]);
 export type ProgressionActionInput = z.infer<typeof progressionActionSchema>;
 
+// ----- Progression (Village / Clan / Histoire) -----
+// Le joueur soumet UN RP pour une condition. Le serveur résout
+// track / tier / palier / scope depuis COND_CATALOG, et gate le palier.
+export const progressionSubmitSchema = z.object({
+  condId: z.string().min(3).max(80),
+  rpTitle: z.string().max(160).optional().nullable(),
+  // Lien tolérant : le serveur normalise (préfixe https:// si le schéma manque).
+  rpUrl: z.string().max(500).optional().nullable(),
+  comment: z.string().max(2000).optional().nullable(),
+});
+export type ProgressionSubmitInput = z.infer<typeof progressionSubmitSchema>;
+
+// Joueur : « Dépenser X XP pour monter en Rang » sur une voie.
+export const progressionLevelupSchema = z.object({
+  track: z.enum(["VILLAGE", "CLAN", "HISTOIRE"]),
+});
+
+// Staff : décision sur une soumission de progression.
+export const progressionDecisionSchema = z.object({
+  decision: z.enum(["VALIDATE", "REJECT"]),
+  reason: z.string().max(500).optional(),
+});
+
+// Staff : pose le rang communautaire « de base » (village ou un clan).
+export const communityRankSchema = z.object({
+  scopeType: z.enum(["VILLAGE", "CLAN"]),
+  scopeKey: z.string().min(1).max(80),
+  baseRank: z.enum(["E", "D", "C", "B", "A", "S"]),
+});
+
+// Staff : valide/dévalide directement une condition communautaire « gérée par
+// le staff » (ex : « Atteindre N réponses RP postées »), sans soumission membre.
+export const progressionConditionSchema = z.object({
+  scopeType: z.enum(["VILLAGE", "CLAN"]),
+  scopeKey: z.string().min(1).max(80),
+  condId: z.string().min(3).max(80),
+  validated: z.boolean(),
+});
+
 // ----- Admin : tweak arts & quintessences (mode god, sans XP) -----
 const rangOpt = z.enum(["E", "D", "C", "B", "A", "S"]).nullable();
 export const adminArtsSchema = z.object({

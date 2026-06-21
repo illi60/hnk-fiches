@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getOrSyncUser } from "@/lib/forum-sync";
 import { ARTS_ALL, artRank, isArtOwned, type ArtsState } from "@/lib/arts";
+import { effectiveCommRankForUserTrack } from "@/lib/progression-server";
 import ArtsRadar from "@/components/ArtsRadar";
 import ArtsManager from "@/components/ArtsManager";
 import ProgressionManager from "@/components/ProgressionManager";
@@ -65,6 +66,12 @@ export default async function DashboardPage() {
   const totalXp = user.forumLastXp ?? user.xpTotalEarned;
   const xpPct =
     totalXp > 0 ? Math.min(100, Math.round((user.xpAvailable / totalXp) * 100)) : 0;
+
+  // Rangs communautaires effectifs (collectifs) — partagés par tous les membres.
+  const [villageCommRank, clanCommRank] = await Promise.all([
+    effectiveCommRankForUserTrack("VILLAGE", user.clan),
+    user.clan ? effectiveCommRankForUserTrack("CLAN", user.clan) : Promise.resolve(null),
+  ]);
   const artsState = ((user.artsState ?? {}) as unknown) as ArtsState;
   const progression = ((user.progressionState ?? {}) as unknown) as ProgressionState;
 
@@ -120,11 +127,11 @@ export default async function DashboardPage() {
         </div>
       </section>
 
-      {/* Les 3 rangs */}
+      {/* Les 3 rangs — perso (ton rang) + collectif (village/clan, partagé) */}
       <div className="grid sm:grid-cols-3 gap-5">
-        <RankCard label="Rang du village" value={user.rangVillage} kanji="里" />
+        <RankCard label="Rang du village" value={user.rangVillage} kanji="里" community={villageCommRank} />
         <RankCard label="Rang histoire" value={user.rangHistoire} kanji="史" />
-        <RankCard label="Rang clan" value={user.rangClan} kanji="氏" />
+        <RankCard label="Rang clan" value={user.rangClan} kanji="氏" community={clanCommRank} />
       </div>
 
       {/* Arts Shinobi */}
@@ -193,7 +200,10 @@ export default async function DashboardPage() {
       )}
 
       <div className="pt-2 flex flex-wrap gap-3">
-        <Link href="/technique/fiches" className="hnk-btn">
+        <Link href="/technique/progression" className="hnk-btn">
+          Progression · les trois voies <span aria-hidden>→</span>
+        </Link>
+        <Link href="/technique/fiches" className="hnk-btn-ghost">
           Mes techniques <span aria-hidden>→</span>
         </Link>
         {user.clan && (
@@ -217,10 +227,12 @@ function RankCard({
   label,
   value,
   kanji,
+  community,
 }: {
   label: string;
   value: string | null | undefined;
   kanji: string;
+  community?: string | null;
 }) {
   return (
     <div className="hnk-panel text-center" data-kanji={kanji}>
@@ -235,6 +247,12 @@ function RankCard({
       ) : (
         <p className="text-smoke mt-3" style={{ fontSize: 72, lineHeight: 1 }}>
           —
+        </p>
+      )}
+      {community !== undefined && (
+        <p className="hnk-eyebrow mt-2">
+          Collectif ·{" "}
+          <span className={`font-bold ${rangClass(community)}`}>{community ?? "E"}</span>
         </p>
       )}
     </div>

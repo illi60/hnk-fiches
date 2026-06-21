@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "XPReason" ADD VALUE 'PROGRESSION_SPEND';

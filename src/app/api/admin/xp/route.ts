@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, jsonError } from "@/lib/permissions";
 import { adminXpSchema } from "@/lib/validators";
+import { recomputeRanks } from "@/lib/progression-server";
 
 // POST /api/admin/xp — admin crédite ou débite manuellement de l'XP.
 //
@@ -69,6 +70,15 @@ export async function POST(req: Request) {
         select: { id: true, xpAvailable: true, xpTotalEarned: true, version: true },
       });
     });
+
+    // Don d'XP positif → recalcule les rangs auto basés sur l'XP. Best-effort.
+    if (amount > 0) {
+      try {
+        await recomputeRanks([userId]);
+      } catch (err) {
+        console.error("[admin xp] recompute failed", err);
+      }
+    }
 
     return NextResponse.json({ user: result });
   } catch (e) {
