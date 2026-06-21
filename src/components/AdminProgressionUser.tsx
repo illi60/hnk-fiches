@@ -3,6 +3,8 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
+import { SubmissionList, fetchSubmissions, type SubItem } from "@/components/AdminProgressionSubmissions";
+
 const RANKS = ["E", "D", "C", "B", "A", "S"] as const;
 
 type Track = "VILLAGE" | "CLAN" | "HISTOIRE";
@@ -27,26 +29,44 @@ function rankClass(r: string) {
 }
 
 // Gestion centralisée de la progression d'un joueur : choisir un membre, puis
-// pour chacune des 3 voies, poser/baisser son rang OU effacer ses conditions
-// individuelles validées (deux actions distinctes).
+// pour chacune des 3 voies, poser/baisser son rang, voir le DÉTAIL de ses
+// conditions (RP soumis) et en supprimer une par une — ou tout effacer.
 export default function AdminProgressionUser({ users }: { users: ProgUser[] }) {
   const [userId, setUserId] = useState("");
+  const [items, setItems] = useState<SubItem[]>([]);
+  const [loading, setLoading] = useState(false);
   const selected = useMemo(() => users.find((u) => u.id === userId), [users, userId]);
+
+  async function load(id: string) {
+    if (!id) {
+      setItems([]);
+      return;
+    }
+    setLoading(true);
+    setItems(await fetchSubmissions(`userId=${encodeURIComponent(id)}`));
+    setLoading(false);
+  }
+
+  function onSelect(id: string) {
+    setUserId(id);
+    void load(id);
+  }
 
   return (
     <section>
       <h2 className="font-serif text-xl text-white2 mb-1">Progression d&apos;un joueur</h2>
       <p className="text-xs text-smoke mb-3">
-        Baisse un rang OU efface les conditions individuelles validées d&apos;une voie. Les deux
-        sont indépendants : effacer les conditions ne change pas le rang stocké (l&apos;auto-promotion
-        ne redescend jamais), et baisser le rang ne supprime pas les conditions déjà validées.
+        Baisse un rang OU supprime des conditions individuelles validées d&apos;une voie (au détail,
+        une par une, ou tout d&apos;un coup). Les deux sont indépendants : supprimer des conditions ne
+        change pas le rang stocké (l&apos;auto-promotion ne redescend jamais), et baisser le rang ne
+        supprime pas les conditions déjà validées.
       </p>
 
       <label className="block max-w-sm mb-4">
         <span className="block text-[10px] uppercase text-smoke mb-1">Joueur</span>
         <select
           value={userId}
-          onChange={(e) => setUserId(e.target.value)}
+          onChange={(e) => onSelect(e.target.value)}
           className="w-full bg-ink-800 border border-white/10 px-3 py-2 text-bone text-sm"
         >
           <option value="">— Choisir un joueur —</option>
@@ -62,7 +82,14 @@ export default function AdminProgressionUser({ users }: { users: ProgUser[] }) {
       {selected && (
         <ul className="space-y-2">
           {TRACKS.map((t) => (
-            <TrackRow key={`${selected.id}:${t.key}`} user={selected} track={t} />
+            <TrackRow
+              key={`${selected.id}:${t.key}`}
+              user={selected}
+              track={t}
+              items={items.filter((i) => i.track === t.key)}
+              loading={loading}
+              onChanged={() => load(selected.id)}
+            />
           ))}
         </ul>
       )}
@@ -73,9 +100,15 @@ export default function AdminProgressionUser({ users }: { users: ProgUser[] }) {
 function TrackRow({
   user,
   track,
+  items,
+  loading,
+  onChanged,
 }: {
   user: ProgUser;
   track: { key: Track; label: string; kanji: string; field: "rangVillage" | "rangClan" | "rangHistoire" };
+  items: SubItem[];
+  loading: boolean;
+  onChanged: () => void;
 }) {
   const router = useRouter();
   const current = (user[track.field] ?? "E") as string;
@@ -83,7 +116,8 @@ function TrackRow({
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const [confirming, setConfirming] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [confirmWipe, setConfirmWipe] = useState(false);
 
   const noClan = track.key === "CLAN" && !user.clan?.trim();
 
@@ -105,7 +139,7 @@ function TrackRow({
     });
   }
 
-  function resetConditions() {
+  function wipeAll() {
     setErr(null);
     setMsg(null);
     start(async () => {
@@ -119,8 +153,9 @@ function TrackRow({
         setErr("Erreur");
         return;
       }
-      setConfirming(false);
+      setConfirmWipe(false);
       setMsg(`${j.deleted ?? 0} condition(s) effacée(s).`);
+      onChanged();
       router.refresh();
     });
   }
@@ -163,41 +198,58 @@ function TrackRow({
           {pending ? "…" : "Poser"}
         </button>
 
-        {confirming ? (
-          <span className="flex items-center gap-2">
-            <button
-              onClick={resetConditions}
-              disabled={pending}
-              className="px-3 py-1.5 bg-red-500 text-black text-xs tracking-[0.2em] uppercase font-bold disabled:opacity-50"
-            >
-              {pending ? "…" : "Confirmer"}
-            </button>
-            <button onClick={() => setConfirming(false)} className="text-xs text-smoke">
-              Annuler
-            </button>
-          </span>
-        ) : (
-          <button
-            onClick={() => {
-              setConfirming(true);
-              setMsg(null);
-              setErr(null);
-            }}
-            disabled={pending}
-            className="px-3 py-1.5 bg-red-500/15 border border-red-500/40 text-red-300 text-xs tracking-[0.2em] uppercase font-bold hover:bg-red-500/25 disabled:opacity-40"
-          >
-            Effacer les conditions
-          </button>
-        )}
+        <button
+          onClick={() => setOpen((o) => !o)}
+          disabled={noClan}
+          className="px-3 py-1.5 border border-white/15 text-bone text-xs tracking-[0.2em] uppercase font-bold hover:bg-white/5 disabled:opacity-40"
+        >
+          {open ? "Masquer" : "Détail"} ({loading ? "…" : items.length})
+        </button>
 
         {msg && <span className="text-xs text-emerald-400">{msg}</span>}
         {err && <span className="text-xs text-ember-hot">{err}</span>}
       </div>
+
       {noClan && (
         <p className="text-[10px] text-smoke mt-1.5">
           Ce joueur n&apos;a pas de clan : la voie clanique ne s&apos;applique pas tant qu&apos;un clan
           ne lui est pas attribué.
         </p>
+      )}
+
+      {open && !noClan && (
+        <div className="mt-3 border-t border-white/5 pt-3 space-y-3">
+          {loading ? (
+            <p className="text-xs text-smoke italic">Chargement…</p>
+          ) : (
+            <SubmissionList items={items} onChanged={onChanged} />
+          )}
+
+          {items.length > 0 &&
+            (confirmWipe ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-smoke">Supprimer les {items.length} ?</span>
+                <button
+                  onClick={wipeAll}
+                  disabled={pending}
+                  className="px-3 py-1.5 bg-red-500 text-black text-xs tracking-[0.2em] uppercase font-bold disabled:opacity-50"
+                >
+                  {pending ? "…" : "Tout effacer"}
+                </button>
+                <button onClick={() => setConfirmWipe(false)} className="text-xs text-smoke">
+                  Annuler
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmWipe(true)}
+                disabled={pending}
+                className="text-[10px] uppercase tracking-wider text-red-300/80 hover:text-red-300"
+              >
+                Tout effacer la voie
+              </button>
+            ))}
+        </div>
       )}
     </li>
   );

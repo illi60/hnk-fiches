@@ -3,6 +3,8 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
+import { SubmissionList, fetchSubmissions, type SubItem } from "@/components/AdminProgressionSubmissions";
+
 const RANKS = ["E", "D", "C", "B", "A", "S"] as const;
 
 export interface ScopeRow {
@@ -110,6 +112,27 @@ function RankRow({ scope }: { scope: ScopeRow }) {
   const [confirming, setConfirming] = useState(false);
   const [resetMsg, setResetMsg] = useState<string | null>(null);
 
+  // Détail des conditions communautaires (lazy : chargé au 1er « Détail »).
+  const [open, setOpen] = useState(false);
+  const [items, setItems] = useState<SubItem[] | null>(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+
+  async function loadDetail() {
+    setLoadingDetail(true);
+    setItems(
+      await fetchSubmissions(
+        `scopeType=${scope.type}&scopeKey=${encodeURIComponent(scope.key)}`
+      )
+    );
+    setLoadingDetail(false);
+  }
+
+  function toggleDetail() {
+    const next = !open;
+    setOpen(next);
+    if (next && items === null) void loadDetail();
+  }
+
   function save() {
     setErr(null);
     setSaved(false);
@@ -147,77 +170,98 @@ function RankRow({ scope }: { scope: ScopeRow }) {
       }
       setConfirming(false);
       setResetMsg(`${j.deleted ?? 0} effacée(s).`);
+      setItems([]);
       router.refresh();
     });
   }
 
   return (
-    <li className="flex flex-wrap items-center gap-3 border border-white/5 bg-ink-700 px-4 py-2.5">
-      <span className="text-sm text-bone flex-1 min-w-[140px]">{scope.label}</span>
+    <li className="border border-white/5 bg-ink-700 px-4 py-2.5">
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="text-sm text-bone flex-1 min-w-[140px]">{scope.label}</span>
 
-      <span className="text-[10px] text-smoke">
-        Dérivé{" "}
-        <span className={`font-bold ${rankClass(scope.derived)}`}>{scope.derived}</span>
-        {" · "}Effectif{" "}
-        <span className={`font-bold ${rankClass(scope.effective)}`}>{scope.effective}</span>
-      </span>
-
-      <label className="flex items-center gap-2 text-[10px] uppercase text-smoke">
-        Base
-        <select
-          value={base}
-          onChange={(e) => {
-            setBase(e.target.value);
-            setSaved(false);
-          }}
-          className="bg-ink-800 border border-white/10 px-2 py-1 text-bone text-sm"
-        >
-          {RANKS.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <button
-        onClick={save}
-        disabled={pending || base === scope.base}
-        className="px-3 py-1.5 bg-ember/20 border border-ember/40 text-ember text-xs tracking-[0.2em] uppercase font-bold hover:bg-ember/30 disabled:opacity-40"
-      >
-        {pending ? "…" : saved ? "✓" : "Poser"}
-      </button>
-
-      {confirming ? (
-        <span className="flex items-center gap-2">
-          <button
-            onClick={resetConditions}
-            disabled={pending}
-            className="px-3 py-1.5 bg-red-500 text-black text-xs tracking-[0.2em] uppercase font-bold disabled:opacity-50"
-          >
-            {pending ? "…" : "Confirmer"}
-          </button>
-          <button onClick={() => setConfirming(false)} className="text-xs text-smoke">
-            Annuler
-          </button>
+        <span className="text-[10px] text-smoke">
+          Dérivé{" "}
+          <span className={`font-bold ${rankClass(scope.derived)}`}>{scope.derived}</span>
+          {" · "}Effectif{" "}
+          <span className={`font-bold ${rankClass(scope.effective)}`}>{scope.effective}</span>
         </span>
-      ) : (
-        <button
-          onClick={() => {
-            setConfirming(true);
-            setResetMsg(null);
-            setErr(null);
-          }}
-          disabled={pending}
-          className="px-3 py-1.5 bg-red-500/15 border border-red-500/40 text-red-300 text-xs tracking-[0.2em] uppercase font-bold hover:bg-red-500/25 disabled:opacity-40"
-          title="Efface les conditions communautaires validées de ce scope"
-        >
-          Effacer les conditions
-        </button>
-      )}
 
-      {resetMsg && <span className="text-xs text-emerald-400">{resetMsg}</span>}
-      {err && <span className="text-xs text-ember-hot">{err}</span>}
+        <label className="flex items-center gap-2 text-[10px] uppercase text-smoke">
+          Base
+          <select
+            value={base}
+            onChange={(e) => {
+              setBase(e.target.value);
+              setSaved(false);
+            }}
+            className="bg-ink-800 border border-white/10 px-2 py-1 text-bone text-sm"
+          >
+            {RANKS.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <button
+          onClick={save}
+          disabled={pending || base === scope.base}
+          className="px-3 py-1.5 bg-ember/20 border border-ember/40 text-ember text-xs tracking-[0.2em] uppercase font-bold hover:bg-ember/30 disabled:opacity-40"
+        >
+          {pending ? "…" : saved ? "✓" : "Poser"}
+        </button>
+
+        <button
+          onClick={toggleDetail}
+          className="px-3 py-1.5 border border-white/15 text-bone text-xs tracking-[0.2em] uppercase font-bold hover:bg-white/5"
+        >
+          {open ? "Masquer" : "Détail"}
+          {items !== null ? ` (${items.length})` : loadingDetail ? " (…)" : ""}
+        </button>
+
+        {confirming ? (
+          <span className="flex items-center gap-2">
+            <button
+              onClick={resetConditions}
+              disabled={pending}
+              className="px-3 py-1.5 bg-red-500 text-black text-xs tracking-[0.2em] uppercase font-bold disabled:opacity-50"
+            >
+              {pending ? "…" : "Confirmer"}
+            </button>
+            <button onClick={() => setConfirming(false)} className="text-xs text-smoke">
+              Annuler
+            </button>
+          </span>
+        ) : (
+          <button
+            onClick={() => {
+              setConfirming(true);
+              setResetMsg(null);
+              setErr(null);
+            }}
+            disabled={pending}
+            className="px-3 py-1.5 bg-red-500/15 border border-red-500/40 text-red-300 text-xs tracking-[0.2em] uppercase font-bold hover:bg-red-500/25 disabled:opacity-40"
+            title="Efface toutes les conditions communautaires validées de ce scope"
+          >
+            Effacer les conditions
+          </button>
+        )}
+
+        {resetMsg && <span className="text-xs text-emerald-400">{resetMsg}</span>}
+        {err && <span className="text-xs text-ember-hot">{err}</span>}
+      </div>
+
+      {open && (
+        <div className="mt-3 border-t border-white/5 pt-3">
+          {loadingDetail || items === null ? (
+            <p className="text-xs text-smoke italic">Chargement…</p>
+          ) : (
+            <SubmissionList items={items} onChanged={loadDetail} showUser />
+          )}
+        </div>
+      )}
     </li>
   );
 }
