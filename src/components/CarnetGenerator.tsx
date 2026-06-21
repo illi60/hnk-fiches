@@ -134,6 +134,7 @@ export default function CarnetGenerator() {
       `<meta name="viewport" content="width=device-width, initial-scale=1">` +
       `<base target="_blank">` +
       `<link rel="stylesheet" href="${CSS_HREF}">` +
+      `<script src="/forum/hnk-player.js" defer></script>` +
       `<style>html,body{margin:0;background:#050608}body{padding:24px 16px}</style>` +
       `</head><body><div id="hnk-root"></div></body></html>`,
     []
@@ -411,7 +412,7 @@ function PersonnageForm({
         </Field>
         <div>
           <span className="hnk-label block mb-1">Autres détails (texte libre)</span>
-          <RichEditor value={p.traitsLibre} onChange={(html) => setPerso("traitsLibre", html)} minHeight="80px" placeholder="Tics, accessoires, parfum…" />
+          <RichEditor value={p.traitsLibre} onChange={(html) => setPerso("traitsLibre", html)} minHeight="80px" maxHeight="260px" placeholder="Tics, accessoires, parfum…" withColor withBlocks />
         </div>
       </div>
 
@@ -438,7 +439,7 @@ function PersonnageForm({
       <div className="border-t border-white/10 pt-4">
         <div>
           <span className="hnk-label block mb-1">Ambitions (résumé)</span>
-          <RichEditor value={p.ambitions} onChange={(html) => setPerso("ambitions", html)} minHeight="90px" placeholder="Ce que vise ton personnage, en quelques phrases." />
+          <RichEditor value={p.ambitions} onChange={(html) => setPerso("ambitions", html)} minHeight="90px" maxHeight="300px" placeholder="Ce que vise ton personnage, en quelques phrases." withColor withBlocks />
         </div>
       </div>
     </div>
@@ -567,7 +568,7 @@ function LiensForm({ c, setC }: { c: CarnetData; setC: React.Dispatch<React.SetS
           </div>
           <div>
             <span className="hnk-label block mb-1">Description</span>
-            <RichEditor value={l.desc} onChange={(html) => patchLien(i, { desc: html })} minHeight="70px" placeholder="Quelques mots sur la relation…" />
+            <RichEditor value={l.desc} onChange={(html) => patchLien(i, { desc: html })} minHeight="70px" maxHeight="260px" placeholder="Quelques mots sur la relation…" withColor withBlocks />
           </div>
 
           <div className="space-y-2">
@@ -674,7 +675,7 @@ function ChronoForm({ c, setC }: { c: CarnetData; setC: React.Dispatch<React.Set
               </Field>
               <div>
                 <span className="hnk-label block mb-1">Description</span>
-                <RichEditor value={it.text} onChange={(html) => patch(i, { text: html })} minHeight="60px" placeholder="Ce qui s'y joue, en bref…" />
+                <RichEditor value={it.text} onChange={(html) => patch(i, { text: html })} minHeight="60px" maxHeight="240px" placeholder="Ce qui s'y joue, en bref…" withColor withBlocks />
               </div>
             </>
           ) : (
@@ -684,7 +685,7 @@ function ChronoForm({ c, setC }: { c: CarnetData; setC: React.Dispatch<React.Set
               </Field>
               <div>
                 <span className="hnk-label block mb-1">Texte</span>
-                <RichEditor value={it.text} onChange={(html) => patch(i, { text: html })} minHeight="70px" placeholder="Quelques lignes stylisées de transition…" />
+                <RichEditor value={it.text} onChange={(html) => patch(i, { text: html })} minHeight="70px" maxHeight="240px" placeholder="Quelques lignes stylisées de transition…" withColor withBlocks />
               </div>
             </>
           )}
@@ -759,7 +760,7 @@ function AccForm({ c, setC }: { c: CarnetData; setC: React.Dispatch<React.SetSta
           </Field>
           <div>
             <span className="hnk-label block mb-1">Description</span>
-            <RichEditor value={a.text} onChange={(html) => patch(i, { text: html })} minHeight="60px" placeholder="Ce qui a été accompli, et son impact…" />
+            <RichEditor value={a.text} onChange={(html) => patch(i, { text: html })} minHeight="60px" maxHeight="240px" placeholder="Ce qui a été accompli, et son impact…" withColor withBlocks />
           </div>
         </div>
       ))}

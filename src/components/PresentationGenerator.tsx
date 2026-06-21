@@ -104,6 +104,7 @@ export default function PresentationGenerator() {
       `<meta name="viewport" content="width=device-width, initial-scale=1">` +
       `<base target="_blank">` +
       `<link rel="stylesheet" href="${CSS_HREF}">` +
+      `<script src="/forum/hnk-player.js" defer></script>` +
       `<style>html,body{margin:0;background:#050608}body{padding:24px 16px}</style>` +
       `</head><body><div id="hnk-root"></div></body></html>`,
     []
@@ -265,7 +266,7 @@ export default function PresentationGenerator() {
         {/* Traits */}
         <section className="hnk-panel p-5 space-y-3">
           <h2 className="hnk-section-title mb-1">Traits particuliers</h2>
-          <RichEditor value={d.traits} onChange={(html) => set("traits", html)} minHeight="90px" placeholder="Cicatrice, posture, signe distinctif…" />
+          <RichEditor value={d.traits} onChange={(html) => set("traits", html)} minHeight="90px" maxHeight="300px" placeholder="Cicatrice, posture, signe distinctif…" withColor withBlocks />
         </section>
 
         {/* Caractère : questions verrouillées */}
@@ -275,7 +276,7 @@ export default function PresentationGenerator() {
           {CHARACTER_QUESTIONS.filter((q) => !q.requiresTrame || d.trame).map((q) => (
             <div key={q.id}>
               <span className="hnk-label block mb-1">{q.label}</span>
-              <RichEditor value={d.answers[q.id] ?? ""} onChange={(html) => setAnswer(q.id, html)} minHeight="70px" />
+              <RichEditor value={d.answers[q.id] ?? ""} onChange={(html) => setAnswer(q.id, html)} minHeight="70px" maxHeight="280px" withColor withBlocks />
             </div>
           ))}
         </section>
@@ -305,7 +306,7 @@ export default function PresentationGenerator() {
                   </button>
                 )}
               </div>
-              <RichEditor value={e.text} onChange={(html) => setEvent(i, { text: html })} minHeight="60px" placeholder="Récit de l'événement…" />
+              <RichEditor value={e.text} onChange={(html) => setEvent(i, { text: html })} minHeight="60px" maxHeight="240px" placeholder="Récit de l'événement…" withColor withBlocks />
             </div>
           ))}
           <button
