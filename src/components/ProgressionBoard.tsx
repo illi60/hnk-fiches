@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import SubmitRpModal from "./SubmitRpModal";
 
 // ---- View models (construits côté serveur dans /technique/progression) ----
-export type CondMode = "count" | "oneshot" | "xp_pool" | "xp_self";
+export type CondMode = "count" | "oneshot" | "xp_pool" | "xp_self" | "member_count";
 export type SubStatus = "PENDING" | "VALIDATED" | "REJECTED";
 
 export interface SubView {
@@ -382,7 +382,7 @@ function ProgressMeter({ cond }: { cond: CondView }) {
   if (cond.mode !== "count" && !cond.auto) return null;
   if (cond.target <= 1 && !cond.auto) return null;
   const pct = cond.target > 0 ? Math.min(100, Math.round((cond.current / cond.target) * 100)) : 0;
-  const unit = cond.auto ? " XP" : "";
+  const unit = cond.mode === "xp_pool" || cond.mode === "xp_self" ? " XP" : "";
   return (
     <div className="flex items-center gap-2 min-w-[120px]">
       <div className="flex-1 h-1.5 bg-white/8 overflow-hidden">
@@ -512,8 +512,8 @@ function CondRow({ cond, community = false }: { cond: CondView; community?: bool
         </span>
       </div>
 
-      {/* Liste déroulante des RP soumis */}
-      {subCount > 0 && (
+      {/* Liste déroulante des RP soumis (sans objet pour les conditions auto) */}
+      {!cond.auto && subCount > 0 && (
         <details className="ml-6 mt-1.5 group">
           <summary className="cursor-pointer text-[10px] text-smoke hover:text-bone select-none list-none">
             <span className="group-open:hidden">▸</span>

@@ -658,9 +658,11 @@ export type ProgTier = "COMMUNITY" | "INDIVIDUAL";
 //                 personnages de Rang D »). Une seule validation suffit.
 //   - "xp_pool" : AUTO — XP cumulés du scope (somme des membres village/clan).
 //   - "xp_self" : AUTO — XP « générés » du joueur.
+//   - "member_count" : AUTO — nombre de personnages du scope (village/clan) dont
+//                 le rang général ≥ rang du palier (« Avoir N personnages de Rang X »).
 // Classement par jeu d'ids : tout le reste est un compteur (`count`).
 // ------------------------------------------------------------
-export type CondMode = "count" | "oneshot" | "xp_pool" | "xp_self";
+export type CondMode = "count" | "oneshot" | "xp_pool" | "xp_self" | "member_count";
 
 // XP communautaire (« Atteindre N XP cumulés à l'échelle du village/clan »).
 const XP_POOL_IDS = new Set<string>([
@@ -678,21 +680,27 @@ const XP_SELF_IDS = new Set<string>([
 // « Avoir terminé N RP ») : le staff vérifie le total du forum et valide une fois,
 // plutôt que d'exiger N soumissions séparées.
 const ONESHOT_IDS = new Set<string>([
-  "VILLAGE.D.c2", "VILLAGE.D.c8",
-  "VILLAGE.C.c2", "VILLAGE.C.c9", "VILLAGE.C.c10",
-  "VILLAGE.B.c2", "VILLAGE.B.c6", "VILLAGE.B.c7",
-  "VILLAGE.A.c2", "VILLAGE.A.c6", "VILLAGE.A.c7", "VILLAGE.A.c8", "VILLAGE.A.c9",
+  "VILLAGE.D.c2",
+  "VILLAGE.C.c2", "VILLAGE.C.c10",
+  "VILLAGE.B.c2", "VILLAGE.B.c7",
+  "VILLAGE.A.c2", "VILLAGE.A.c6", "VILLAGE.A.c7", "VILLAGE.A.c8",
   "VILLAGE.A.c10", "VILLAGE.A.c11", "VILLAGE.A.c12", "VILLAGE.A.c13", "VILLAGE.A.i4", "VILLAGE.A.i5",
   "VILLAGE.S.c3", "VILLAGE.S.c4",
-  "CLAN.D.c7",
-  "CLAN.C.c9",
-  "CLAN.B.c7", "CLAN.B.c8", "CLAN.B.c9", "CLAN.B.c10", "CLAN.B.c11",
-  "CLAN.A.c6", "CLAN.A.c7", "CLAN.A.c8", "CLAN.A.c9", "CLAN.A.i2", "CLAN.A.i5",
-  "CLAN.S.c6", "CLAN.S.c7", "CLAN.S.c8", "CLAN.S.c9", "CLAN.S.c10", "CLAN.S.c11", "CLAN.S.c12",
+  "CLAN.B.c7", "CLAN.B.c8", "CLAN.B.c9", "CLAN.B.c10",
+  "CLAN.A.c6", "CLAN.A.c8", "CLAN.A.c9", "CLAN.A.i2", "CLAN.A.i5",
+  "CLAN.S.c6", "CLAN.S.c7", "CLAN.S.c8", "CLAN.S.c10", "CLAN.S.c11", "CLAN.S.c12",
   "HISTOIRE.C.i5",
   "HISTOIRE.B.i1", "HISTOIRE.B.i7", "HISTOIRE.B.i9", "HISTOIRE.B.x1.3",
   "HISTOIRE.A.i1", "HISTOIRE.A.i6", "HISTOIRE.A.i7", "HISTOIRE.A.x1.3",
   "HISTOIRE.S.i2", "HISTOIRE.S.i6", "HISTOIRE.S.i7", "HISTOIRE.S.i8", "HISTOIRE.S.x1.3",
+]);
+
+// « Avoir N personnages de Rang X » — AUTO : compte les personnages du scope
+// (village = tous · clan = ses membres) dont le rang général ≥ rang du palier.
+// La cible N = `count` ; le seuil de rang = le rang du palier de la condition.
+const MEMBER_COUNT_IDS = new Set<string>([
+  "VILLAGE.D.c8", "VILLAGE.C.c9", "VILLAGE.B.c6", "VILLAGE.A.c9",
+  "CLAN.D.c7", "CLAN.C.c9", "CLAN.B.c11", "CLAN.A.c7", "CLAN.S.c9",
 ]);
 
 // Conditions « gérées par le staff » : non soumettables par les membres ; le
@@ -709,21 +717,22 @@ export function isAdminManaged(id: string): boolean {
 export function condMode(id: string): CondMode {
   if (XP_POOL_IDS.has(id)) return "xp_pool";
   if (XP_SELF_IDS.has(id)) return "xp_self";
+  if (MEMBER_COUNT_IDS.has(id)) return "member_count";
   if (ONESHOT_IDS.has(id)) return "oneshot";
   return "count";
 }
 
-// Cible d'une condition : compteur → N (≥1) ; oneshot → 1 ; xp_* → seuil XP.
+// Cible d'une condition : compteur → N (≥1) ; oneshot → 1 ; xp_* / member_count → seuil N.
 export function condTarget(id: string, count?: number): number {
   const mode = condMode(id);
   if (mode === "oneshot") return 1;
   if (mode === "count") return Math.max(1, count ?? 1);
-  return count ?? 0; // xp_pool / xp_self
+  return count ?? 0; // xp_pool / xp_self / member_count
 }
 
-// Une condition AUTO n'est jamais soumise (calculée depuis l'XP).
+// Une condition AUTO n'est jamais soumise (calculée depuis l'XP ou les membres).
 export function isAutoMode(m: CondMode): boolean {
-  return m === "xp_pool" || m === "xp_self";
+  return m === "xp_pool" || m === "xp_self" || m === "member_count";
 }
 
 // Métadonnée d'une condition résolue depuis son id (validation serveur).
@@ -818,6 +827,7 @@ export function normalizeRpUrl(raw?: string | null): string | null {
 export interface ScopeProgress {
   countByCond: Record<string, number>; // condId → nb de soumissions VALIDATED dans le scope
   xpPool: number; // XP cumulés du scope (somme des membres)
+  memberCountByRank: Partial<Record<Rank, number>>; // nb de personnages du scope par rang général
 }
 
 // Progression individuelle d'un joueur.
@@ -826,8 +836,20 @@ export interface UserProgress {
   xpSelf: number; // XP « générés » du joueur
 }
 
+// Nb de personnages du scope dont le rang général ≥ `rank`.
+export function membersAtLeast(byRank: Partial<Record<Rank, number>>, rank: Rank): number {
+  let n = 0;
+  for (let i = rankIndex(rank); i < RANKS.length; i++) n += byRank[RANKS[i]] ?? 0;
+  return n;
+}
+
 export function communityCondMet(cond: ProgCond, sp: ScopeProgress): boolean {
-  if (condMode(cond.id) === "xp_pool") return sp.xpPool >= condTarget(cond.id, cond.count);
+  const mode = condMode(cond.id);
+  if (mode === "xp_pool") return sp.xpPool >= condTarget(cond.id, cond.count);
+  if (mode === "member_count") {
+    const rank = COND_CATALOG.get(cond.id)?.rank ?? "E";
+    return membersAtLeast(sp.memberCountByRank, rank) >= condTarget(cond.id, cond.count);
+  }
   return (sp.countByCond[cond.id] ?? 0) >= condTarget(cond.id, cond.count);
 }
 
@@ -836,9 +858,14 @@ export function individualCondMet(cond: ProgCond, up: UserProgress): boolean {
   return (up.countByCond[cond.id] ?? 0) >= condTarget(cond.id, cond.count);
 }
 
-// Valeur courante affichée pour une condition (compteur ou XP).
+// Valeur courante affichée pour une condition (compteur, XP, ou nb de personnages).
 export function communityCurrent(cond: ProgCond, sp: ScopeProgress): number {
-  if (condMode(cond.id) === "xp_pool") return sp.xpPool;
+  const mode = condMode(cond.id);
+  if (mode === "xp_pool") return sp.xpPool;
+  if (mode === "member_count") {
+    const rank = COND_CATALOG.get(cond.id)?.rank ?? "E";
+    return membersAtLeast(sp.memberCountByRank, rank);
+  }
   return sp.countByCond[cond.id] ?? 0;
 }
 export function individualCurrent(cond: ProgCond, up: UserProgress): number {

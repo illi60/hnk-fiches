@@ -26,7 +26,7 @@ import {
   type Rank,
   type PalierStatus,
 } from "@/lib/progression";
-import { loadAllXpPools, loadAllBaseRanks, loadCommunityCounts, loadUserCounts } from "@/lib/progression-server";
+import { loadScopeAggregates, loadAllBaseRanks, loadCommunityCounts, loadUserCounts } from "@/lib/progression-server";
 import ProgressionBoard, {
   type TrackView,
   type CondView,
@@ -69,9 +69,9 @@ export default async function ProgressionPage() {
     user: { select: { username: true } },
   } as const;
 
-  const [pools, baseRanks, villageCounts, clanCounts, userCounts, communitySubs, mySubs] =
+  const [agg, baseRanks, villageCounts, clanCounts, userCounts, communitySubs, mySubs] =
     await Promise.all([
-      loadAllXpPools(),
+      loadScopeAggregates(),
       loadAllBaseRanks(),
       loadCommunityCounts("VILLAGE", VILLAGE_SCOPE_KEY),
       clanKey ? loadCommunityCounts("CLAN", clanKey) : Promise.resolve({} as Record<string, number>),
@@ -102,10 +102,15 @@ export default async function ProgressionPage() {
     ]);
 
   // --- Progression contextuelle ---
-  const villageProg: ScopeProgress = { countByCond: villageCounts, xpPool: pools.village };
+  const villageProg: ScopeProgress = {
+    countByCond: villageCounts,
+    xpPool: agg.xpVillage,
+    memberCountByRank: agg.membersVillage,
+  };
   const clanProg: ScopeProgress = {
     countByCond: clanCounts,
-    xpPool: clanKey ? pools.clans[clanKey] ?? 0 : 0,
+    xpPool: clanKey ? agg.xpClans[clanKey] ?? 0 : 0,
+    memberCountByRank: clanKey ? agg.membersClans[clanKey] ?? {} : {},
   };
   const userProg: UserProgress = { countByCond: userCounts, xpSelf };
 

@@ -107,6 +107,8 @@ function RankRow({ scope }: { scope: ScopeRow }) {
   const [pending, start] = useTransition();
   const [saved, setSaved] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [resetMsg, setResetMsg] = useState<string | null>(null);
 
   function save() {
     setErr(null);
@@ -123,6 +125,28 @@ function RankRow({ scope }: { scope: ScopeRow }) {
         return;
       }
       setSaved(true);
+      router.refresh();
+    });
+  }
+
+  // Efface les conditions COMMUNAUTAIRES validées du scope (le rang dérivé
+  // retombe ; le rang de base et les rangs personnels des membres ne bougent pas).
+  function resetConditions() {
+    setErr(null);
+    setResetMsg(null);
+    start(async () => {
+      const r = await fetch("/api/admin/progression/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: "COMMUNITY", scopeType: scope.type, scopeKey: scope.key }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!j.ok) {
+        setErr("Erreur");
+        return;
+      }
+      setConfirming(false);
+      setResetMsg(`${j.deleted ?? 0} effacée(s).`);
       router.refresh();
     });
   }
@@ -163,6 +187,36 @@ function RankRow({ scope }: { scope: ScopeRow }) {
       >
         {pending ? "…" : saved ? "✓" : "Poser"}
       </button>
+
+      {confirming ? (
+        <span className="flex items-center gap-2">
+          <button
+            onClick={resetConditions}
+            disabled={pending}
+            className="px-3 py-1.5 bg-red-500 text-black text-xs tracking-[0.2em] uppercase font-bold disabled:opacity-50"
+          >
+            {pending ? "…" : "Confirmer"}
+          </button>
+          <button onClick={() => setConfirming(false)} className="text-xs text-smoke">
+            Annuler
+          </button>
+        </span>
+      ) : (
+        <button
+          onClick={() => {
+            setConfirming(true);
+            setResetMsg(null);
+            setErr(null);
+          }}
+          disabled={pending}
+          className="px-3 py-1.5 bg-red-500/15 border border-red-500/40 text-red-300 text-xs tracking-[0.2em] uppercase font-bold hover:bg-red-500/25 disabled:opacity-40"
+          title="Efface les conditions communautaires validées de ce scope"
+        >
+          Effacer les conditions
+        </button>
+      )}
+
+      {resetMsg && <span className="text-xs text-emerald-400">{resetMsg}</span>}
       {err && <span className="text-xs text-ember-hot">{err}</span>}
     </li>
   );

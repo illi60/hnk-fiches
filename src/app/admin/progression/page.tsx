@@ -14,7 +14,7 @@ import {
   type Rank,
 } from "@/lib/progression";
 import {
-  loadAllXpPools,
+  loadScopeAggregates,
   loadAllBaseRanks,
   loadCommunityCounts,
   loadAllClanCommunityCounts,
@@ -22,6 +22,7 @@ import {
 import AdminProgressionDecision from "@/components/AdminProgressionDecision";
 import AdminCommunityRanks, { type ScopeRow } from "@/components/AdminCommunityRanks";
 import AdminManagedConditions, { type ManagedCond } from "@/components/AdminManagedConditions";
+import AdminProgressionUser, { type ProgUser } from "@/components/AdminProgressionUser";
 
 // File de validation des conditions de progression (staff : ADMIN ou TECH_MOD).
 // Gestion des rangs communautaires de base : ADMIN uniquement.
@@ -50,9 +51,10 @@ export default async function AdminProgressionPage() {
   // --- Rangs communautaires (ADMIN) : base / dérivé / effectif ---
   const scopes: ScopeRow[] = [];
   const managedVillage: ManagedCond[] = [];
+  let progUsers: ProgUser[] = [];
   if (isAdmin) {
-    const [pools, baseRanks, villageCounts, clanCountsByScope, clanRows] = await Promise.all([
-      loadAllXpPools(),
+    const [agg, baseRanks, villageCounts, clanCountsByScope, clanRows, allUsers] = await Promise.all([
+      loadScopeAggregates(),
       loadAllBaseRanks(),
       loadCommunityCounts("VILLAGE", VILLAGE_SCOPE_KEY),
       loadAllClanCommunityCounts(),
@@ -62,10 +64,26 @@ export default async function AdminProgressionPage() {
         distinct: ["clan"],
         orderBy: { clan: "asc" },
       }),
+      prisma.user.findMany({
+        select: {
+          id: true,
+          username: true,
+          clan: true,
+          rangVillage: true,
+          rangClan: true,
+          rangHistoire: true,
+        },
+        orderBy: { username: "asc" },
+      }),
     ]);
+    progUsers = allUsers;
 
     const villageBase = baseRanks[`VILLAGE:${VILLAGE_SCOPE_KEY}`] ?? "E";
-    const villageSp = { countByCond: villageCounts, xpPool: pools.village };
+    const villageSp = {
+      countByCond: villageCounts,
+      xpPool: agg.xpVillage,
+      memberCountByRank: agg.membersVillage,
+    };
     scopes.push({
       type: "VILLAGE",
       key: VILLAGE_SCOPE_KEY,
@@ -90,7 +108,11 @@ export default async function AdminProgressionPage() {
     for (const key of clanKeys) {
       const counts = clanCountsByScope[key] ?? {};
       const base = baseRanks[`CLAN:${key}`] ?? "E";
-      const sp = { countByCond: counts, xpPool: pools.clans[key] ?? 0 };
+      const sp = {
+        countByCond: counts,
+        xpPool: agg.xpClans[key] ?? 0,
+        memberCountByRank: agg.membersClans[key] ?? {},
+      };
       // Libellé : retrouve un nom de clan original pour la clé normalisée.
       const original = clanRows.find((c) => clanScopeKey(c.clan) === key)?.clan ?? key;
       scopes.push({
@@ -128,6 +150,8 @@ export default async function AdminProgressionPage() {
       </div>
 
       {isAdmin && scopes.length > 0 && <AdminCommunityRanks scopes={scopes} />}
+
+      {isAdmin && progUsers.length > 0 && <AdminProgressionUser users={progUsers} />}
 
       {isAdmin && managedVillage.length > 0 && (
         <AdminManagedConditions

@@ -233,6 +233,23 @@ export const progressionConditionSchema = z.object({
   validated: z.boolean(),
 });
 
+// Admin : reset des progressions. Efface les soumissions (conditions validées /
+// en attente) — action distincte de la baisse de rang (gérée via le profil).
+//   - USER      : conditions INDIVIDUELLES d'un joueur sur une voie.
+//   - COMMUNITY : conditions COMMUNAUTAIRES d'un scope (village ou un clan).
+export const progressionResetSchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("USER"),
+    userId: z.string().min(1),
+    track: z.enum(["VILLAGE", "CLAN", "HISTOIRE"]),
+  }),
+  z.object({
+    kind: z.literal("COMMUNITY"),
+    scopeType: z.enum(["VILLAGE", "CLAN"]),
+    scopeKey: z.string().min(1).max(80),
+  }),
+]);
+
 // ----- Admin : tweak arts & quintessences (mode god, sans XP) -----
 const rangOpt = z.enum(["E", "D", "C", "B", "A", "S"]).nullable();
 export const adminArtsSchema = z.object({

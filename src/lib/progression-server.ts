@@ -31,20 +31,59 @@ function userXp(u: { forumLastXp: number | null; xpTotalEarned: number }): numbe
   return u.forumLastXp ?? u.xpTotalEarned ?? 0;
 }
 
-// Pools XP : village (tous les membres) + par clan (clé normalisée).
-export async function loadAllXpPools(): Promise<{ village: number; clans: Record<string, number> }> {
+// Rang général d'un personnage = le plus haut de ses rangs (cf. « non cumul »).
+function generalRankOf(u: {
+  rang: Rang | null;
+  rangVillage: Rang | null;
+  rangClan: Rang | null;
+  rangHistoire: Rang | null;
+}): Rank {
+  const idx = Math.max(
+    rankIndex(u.rang),
+    rankIndex(u.rangVillage),
+    rankIndex(u.rangClan),
+    rankIndex(u.rangHistoire)
+  );
+  return RANKS[idx];
+}
+
+// Agrégats de scope en UN seul scan : pools XP (village + par clan) ET
+// répartition des personnages par rang général (pour « Avoir N personnages
+// de Rang X »). Village = tous les membres ; clans = par clé normalisée.
+export interface ScopeAggregates {
+  xpVillage: number;
+  xpClans: Record<string, number>;
+  membersVillage: Partial<Record<Rank, number>>;
+  membersClans: Record<string, Partial<Record<Rank, number>>>;
+}
+export async function loadScopeAggregates(): Promise<ScopeAggregates> {
   const users = await prisma.user.findMany({
-    select: { clan: true, forumLastXp: true, xpTotalEarned: true },
+    select: {
+      clan: true,
+      forumLastXp: true,
+      xpTotalEarned: true,
+      rang: true,
+      rangVillage: true,
+      rangClan: true,
+      rangHistoire: true,
+    },
   });
-  let village = 0;
-  const clans: Record<string, number> = {};
+  let xpVillage = 0;
+  const xpClans: Record<string, number> = {};
+  const membersVillage: Partial<Record<Rank, number>> = {};
+  const membersClans: Record<string, Partial<Record<Rank, number>>> = {};
   for (const u of users) {
     const xp = userXp(u);
-    village += xp;
+    xpVillage += xp;
+    const gr = generalRankOf(u);
+    membersVillage[gr] = (membersVillage[gr] ?? 0) + 1;
     const k = clanScopeKey(u.clan);
-    if (k) clans[k] = (clans[k] ?? 0) + xp;
+    if (k) {
+      xpClans[k] = (xpClans[k] ?? 0) + xp;
+      (membersClans[k] ??= {})[gr] = (membersClans[k][gr] ?? 0) + 1;
+    }
   }
-  return { village, clans };
+  return { xpVillage, xpClans, membersVillage, membersClans };
 }
 
 // Compteurs validés (communautaire) d'un scope : condId → nb de soumissions VALIDATED.
@@ -113,13 +152,14 @@ export async function effectiveCommRankForUserTrack(
   const scopeKey = track === "VILLAGE" ? VILLAGE_SCOPE_KEY : clanScopeKey(clan);
   if (!scopeKey) return "E";
   const scopeType = track === "VILLAGE" ? "VILLAGE" : "CLAN";
-  const [counts, pools, base] = await Promise.all([
+  const [counts, agg, base] = await Promise.all([
     loadCommunityCounts(track, scopeKey),
-    loadAllXpPools(),
+    loadScopeAggregates(),
     loadBaseRank(scopeType, scopeKey),
   ]);
-  const xpPool = track === "VILLAGE" ? pools.village : pools.clans[scopeKey] ?? 0;
-  const sp: ScopeProgress = { countByCond: counts, xpPool };
+  const xpPool = track === "VILLAGE" ? agg.xpVillage : agg.xpClans[scopeKey] ?? 0;
+  const memberCountByRank = track === "VILLAGE" ? agg.membersVillage : agg.membersClans[scopeKey] ?? {};
+  const sp: ScopeProgress = { countByCond: counts, xpPool, memberCountByRank };
   return effectiveCommunityRank(track, base, sp);
 }
 
@@ -134,20 +174,22 @@ export async function recomputeRanks(userIds: string[] | "all"): Promise<number>
   if (userIds !== "all" && userIds.length === 0) return 0;
 
   // 1) Rangs communautaires effectifs (village + tous les clans), une fois.
-  const [pools, baseRanks, villageCounts, clanCounts] = await Promise.all([
-    loadAllXpPools(),
+  const [agg, baseRanks, villageCounts, clanCounts] = await Promise.all([
+    loadScopeAggregates(),
     loadAllBaseRanks(),
     loadCommunityCounts("VILLAGE", VILLAGE_SCOPE_KEY),
     loadAllClanCommunityCounts(),
   ]);
   const villageEff = effectiveCommunityRank("VILLAGE", baseRanks[`VILLAGE:${VILLAGE_SCOPE_KEY}`] ?? "E", {
     countByCond: villageCounts,
-    xpPool: pools.village,
+    xpPool: agg.xpVillage,
+    memberCountByRank: agg.membersVillage,
   });
   const clanEff = (key: string): Rank =>
     effectiveCommunityRank("CLAN", baseRanks[`CLAN:${key}`] ?? "E", {
       countByCond: clanCounts[key] ?? {},
-      xpPool: pools.clans[key] ?? 0,
+      xpPool: agg.xpClans[key] ?? 0,
+      memberCountByRank: agg.membersClans[key] ?? {},
     });
 
   // 2) Joueurs ciblés + leurs compteurs individuels validés (un seul groupBy).
