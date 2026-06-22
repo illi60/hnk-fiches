@@ -26,6 +26,9 @@ const CLAN_SORTS: { key: ClanSort; label: string }[] = [
 
 const MEDALS: Record<number, string> = { 1: "#ffc23c", 2: "#cfd6dd", 3: "#cd7f4d" };
 
+// Clans disposant d'un logo SVG dans public/clans/ (clé normalisée = nom de fichier).
+const CLAN_LOGOS = new Set(["uchiha", "hyuga", "sarutobi", "senju", "uzumaki", "konoha"]);
+
 const fmt = (n: number) => n.toLocaleString("fr-FR");
 
 export default function LadderView({
@@ -356,7 +359,16 @@ function PlayerRow({
   );
 }
 
-function ClanCrest({ name, size = 44 }: { name: string; size?: number }) {
+function ClanCrest({
+  name,
+  clanKey,
+  size = 44,
+}: {
+  name: string;
+  clanKey?: string;
+  size?: number;
+}) {
+  const hasLogo = !!clanKey && CLAN_LOGOS.has(clanKey);
   return (
     <span
       className="flex-none grid place-items-center font-display text-ember"
@@ -366,10 +378,19 @@ function ClanCrest({ name, size = 44 }: { name: string; size?: number }) {
         fontSize: size * 0.42,
         background: "rgba(255,87,34,0.10)",
         border: "1px solid color-mix(in srgb, var(--ember) 45%, transparent)",
-        textShadow: "0 0 12px color-mix(in srgb, var(--ember) 55%, transparent)",
+        textShadow: hasLogo ? undefined : "0 0 12px color-mix(in srgb, var(--ember) 55%, transparent)",
       }}
     >
-      {name.charAt(0).toUpperCase() || "氏"}
+      {hasLogo ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={`/clans/${clanKey}.svg`}
+          alt=""
+          style={{ width: "66%", height: "66%", objectFit: "contain" }}
+        />
+      ) : (
+        name.charAt(0).toUpperCase() || "氏"
+      )}
     </span>
   );
 }
@@ -392,7 +413,7 @@ function ClanRow({
       style={rowStyle(pos)}
     >
       <PosBadge pos={pos} />
-      <ClanCrest name={c.name} />
+      <ClanCrest name={c.name} clanKey={c.key} />
       <span className="flex-1 min-w-0">
         <span className="block hnk-serif text-base sm:text-lg text-white truncate uppercase tracking-wide">
           {c.name}
@@ -519,7 +540,7 @@ function PlayerModal({
       {clan && (
         <div className="mt-4 flex items-center justify-between border-t border-white/5 pt-3">
           <span className="flex items-center gap-2 text-sm text-bone">
-            <ClanCrest name={clan.name} size={28} />
+            <ClanCrest name={clan.name} clanKey={clan.key} size={28} />
             <span className="uppercase tracking-wide">{clan.name}</span>
           </span>
           <span className="hnk-eyebrow">
@@ -570,7 +591,7 @@ function ClanModal({
     <Backdrop onClose={onClose}>
       <CloseBtn onClose={onClose} />
       <div className="flex items-center gap-4">
-        <ClanCrest name={c.name} size={64} />
+        <ClanCrest name={c.name} clanKey={c.key} size={64} />
         <div className="min-w-0">
           <p className="hnk-eyebrow">Clan</p>
           <h3 className="hnk-serif text-2xl text-white truncate uppercase tracking-wide">
