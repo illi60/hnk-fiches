@@ -280,7 +280,7 @@ export const adminForumLinkSchema = z.object({
 export const adminFicheValidateSchema = z.object({
   ficheId: z.string().cuid(),
   decision: z.enum(["VALIDATE", "REJECT"]),
-  reason: z.string().max(500).optional(),
+  reason: z.string().optional(),
   // Le coût final est recalculé serveur ; l'admin peut surcharger ici
   costOverride: z.number().int().min(0).max(100_000).optional(),
 });

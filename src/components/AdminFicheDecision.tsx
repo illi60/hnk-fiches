@@ -116,8 +116,7 @@ export default function AdminFicheDecision({
         <textarea
           value={reason}
           onChange={(e) => setReason(e.target.value)}
-          rows={2}
-          maxLength={500}
+          rows={4}
           className="w-full bg-ink-800 border border-white/10 px-3 py-1.5 text-bone text-sm"
         />
       </label>
