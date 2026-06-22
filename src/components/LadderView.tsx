@@ -345,7 +345,6 @@ function PlayerRow({
       </span>
 
       <span className={`hnk-chip ${rankClass(p.rang)} flex-none`}>{p.rang}</span>
-      <Metric label="Niv" value={p.level} on={false} className="hidden md:flex w-12" />
       <Metric label="XP" value={fmt(p.xp)} on={active === "xp"} className="w-16 sm:w-20" />
       <Metric
         label="RP"
@@ -512,8 +511,7 @@ function PlayerModal({
         <MiniRank label="Clan" value={p.rangClan} />
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-1 mt-5">
-        <StatBox label="Niveau" value={p.level} />
+      <div className="grid grid-cols-2 gap-x-6 gap-y-1 mt-5">
         <StatBox label="XP" value={fmt(p.xp)} />
         <StatBox label="Contribution" value={`${p.contribution} RP`} />
       </div>

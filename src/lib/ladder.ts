@@ -13,7 +13,6 @@
 // ============================================================
 
 import { prisma } from "@/lib/prisma";
-import { levelFromTotalXp } from "@/lib/xp";
 import {
   RANKS,
   rankIndex,
@@ -56,7 +55,6 @@ export interface LadderPlayer {
   rangHistoire: Rank | null;
   grade: string | null;
   xp: number;
-  level: number;
   contribution: number; // RP de progression VALIDÉS (toutes voies)
   forumUrl: string | null;
 }
@@ -131,7 +129,6 @@ export async function loadLadder(): Promise<LadderData> {
       rangHistoire: u.rangHistoire as Rank | null,
       grade: u.grade,
       xp,
-      level: levelFromTotalXp(xp),
       contribution: contribByUser.get(u.id) ?? 0,
       forumUrl: u.forumProfileUrl,
     };
