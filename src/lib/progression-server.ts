@@ -338,6 +338,8 @@ export async function attemptSubmission(opts: {
   const scopeKey = communityScope ?? "self";
 
   if (mode !== "MANUAL" && !rpKey) return { ok: false, error: "RP_REQUIS" };
+  const comment = (opts.comment ?? "").trim();
+  if (mode !== "MANUAL" && !comment) return { ok: false, error: "COMMENT_REQUIS" };
 
   const personalRank = (
     meta.track === "VILLAGE" ? user.rangVillage : meta.track === "CLAN" ? user.rangClan : user.rangHistoire
@@ -404,7 +406,7 @@ export async function attemptSubmission(opts: {
         scopeKey,
         rpTitle: opts.rpTitle,
         rpUrl: rpKey,
-        comment: opts.comment,
+        comment: comment || null,
         collaborators,
         collaboratorIds,
       },

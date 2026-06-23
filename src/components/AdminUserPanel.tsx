@@ -99,13 +99,181 @@ function AccountAdminPanel({
       <h3 className="text-[10px] tracking-[0.28em] uppercase text-ember mb-3">Compte</h3>
       <div className="grid md:grid-cols-2 gap-4">
         <PasswordResetForm userId={user.id} isProtectedAdmin={user.canManageAdmins} />
+        <RenameForm
+          userId={user.id}
+          currentUsername={user.username}
+          isProtectedAdmin={user.canManageAdmins}
+          actorCanManageAdmins={canManageAdmins}
+        />
         <RoleForm
           user={user}
           currentUserId={currentUserId}
           canManageAdmins={canManageAdmins}
         />
       </div>
+      <div className="mt-4">
+      <DeleteAccountForm
+        userId={user.id}
+        currentUsername={user.username}
+        isSelf={user.id === currentUserId}
+        isProtectedAdmin={user.canManageAdmins}
+        actorCanManageAdmins={canManageAdmins}
+      />
+      </div>
     </section>
+  );
+}
+
+function RenameForm({
+  userId,
+  currentUsername,
+  isProtectedAdmin,
+  actorCanManageAdmins,
+}: {
+  userId: string;
+  currentUsername: string;
+  isProtectedAdmin: boolean;
+  actorCanManageAdmins: boolean;
+}) {
+  const router = useRouter();
+  const [username, setUsername] = useState(currentUsername);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+
+  function submit() {
+    setMsg(null);
+    start(async () => {
+      const res = await fetch(`/api/admin/users/${userId}/username`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok || !j.ok) {
+        setMsg(
+          j.error === "USERNAME_TAKEN"
+            ? "Pseudo déjà pris."
+            : j.error === "FORBIDDEN"
+            ? "Protégé : réservé aux admins maîtres."
+            : "Erreur."
+        );
+        return;
+      }
+      setMsg("Pseudo mis à jour.");
+      router.refresh();
+    });
+  }
+
+  return (
+    <div>
+      <label className="block">
+        <span className="block text-[10px] uppercase text-smoke mb-1">Renommer le compte</span>
+        <input
+          type="text"
+          value={username}
+          onChange={(e) => {
+            setUsername(e.target.value);
+            setMsg(null);
+          }}
+          minLength={3}
+          className="w-full bg-ink-900 border border-white/10 px-3 py-2 text-bone text-sm"
+          placeholder={isProtectedAdmin ? "Admin maître protégé" : "Nouveau pseudo"}
+        />
+      </label>
+      <button
+        onClick={submit}
+        disabled={
+          pending ||
+          username.trim().length < 3 ||
+          username.trim() === currentUsername ||
+          (isProtectedAdmin && !actorCanManageAdmins)
+        }
+        className="mt-3 px-4 py-2 bg-ember text-black font-bold tracking-[0.2em] uppercase text-xs hover:bg-ember-hot disabled:opacity-50"
+      >
+        {pending ? "…" : "Renommer"}
+      </button>
+      {msg && <p className="text-xs text-bone mt-2">{msg}</p>}
+    </div>
+  );
+}
+
+function DeleteAccountForm({
+  userId,
+  currentUsername,
+  isSelf,
+  isProtectedAdmin,
+  actorCanManageAdmins,
+}: {
+  userId: string;
+  currentUsername: string;
+  isSelf: boolean;
+  isProtectedAdmin: boolean;
+  actorCanManageAdmins: boolean;
+}) {
+  const router = useRouter();
+  const [confirm, setConfirm] = useState("");
+  const [msg, setMsg] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+
+  function submit() {
+    setMsg(null);
+    start(async () => {
+      const res = await fetch(`/api/admin/users/${userId}`, { method: "DELETE" });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok || !j.ok) {
+        setMsg(
+          j.error === "SELF_DELETE"
+            ? "Tu ne peux pas supprimer ton propre compte."
+            : j.error === "LAST_ADMIN_MANAGER"
+            ? "Impossible de supprimer le dernier admin maître."
+            : j.error === "FORBIDDEN"
+            ? "Protégé : réservé aux admins maîtres."
+            : "Erreur."
+        );
+        return;
+      }
+      router.push("/admin/users");
+      router.refresh();
+    });
+  }
+
+  const canDelete = confirm === currentUsername && !isSelf;
+
+  return (
+    <div className="border border-red-500/20 bg-red-500/5 p-4">
+      <p className="text-[10px] uppercase tracking-[0.28em] text-red-300 mb-2">Danger</p>
+      <p className="text-sm text-bone/80">
+        Supprimer définitivement le compte <span className="text-bone font-bold">{currentUsername}</span>.
+      </p>
+      {isProtectedAdmin && (
+        <p className="text-[10px] text-smoke mt-2">
+          Compte protégé: réservé aux admins maîtres.
+        </p>
+      )}
+      <label className="block mt-3">
+        <span className="block text-[10px] uppercase text-smoke mb-1">
+          Confirme en tapant le pseudo
+        </span>
+        <input
+          type="text"
+          value={confirm}
+          onChange={(e) => {
+            setConfirm(e.target.value);
+            setMsg(null);
+          }}
+          className="w-full bg-ink-900 border border-white/10 px-3 py-2 text-bone text-sm"
+          placeholder={currentUsername}
+        />
+      </label>
+      <button
+        onClick={submit}
+        disabled={pending || !canDelete || (isProtectedAdmin && !actorCanManageAdmins)}
+        className="mt-3 px-4 py-2 bg-red-500 text-black font-bold tracking-[0.2em] uppercase text-xs hover:bg-red-400 disabled:opacity-50"
+      >
+        {pending ? "…" : "Supprimer le compte"}
+      </button>
+      {msg && <p className="text-xs text-red-300 mt-2">{msg}</p>}
+    </div>
   );
 }
 

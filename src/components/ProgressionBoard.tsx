@@ -446,7 +446,7 @@ function CondRow({ cond, community = false }: { cond: CondView; community?: bool
 
   function submit() {
     setErr(null);
-    if (!comment.trim()) {
+    if (!manualReview && !comment.trim()) {
       setErr("Commentaire obligatoire.");
       return;
     }
@@ -467,7 +467,7 @@ function CondRow({ cond, community = false }: { cond: CondView; community?: bool
           condId: cond.id,
           rpTitle: title.trim() || undefined,
           rpUrl: url.trim() || undefined,
-          comment: comment.trim(),
+          comment: comment.trim() || undefined,
           collaborators: requiresCollaborators ? collaboratorList : undefined,
         }),
       });
@@ -635,7 +635,7 @@ function CondRow({ cond, community = false }: { cond: CondView; community?: bool
           <textarea
             className="hnk-input !text-xs"
             rows={2}
-            placeholder="Commentaire pour le staff (obligatoire)"
+            placeholder={manualReview ? "Commentaire pour le staff (optionnel)" : "Commentaire pour le staff (obligatoire)"}
             value={comment}
             onChange={(e) => setComment(e.target.value)}
           />

@@ -136,7 +136,7 @@ export default function SubmitRpModal({ tracks, onClose }: { tracks: TrackView[]
     (!hasManual || selected.size === 1) &&
     (!requiresUrl || url.trim().length > 0) &&
     (!needsCollaborators || collaboratorList.length > 0) &&
-    comment.trim().length > 0;
+    (!selectedModes.some((m) => m !== "MANUAL") || comment.trim().length > 0);
 
   function submit() {
     setErr(null);
@@ -149,14 +149,14 @@ export default function SubmitRpModal({ tracks, onClose }: { tracks: TrackView[]
       const r = await fetch("/api/me/progression/submit-batch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          condIds: [...selected],
-          rpTitle: title.trim() || undefined,
-          rpUrl: requiresUrl ? url.trim() : undefined,
-          comment: comment.trim(),
-          collaborators: needsCollaborators ? collaboratorList : undefined,
-        }),
-      });
+          body: JSON.stringify({
+            condIds: [...selected],
+            rpTitle: title.trim() || undefined,
+            rpUrl: requiresUrl ? url.trim() : undefined,
+            comment: comment.trim() || undefined,
+            collaborators: needsCollaborators ? collaboratorList : undefined,
+          }),
+        });
       const j = await r.json().catch(() => ({}));
       if (!j.ok) {
         setErr(j.error === "RATE_LIMITED" ? "Trop de soumissions, patiente une minute." : "Erreur.");
@@ -220,7 +220,7 @@ export default function SubmitRpModal({ tracks, onClose }: { tracks: TrackView[]
           <textarea
             className="hnk-input"
             rows={2}
-            placeholder="Commentaire pour le staff (obligatoire)"
+            placeholder={hasManual ? "Commentaire pour le staff (optionnel)" : "Commentaire pour le staff (obligatoire)"}
             value={comment}
             onChange={(e) => setComment(e.target.value)}
           />

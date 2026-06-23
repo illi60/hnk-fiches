@@ -42,7 +42,7 @@ export async function POST(req: Request) {
       condId,
       rpKey,
       rpTitle: rpTitle?.trim() || null,
-      comment: comment.trim(),
+      comment: comment?.trim() || null,
       collaborators,
       effCommRank: makeCommRankResolver(user.clan),
       reuse,

@@ -715,7 +715,7 @@ export function isAdminManaged(id: string): boolean {
 }
 
 // Conditions qui doivent rester des demandes de validation manuelle.
-const MANUAL_REVIEW_IDS = new Set<string>(["HISTOIRE.A.i1"]);
+const MANUAL_REVIEW_IDS = new Set<string>(["HISTOIRE.B.i1", "HISTOIRE.A.i1"]);
 
 // Conditions qui exigent de saisir les pseudos exacts des autres participants.
 // Règle métier actuelle : RP libres / trivia / défis / missions = co-participants requis.

@@ -80,6 +80,9 @@ export function jsonError(e: unknown): NextResponse {
       "FORBIDDEN",
       "LAST_ADMIN_MANAGER",
       "SELF_ROLE_CHANGE",
+      "SELF_DELETE",
+      "USERNAME_TAKEN",
+      "COMMENT_REQUIS",
     ]);
     if (known.has(e.message)) {
       const statusMap: Record<string, number> = {
@@ -92,6 +95,9 @@ export function jsonError(e: unknown): NextResponse {
         FORBIDDEN: 403,
         LAST_ADMIN_MANAGER: 409,
         SELF_ROLE_CHANGE: 409,
+        SELF_DELETE: 409,
+        USERNAME_TAKEN: 409,
+        COMMENT_REQUIS: 400,
       };
       return NextResponse.json({ error: e.message }, { status: statusMap[e.message] ?? 400 });
     }

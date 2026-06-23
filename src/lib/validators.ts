@@ -139,6 +139,14 @@ export const adminPasswordResetSchema = z.object({
   password: z.string().min(8).max(120),
 });
 
+export const adminUsernameSchema = z.object({
+  username: z
+    .string()
+    .min(3)
+    .max(24)
+    .regex(/^[A-Za-z0-9_\- ]+$/, "Caractères autorisés : lettres, chiffres, _ -"),
+});
+
 export const adminRoleSchema = z.object({
   role: z.enum(["USER", "ADMIN", "TECH_MOD"]),
 });
@@ -195,7 +203,7 @@ export const progressionSubmitSchema = z.object({
   rpTitle: z.string().max(160).optional().nullable(),
   // Lien tolérant : le serveur normalise (préfixe https:// si le schéma manque).
   rpUrl: z.string().max(500).optional().nullable(),
-  comment: z.string().trim().min(1).max(2000),
+  comment: z.string().trim().max(2000).optional().nullable(),
   collaborators: z.array(z.string().trim().min(1).max(24)).max(8).optional(),
 }).superRefine((data, ctx) => {
   const grouped = requiresCollaborators(data.condId);
@@ -233,7 +241,7 @@ export const progressionBatchSchema = z.object({
   condIds: z.array(z.string().min(3).max(80)).min(1).max(60),
   rpTitle: z.string().max(160).optional().nullable(),
   rpUrl: z.string().max(500).optional().nullable(),
-  comment: z.string().trim().min(1).max(2000),
+  comment: z.string().trim().max(2000).optional().nullable(),
   collaborators: z.array(z.string().trim().min(1).max(24)).max(8).optional(),
 }).superRefine((data, ctx) => {
   const modes = new Set(
