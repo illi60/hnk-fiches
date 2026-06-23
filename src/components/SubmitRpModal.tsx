@@ -12,13 +12,23 @@ interface PickItem {
   trackLabel: string;
   rank: string;
   tier: "Communautaire" | "Individuelle";
+  submissionMode: "SOLO" | "GROUP" | "MANUAL";
 }
 
 // Aplati la liste des conditions actuellement soumettables (sur toutes les voies).
 function collectSubmittable(tracks: TrackView[]): PickItem[] {
   const out: PickItem[] = [];
   const push = (c: CondView, t: TrackView, rank: string, tier: PickItem["tier"]) => {
-    if (c.submittable) out.push({ condId: c.id, label: c.label, trackKey: t.key, trackLabel: t.label, rank, tier });
+    if (!c.submittable) return;
+    out.push({
+      condId: c.id,
+      label: c.label,
+      trackKey: t.key,
+      trackLabel: t.label,
+      rank,
+      tier,
+      submissionMode: c.submissionMode,
+    });
   };
   for (const t of tracks) {
     if (!t.available) continue;
@@ -39,6 +49,8 @@ function humanErr(e?: string): string {
       return "déjà soumis pour cette condition";
     case "RP_AUTRE_VOIE":
       return "déjà utilisé dans l'autre voie (Village ⊕ Clan)";
+    case "RP_REQUIS":
+      return "lien RP requis";
     case "DEJA_ATTEINT":
       return "palier déjà atteint";
     case "DEJA_SOUMISE":
@@ -48,6 +60,14 @@ function humanErr(e?: string): string {
     case "VERROUILLE":
     case "COMMUNAUTE_REQUISE":
       return "condition verrouillée";
+    case "COLLABORATEURS_REQUIS":
+      return "au moins un pseudo exact est requis";
+    case "COLLABORATEUR_INCONNU":
+      return "pseudo participant introuvable";
+    case "COLLABORATEURS_INTERDITS":
+      return "condition en solo uniquement";
+    case "SOLO_INTERDIT":
+      return "tu ne peux pas te renseigner toi-même";
     default:
       return "refusée";
   }
@@ -60,6 +80,7 @@ export default function SubmitRpModal({ tracks, onClose }: { tracks: TrackView[]
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [comment, setComment] = useState("");
+  const [collaborators, setCollaborators] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [pending, start] = useTransition();
   const [results, setResults] = useState<{ condId: string; ok: boolean; error?: string }[] | null>(null);
@@ -81,7 +102,14 @@ export default function SubmitRpModal({ tracks, onClose }: { tracks: TrackView[]
     () => new Set([...selected].map((id) => byId.get(id)?.trackKey).filter(Boolean)),
     [selected, byId]
   );
+  const selectedModes = useMemo(
+    () => [...selected].map((id) => byId.get(id)?.submissionMode).filter(Boolean),
+    [selected, byId]
+  );
   const villageClanConflict = selectedTracks.has("VILLAGE") && selectedTracks.has("CLAN");
+  const hasManual = selectedModes.includes("MANUAL");
+  const needsCollaborators = selectedModes.includes("GROUP");
+  const requiresUrl = selectedModes.some((m) => m !== "MANUAL");
 
   function toggle(condId: string) {
     setResults(null);
@@ -93,20 +121,40 @@ export default function SubmitRpModal({ tracks, onClose }: { tracks: TrackView[]
     });
   }
 
-  const canSubmit = url.trim().length > 0 && selected.size > 0 && !villageClanConflict && !pending;
+  const collaboratorList = Array.from(
+    new Set(
+      collaborators
+        .split(/[\n,;]/g)
+        .map((s) => s.trim())
+        .filter(Boolean)
+    )
+  );
+  const canSubmit =
+    selected.size > 0 &&
+    !villageClanConflict &&
+    !pending &&
+    (!hasManual || selected.size === 1) &&
+    (!requiresUrl || url.trim().length > 0) &&
+    (!needsCollaborators || collaboratorList.length > 0) &&
+    comment.trim().length > 0;
 
   function submit() {
     setErr(null);
     setResults(null);
     start(async () => {
+      if (hasManual && selected.size > 1) {
+        setErr("La demande manuelle doit être soumise seule.");
+        return;
+      }
       const r = await fetch("/api/me/progression/submit-batch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           condIds: [...selected],
           rpTitle: title.trim() || undefined,
-          rpUrl: url.trim(),
-          comment: comment.trim() || undefined,
+          rpUrl: requiresUrl ? url.trim() : undefined,
+          comment: comment.trim(),
+          collaborators: needsCollaborators ? collaboratorList : undefined,
         }),
       });
       const j = await r.json().catch(() => ({}));
@@ -116,11 +164,11 @@ export default function SubmitRpModal({ tracks, onClose }: { tracks: TrackView[]
       }
       setResults(j.results);
       router.refresh();
-      // Retire de la sélection les conditions acceptées (laisse les refusées visibles).
-      const okIds = new Set<string>((j.results as { condId: string; ok: boolean }[]).filter((x) => x.ok).map((x) => x.condId));
+      const okIds = new Set<string>(
+        (j.results as { condId: string; ok: boolean }[]).filter((x) => x.ok).map((x) => x.condId)
+      );
       setSelected((prev) => new Set([...prev].filter((id) => !okIds.has(id))));
       if (okIds.size === j.results.length) {
-        // tout est passé → on peut fermer
         setTimeout(onClose, 600);
       }
     });
@@ -157,17 +205,30 @@ export default function SubmitRpModal({ tracks, onClose }: { tracks: TrackView[]
           />
           <input
             className="hnk-input"
-            placeholder="Lien du RP (https://…) — requis"
+            placeholder={requiresUrl ? "Lien du RP (https://…) — requis" : "Lien du RP (optionnel pour la demande manuelle)"}
             value={url}
             onChange={(e) => setUrl(e.target.value)}
           />
+          {needsCollaborators && (
+            <input
+              className="hnk-input"
+              placeholder="Pseudos exacts des autres participants, séparés par des virgules"
+              value={collaborators}
+              onChange={(e) => setCollaborators(e.target.value)}
+            />
+          )}
           <textarea
             className="hnk-input"
             rows={2}
-            placeholder="Commentaire pour le staff (facultatif)"
+            placeholder="Commentaire pour le staff (obligatoire)"
             value={comment}
             onChange={(e) => setComment(e.target.value)}
           />
+          {hasManual && (
+            <p className="text-[11px] text-smoke">
+              Demande manuelle de validation: un seul item à la fois, sans lien RP obligatoire.
+            </p>
+          )}
         </div>
 
         <p className="hnk-eyebrow mb-2">Conditions débloquées par ce RP</p>
@@ -218,8 +279,12 @@ export default function SubmitRpModal({ tracks, onClose }: { tracks: TrackView[]
 
         {villageClanConflict && (
           <p className="text-[11px] text-ember-hot mt-3">
-            Un même RP ne peut pas servir à la fois au Village et au Clan. Décoche l&apos;une des deux
-            voies.
+            Un même RP ne peut pas servir à la fois au Village et au Clan. Décoche l&apos;une des deux voies.
+          </p>
+        )}
+        {hasManual && selected.size > 1 && (
+          <p className="text-[11px] text-ember-hot mt-3">
+            Une demande manuelle doit être soumise seule.
           </p>
         )}
         {err && <p className="text-sm text-ember-hot mt-3">{err}</p>}

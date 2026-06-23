@@ -10,6 +10,7 @@ import {
   deriveCommunityRank,
   effectiveCommunityRank,
   isAdminManaged,
+  submissionMode,
   PROGRESSION,
   type Rank,
 } from "@/lib/progression";
@@ -43,6 +44,7 @@ export default async function AdminProgressionPage() {
       rpTitle: true,
       rpUrl: true,
       comment: true,
+      collaborators: true,
       createdAt: true,
       user: { select: { id: true, username: true, clan: true } },
     },
@@ -172,12 +174,16 @@ export default async function AdminProgressionPage() {
           <ul className="space-y-3">
             {pending.map((s) => {
               const meta = condMeta(s.condId);
+              const mode = submissionMode(s.condId);
               return (
                 <li key={s.id} className="border border-white/5 bg-ink-700 p-4">
                   <div className="flex flex-wrap items-center gap-2 mb-2">
                     <span className="hnk-chip">{TRACK_LABEL[s.track]}</span>
                     <span className="hnk-chip">
                       {s.tier === "COMMUNITY" ? "Communautaire" : "Individuelle"}
+                    </span>
+                    <span className="hnk-chip">
+                      {mode === "MANUAL" ? "Validation manuelle" : mode === "GROUP" ? "RP à plusieurs" : "Solo"}
                     </span>
                     <span className="hnk-chip">Vise Rang {s.targetRank}</span>
                     {s.tier === "COMMUNITY" && s.scopeKey && (
@@ -220,6 +226,11 @@ export default async function AdminProgressionPage() {
                     {s.comment && (
                       <p className="text-bone/80 whitespace-pre-wrap break-words pt-1">
                         {s.comment}
+                      </p>
+                    )}
+                    {s.collaborators && s.collaborators.length > 0 && (
+                      <p className="text-bone/75 whitespace-pre-wrap break-words pt-1">
+                        Avec : {s.collaborators.join(", ")}
                       </p>
                     )}
                   </div>

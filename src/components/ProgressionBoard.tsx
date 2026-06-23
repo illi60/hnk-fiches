@@ -14,6 +14,7 @@ export interface SubView {
   title?: string;
   url?: string;
   comment?: string;
+  collaborators?: string[];
   status: SubStatus;
   author?: string;
   mine: boolean;
@@ -24,6 +25,7 @@ export interface CondView {
   id: string;
   label: string;
   mode: CondMode;
+  submissionMode: "SOLO" | "GROUP" | "MANUAL";
   target: number;
   current: number;
   met: boolean;
@@ -96,10 +98,20 @@ function humanErr(e?: string): string {
       return "Palier déjà atteint.";
     case "AUTO":
       return "Condition automatique (XP).";
+    case "RP_REQUIS":
+      return "Lien RP requis.";
     case "RP_DEJA_CONDITION":
       return "Ce RP a déjà été soumis pour cette condition.";
     case "RP_AUTRE_VOIE":
       return "Ce RP est déjà utilisé dans l'autre voie (Village ⊕ Clan).";
+    case "COLLABORATEURS_REQUIS":
+      return "Au moins un pseudo exact est requis.";
+    case "COLLABORATEUR_INCONNU":
+      return "Pseudo participant introuvable.";
+    case "COLLABORATEURS_INTERDITS":
+      return "Cette condition se soumet en solo.";
+    case "SOLO_INTERDIT":
+      return "Tu ne peux pas te renseigner toi-même.";
     case "INVALID_STATE":
       return "Action impossible dans cet état.";
     default:
@@ -407,19 +419,47 @@ function CondRow({ cond, community = false }: { cond: CondView; community?: bool
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [comment, setComment] = useState("");
+  const [collaborators, setCollaborators] = useState("");
   const [err, setErr] = useState<string | null>(null);
+  const requiresCollaborators = cond.submissionMode === "GROUP";
+  const manualReview = cond.submissionMode === "MANUAL";
 
   function openForm() {
     setTitle("");
     setUrl("");
     setComment("");
+    setCollaborators("");
     setErr(null);
     setOpen(true);
   }
 
+  function parseCollaborators() {
+    return Array.from(
+      new Set(
+        collaborators
+          .split(/[\n,;]/g)
+          .map((s) => s.trim())
+          .filter(Boolean)
+      )
+    );
+  }
+
   function submit() {
     setErr(null);
+    if (!comment.trim()) {
+      setErr("Commentaire obligatoire.");
+      return;
+    }
+    if (requiresCollaborators && parseCollaborators().length === 0) {
+      setErr("Au moins un pseudo exact est requis.");
+      return;
+    }
+    if (cond.submissionMode !== "MANUAL" && !url.trim()) {
+      setErr("Lien RP requis.");
+      return;
+    }
     start(async () => {
+      const collaboratorList = parseCollaborators();
       const r = await fetch("/api/me/progression/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -427,7 +467,8 @@ function CondRow({ cond, community = false }: { cond: CondView; community?: bool
           condId: cond.id,
           rpTitle: title.trim() || undefined,
           rpUrl: url.trim() || undefined,
-          comment: comment.trim() || undefined,
+          comment: comment.trim(),
+          collaborators: requiresCollaborators ? collaboratorList : undefined,
         }),
       });
       const j = await r.json().catch(() => ({}));
@@ -439,6 +480,7 @@ function CondRow({ cond, community = false }: { cond: CondView; community?: bool
       setTitle("");
       setUrl("");
       setComment("");
+      setCollaborators("");
       router.refresh();
     });
   }
@@ -541,6 +583,11 @@ function CondRow({ cond, community = false }: { cond: CondView; community?: bool
                       {community && s.author ? ` · ${s.author}` : ""} · {s.created}
                     </span>
                     {s.comment && <p className="text-smoke italic mt-0.5">{s.comment}</p>}
+                    {s.collaborators && s.collaborators.length > 0 && (
+                      <p className="text-smoke mt-0.5">
+                        Avec : <span className="text-bone">{s.collaborators.join(", ")}</span>
+                      </p>
+                    )}
                     {s.status === "REJECTED" && s.rejectionReason && (
                       <p className="text-ember-hot/80 mt-0.5">Refusé : {s.rejectionReason}</p>
                     )}
@@ -573,17 +620,30 @@ function CondRow({ cond, community = false }: { cond: CondView; community?: bool
           />
           <input
             className="hnk-input !text-xs"
-            placeholder="Lien du RP (https://…)"
+            placeholder={manualReview ? "Lien du RP (optionnel pour cette demande manuelle)" : "Lien du RP (https://…)"}
             value={url}
             onChange={(e) => setUrl(e.target.value)}
           />
+          {requiresCollaborators && (
+            <input
+              className="hnk-input !text-xs"
+              placeholder="Pseudos exacts des autres participants, séparés par des virgules"
+              value={collaborators}
+              onChange={(e) => setCollaborators(e.target.value)}
+            />
+          )}
           <textarea
             className="hnk-input !text-xs"
             rows={2}
-            placeholder="Commentaire pour le staff (facultatif)"
+            placeholder="Commentaire pour le staff (obligatoire)"
             value={comment}
             onChange={(e) => setComment(e.target.value)}
           />
+          {manualReview && (
+            <p className="text-[10px] text-smoke">
+              Demande de validation manuelle : ajoute le contexte à vérifier, sans lien RP obligatoire.
+            </p>
+          )}
           <div className="flex gap-2">
             <button
               type="button"

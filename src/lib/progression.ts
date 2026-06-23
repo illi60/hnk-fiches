@@ -714,6 +714,30 @@ export function isAdminManaged(id: string): boolean {
   return ADMIN_MANAGED_IDS.has(id);
 }
 
+// Conditions qui doivent rester des demandes de validation manuelle.
+const MANUAL_REVIEW_IDS = new Set<string>(["HISTOIRE.A.i1"]);
+
+// Conditions qui exigent de saisir les pseudos exacts des autres participants.
+// Règle métier actuelle : RP libres / trivia / défis / missions = co-participants requis.
+const GROUP_SUBMISSION_RE =
+  /\bRP\s+Libres?\b|\bRP\s+D[ée]fis?\b|\bRP\s+Trivia\b|\bMissions?\b/i;
+
+export type SubmissionMode = "SOLO" | "GROUP" | "MANUAL";
+
+export function submissionMode(id: string): SubmissionMode {
+  if (MANUAL_REVIEW_IDS.has(id)) return "MANUAL";
+  const label = COND_CATALOG.get(id)?.label ?? "";
+  return GROUP_SUBMISSION_RE.test(label) ? "GROUP" : "SOLO";
+}
+
+export function requiresCollaborators(id: string): boolean {
+  return submissionMode(id) === "GROUP";
+}
+
+export function isManualReviewSubmission(id: string): boolean {
+  return submissionMode(id) === "MANUAL";
+}
+
 export function condMode(id: string): CondMode {
   if (XP_POOL_IDS.has(id)) return "xp_pool";
   if (XP_SELF_IDS.has(id)) return "xp_self";

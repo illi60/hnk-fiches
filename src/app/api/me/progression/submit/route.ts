@@ -25,11 +25,11 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => null);
     const parsed = progressionSubmitSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: "INVALID" }, { status: 400 });
-    const { condId, rpTitle, rpUrl, comment } = parsed.data;
+    const { condId, rpTitle, rpUrl, comment, collaborators } = parsed.data;
 
     const user = await prisma.user.findUnique({
       where: { id: me.id },
-      select: { clan: true, rangVillage: true, rangClan: true, rangHistoire: true },
+      select: { username: true, clan: true, rangVillage: true, rangClan: true, rangHistoire: true },
     });
     if (!user) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
 
@@ -42,7 +42,8 @@ export async function POST(req: Request) {
       condId,
       rpKey,
       rpTitle: rpTitle?.trim() || null,
-      comment: comment?.trim() || null,
+      comment: comment.trim(),
+      collaborators,
       effCommRank: makeCommRankResolver(user.clan),
       reuse,
     });

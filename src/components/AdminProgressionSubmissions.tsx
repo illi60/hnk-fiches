@@ -14,6 +14,7 @@ export interface SubItem {
   status: "PENDING" | "VALIDATED";
   rpTitle: string | null;
   rpUrl: string | null;
+  collaborators?: string[];
   username: string | null;
   createdAt: string;
 }
@@ -108,6 +109,11 @@ function SubRow({
                 {sub.rpUrl}
               </a>
             )}
+          </span>
+        )}
+        {sub.collaborators && sub.collaborators.length > 0 && (
+          <span className="block text-smoke mt-0.5">
+            Avec : <span className="text-bone/80">{sub.collaborators.join(", ")}</span>
           </span>
         )}
         {showUser && sub.username && <span className="block text-smoke mt-0.5">par {sub.username}</span>}

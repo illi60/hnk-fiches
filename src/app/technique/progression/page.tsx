@@ -20,6 +20,7 @@ import {
   condTarget,
   isAutoMode,
   isAdminManaged,
+  submissionMode,
   type ProgCond,
   type ScopeProgress,
   type UserProgress,
@@ -63,6 +64,7 @@ export default async function ProgressionPage() {
     rpTitle: true,
     rpUrl: true,
     comment: true,
+    collaborators: true,
     rejectionReason: true,
     createdAt: true,
     userId: true,
@@ -130,6 +132,7 @@ export default async function ProgressionPage() {
     title: s.rpTitle ?? undefined,
     url: s.rpUrl ?? undefined,
     comment: s.comment ?? undefined,
+    collaborators: s.collaborators ?? [],
     status: s.status,
     author: s.user?.username ?? undefined,
     mine: s.userId === user.id,
@@ -163,6 +166,7 @@ export default async function ProgressionPage() {
     const mode = condMode(c.id);
     const auto = isAutoMode(mode);
     const adminManaged = isAdminManaged(c.id);
+    const subMode = submissionMode(c.id);
     const met = communityCondMet(c, sp);
     const myPending = myPendingCommunity(c.id);
     const submittable =
@@ -171,6 +175,7 @@ export default async function ProgressionPage() {
       id: c.id,
       label: c.label,
       mode,
+      submissionMode: subMode,
       target: condTarget(c.id, c.count),
       current: communityCurrent(c, sp),
       met,
@@ -187,6 +192,7 @@ export default async function ProgressionPage() {
     const mode = condMode(c.id);
     const auto = isAutoMode(mode);
     const adminManaged = isAdminManaged(c.id);
+    const subMode = submissionMode(c.id);
     const met = individualCondMet(c, userProg);
     const myPending = myPendingIndividual(c.id);
     const submittable =
@@ -195,6 +201,7 @@ export default async function ProgressionPage() {
       id: c.id,
       label: c.label,
       mode,
+      submissionMode: subMode,
       target: condTarget(c.id, c.count),
       current: individualCurrent(c, userProg),
       met,

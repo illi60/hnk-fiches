@@ -20,6 +20,8 @@ import {
   rankIndex,
   scopeKeyFor,
   submissionGate,
+  requiresCollaborators,
+  isManualReviewSubmission,
   type ProgTrack,
   type Rank,
   type ScopeProgress,
@@ -286,6 +288,7 @@ export async function clanMemberIds(scopeKey: string): Promise<string[]> {
 // par référence pour fonctionner aussi en lot (plusieurs conditions, 1 RP).
 // ------------------------------------------------------------
 export interface SubmitUser {
+  username: string;
   clan: string | null;
   rangVillage: Rank | null;
   rangClan: Rank | null;
@@ -303,6 +306,7 @@ export async function attemptSubmission(opts: {
   rpKey: string | null;
   rpTitle: string | null;
   comment: string | null;
+  collaborators?: string[];
   effCommRank: (track: ProgTrack) => Promise<Rank>;
   reuse: RpReuseState;
 }): Promise<{ ok: boolean; error?: string }> {
@@ -313,10 +317,27 @@ export async function attemptSubmission(opts: {
   if (meta.adminManaged) return { ok: false, error: "STAFF_ONLY" };
   if (meta.track === "CLAN" && !user.clan?.trim()) return { ok: false, error: "CLAN_REQUIS" };
 
+  const mode = isManualReviewSubmission(condId)
+    ? "MANUAL"
+    : requiresCollaborators(condId)
+    ? "GROUP"
+    : "SOLO";
+  const rawCollaborators = Array.from(new Set((opts.collaborators ?? []).map((s) => s.trim()).filter(Boolean)));
+  const ownName = user.username.trim();
+
+  if (mode === "GROUP") {
+    if (rawCollaborators.length < 1) return { ok: false, error: "COLLABORATEURS_REQUIS" };
+    if (rawCollaborators.some((p) => p === ownName)) return { ok: false, error: "SOLO_INTERDIT" };
+  } else if (rawCollaborators.length > 0) {
+    return { ok: false, error: "COLLABORATEURS_INTERDITS" };
+  }
+
   const communityScope =
     meta.tier === "COMMUNITY" ? scopeKeyFor(meta.track, meta.tier, user.clan) : null;
   if (meta.tier === "COMMUNITY" && !communityScope) return { ok: false, error: "SCOPE_INTROUVABLE" };
   const scopeKey = communityScope ?? "self";
+
+  if (mode !== "MANUAL" && !rpKey) return { ok: false, error: "RP_REQUIS" };
 
   const personalRank = (
     meta.track === "VILLAGE" ? user.rangVillage : meta.track === "CLAN" ? user.rangClan : user.rangHistoire
@@ -324,6 +345,21 @@ export async function attemptSubmission(opts: {
   const effComm = await opts.effCommRank(meta.track);
   const gate = submissionGate(meta, { personalRank: personalRank ?? "E", effectiveCommRank: effComm });
   if (!gate.ok) return { ok: false, error: gate.reason };
+
+  let collaboratorIds: string[] = [];
+  let collaborators: string[] = [];
+  if (mode === "GROUP") {
+    const found = await prisma.user.findMany({
+      where: { username: { in: rawCollaborators } },
+      select: { id: true, username: true },
+    });
+    const foundByName = new Map(found.map((u) => [u.username, u]));
+    const missing = rawCollaborators.filter((name) => !foundByName.has(name));
+    if (missing.length > 0) return { ok: false, error: "COLLABORATEUR_INCONNU" };
+
+    collaboratorIds = rawCollaborators.map((name) => foundByName.get(name)!.id);
+    collaborators = rawCollaborators;
+  }
 
   // Réutilisation du RP : pas 2× la même condition ; Village ⊕ Clan.
   if (rpKey) {
@@ -359,18 +395,20 @@ export async function attemptSubmission(opts: {
   }
 
   await prisma.progressionSubmission.create({
-    data: {
-      userId: opts.userId,
-      track: meta.track,
-      tier: meta.tier,
-      targetRank: meta.rank,
-      condId,
-      scopeKey,
-      rpTitle: opts.rpTitle,
-      rpUrl: rpKey,
-      comment: opts.comment,
-    },
-  });
+      data: {
+        userId: opts.userId,
+        track: meta.track,
+        tier: meta.tier,
+        targetRank: meta.rank,
+        condId,
+        scopeKey,
+        rpTitle: opts.rpTitle,
+        rpUrl: rpKey,
+        comment: opts.comment,
+        collaborators,
+        collaboratorIds,
+      },
+    });
 
   // Met à jour l'état de réutilisation pour les conditions suivantes du lot.
   if (rpKey) {

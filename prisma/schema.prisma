@@ -277,6 +277,8 @@ model ProgressionSubmission {
   rpTitle     String?          // titre du RP
   rpUrl       String?          // lien vers le RP
   comment     String?          @db.Text // commentaire libre pour le staff
+  collaborators   String[]     @default([]) // pseudos exacts saisis par le joueur
+  collaboratorIds String[]     @default([]) // IDs résolus pour l'audit + la contrib
 
   status      SubmissionStatus @default(PENDING)
   rejectionReason String?

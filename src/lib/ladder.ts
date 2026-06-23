@@ -102,10 +102,9 @@ export async function loadLadder(): Promise<LadderData> {
         forumProfileUrl: true,
       },
     }),
-    prisma.progressionSubmission.groupBy({
-      by: ["userId"],
+    prisma.progressionSubmission.findMany({
       where: { status: "VALIDATED" },
-      _count: { _all: true },
+      select: { userId: true, collaboratorIds: true },
     }),
     loadScopeAggregates(),
     loadAllBaseRanks(),
@@ -113,7 +112,12 @@ export async function loadLadder(): Promise<LadderData> {
   ]);
 
   const contribByUser = new Map<string, number>();
-  for (const r of contribRows) contribByUser.set(r.userId, r._count._all);
+  for (const r of contribRows) {
+    contribByUser.set(r.userId, (contribByUser.get(r.userId) ?? 0) + 1);
+    for (const cid of r.collaboratorIds ?? []) {
+      contribByUser.set(cid, (contribByUser.get(cid) ?? 0) + 1);
+    }
+  }
 
   const players: LadderPlayer[] = users.map((u) => {
     const xp = u.forumLastXp ?? u.xpTotalEarned ?? 0;

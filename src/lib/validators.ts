@@ -5,6 +5,8 @@
 
 import { z } from "zod";
 
+import { isManualReviewSubmission, requiresCollaborators } from "@/lib/progression";
+
 // ----- Auth -----
 
 export const registerSchema = z.object({
@@ -193,7 +195,36 @@ export const progressionSubmitSchema = z.object({
   rpTitle: z.string().max(160).optional().nullable(),
   // Lien tolérant : le serveur normalise (préfixe https:// si le schéma manque).
   rpUrl: z.string().max(500).optional().nullable(),
-  comment: z.string().max(2000).optional().nullable(),
+  comment: z.string().trim().min(1).max(2000),
+  collaborators: z.array(z.string().trim().min(1).max(24)).max(8).optional(),
+}).superRefine((data, ctx) => {
+  const grouped = requiresCollaborators(data.condId);
+  const manual = isManualReviewSubmission(data.condId);
+  const collaborators = (data.collaborators ?? []).map((s) => s.trim()).filter(Boolean);
+
+  if (grouped && collaborators.length < 1) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["collaborators"],
+      message: "Au moins un pseudo exact est requis.",
+    });
+  }
+
+  if (!grouped && collaborators.length > 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["collaborators"],
+      message: "Cette condition se soumet en solo.",
+    });
+  }
+
+  if (manual && collaborators.length > 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["collaborators"],
+      message: "La demande manuelle ne nécessite pas de co-participant.",
+    });
+  }
 });
 export type ProgressionSubmitInput = z.infer<typeof progressionSubmitSchema>;
 
@@ -202,7 +233,39 @@ export const progressionBatchSchema = z.object({
   condIds: z.array(z.string().min(3).max(80)).min(1).max(60),
   rpTitle: z.string().max(160).optional().nullable(),
   rpUrl: z.string().max(500).optional().nullable(),
-  comment: z.string().max(2000).optional().nullable(),
+  comment: z.string().trim().min(1).max(2000),
+  collaborators: z.array(z.string().trim().min(1).max(24)).max(8).optional(),
+}).superRefine((data, ctx) => {
+  const modes = new Set(
+    data.condIds.map((condId) =>
+      isManualReviewSubmission(condId) ? "MANUAL" : requiresCollaborators(condId) ? "GROUP" : "SOLO"
+    )
+  );
+  const collaborators = (data.collaborators ?? []).map((s) => s.trim()).filter(Boolean);
+
+  if (modes.has("MANUAL") && data.condIds.length > 1) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["condIds"],
+      message: "Une demande manuelle doit être soumise seule.",
+    });
+  }
+
+  if (modes.has("GROUP") && collaborators.length < 1) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["collaborators"],
+      message: "Au moins un pseudo exact est requis.",
+    });
+  }
+
+  if (!modes.has("GROUP") && collaborators.length > 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["collaborators"],
+      message: "Cette sélection se soumet en solo.",
+    });
+  }
 });
 export type ProgressionBatchInput = z.infer<typeof progressionBatchSchema>;
 

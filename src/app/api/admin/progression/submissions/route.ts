@@ -43,6 +43,7 @@ export async function GET(req: Request) {
         status: true,
         rpTitle: true,
         rpUrl: true,
+        collaborators: true,
         createdAt: true,
         user: { select: { username: true } },
       },
@@ -57,6 +58,7 @@ export async function GET(req: Request) {
       status: r.status,
       rpTitle: r.rpTitle,
       rpUrl: r.rpUrl,
+      collaborators: r.collaborators,
       username: r.user?.username ?? null,
       createdAt: r.createdAt,
     }));
