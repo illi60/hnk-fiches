@@ -465,8 +465,8 @@ function CondRow({ cond, community = false }: { cond: CondView; community?: bool
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           condId: cond.id,
-          rpTitle: title.trim() || undefined,
-          rpUrl: url.trim() || undefined,
+          rpTitle: manualReview ? undefined : title.trim() || undefined,
+          rpUrl: manualReview ? undefined : url.trim() || undefined,
           comment: comment.trim() || undefined,
           collaborators: requiresCollaborators ? collaboratorList : undefined,
         }),
@@ -612,18 +612,22 @@ function CondRow({ cond, community = false }: { cond: CondView; community?: bool
       {/* Formulaire de soumission */}
       {open && (
         <div className="ml-6 mt-2 space-y-2 border-l-2 border-ember/30 pl-3">
-          <input
-            className="hnk-input !text-xs"
-            placeholder="Titre du RP"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-          <input
-            className="hnk-input !text-xs"
-            placeholder={manualReview ? "Lien du RP (optionnel pour cette demande manuelle)" : "Lien du RP (https://…)"}
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-          />
+          {!manualReview && (
+            <>
+              <input
+                className="hnk-input !text-xs"
+                placeholder="Titre du RP"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+              <input
+                className="hnk-input !text-xs"
+                placeholder="Lien du RP (https://…)"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+              />
+            </>
+          )}
           {requiresCollaborators && (
             <input
               className="hnk-input !text-xs"
