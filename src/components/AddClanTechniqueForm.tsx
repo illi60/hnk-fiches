@@ -6,7 +6,13 @@ import { useRouter } from "next/navigation";
 import { ART_OPTIONS, ACTION_TYPES, ELEMENTS } from "@/lib/techniques";
 import { KG_NAMES } from "@/lib/kekkei";
 
-export default function AddClanTechniqueForm({ clans }: { clans: string[] }) {
+export default function AddClanTechniqueForm({
+  clans,
+  kgNames = KG_NAMES,
+}: {
+  clans: string[];
+  kgNames?: string[];
+}) {
   const router = useRouter();
   const [v, setV] = useState({
     clan: clans[0] ?? "",
@@ -16,6 +22,8 @@ export default function AddClanTechniqueForm({ clans }: { clans: string[] }) {
     actionType: "",
     element: "",
     kekkeiGenkai: "",
+    secondaryElement: "",
+    secondaryKekkeiGenkai: "",
     coutXp: "0",
   });
   const [msg, setMsg] = useState<string | null>(null);
@@ -39,6 +47,8 @@ export default function AddClanTechniqueForm({ clans }: { clans: string[] }) {
       actionType: v.actionType || null,
       element: v.element || null,
       kekkeiGenkai: v.kekkeiGenkai,
+      secondaryElement: v.secondaryElement || null,
+      secondaryKekkeiGenkai: v.secondaryKekkeiGenkai || null,
       coutXp: parseInt(v.coutXp, 10) || 0,
     };
     start(async () => {
@@ -52,7 +62,15 @@ export default function AddClanTechniqueForm({ clans }: { clans: string[] }) {
         setMsg("Erreur lors de l'ajout.");
         return;
       }
-      setV((s) => ({ ...s, nom: "", description: "", element: "", kekkeiGenkai: "" }));
+      setV((s) => ({
+        ...s,
+        nom: "",
+        description: "",
+        element: "",
+        kekkeiGenkai: "",
+        secondaryElement: "",
+        secondaryKekkeiGenkai: "",
+      }));
       setMsg("Technique ajoutée à la bibliothèque.");
       router.refresh();
     });
@@ -83,7 +101,13 @@ export default function AddClanTechniqueForm({ clans }: { clans: string[] }) {
           label="Kekkei Genkai associé"
           v={v.kekkeiGenkai}
           on={(x) => up("kekkeiGenkai", x)}
-          options={KG_NAMES}
+          options={kgNames}
+        />
+        <Sel
+          label="KG secondaire"
+          v={v.secondaryKekkeiGenkai}
+          on={(x) => up("secondaryKekkeiGenkai", x)}
+          options={kgNames}
         />
         <Sel label="Art" v={v.art} on={(x) => up("art", x)} options={[...ART_OPTIONS]} />
         <Sel
@@ -92,7 +116,13 @@ export default function AddClanTechniqueForm({ clans }: { clans: string[] }) {
           on={(x) => up("actionType", x)}
           options={ACTION_TYPES.map((a) => a.key)}
         />
-        <Sel label="Élément" v={v.element} on={(x) => up("element", x)} options={[...ELEMENTS]} />
+        <Sel label="Affinité" v={v.element} on={(x) => up("element", x)} options={[...ELEMENTS]} />
+        <Sel
+          label="Affinité secondaire"
+          v={v.secondaryElement}
+          on={(x) => up("secondaryElement", x)}
+          options={[...ELEMENTS]}
+        />
         <Inp label="Coût XP (info)" v={v.coutXp} on={(x) => up("coutXp", x)} />
       </div>
       <label className="block mt-3">

@@ -7,9 +7,10 @@ import FicheForm from "@/components/FicheForm";
 import FicheActions from "@/components/FicheActions";
 import TechniqueExport from "@/components/TechniqueExport";
 import { actionLabel, natureLabel, ART_KANJI } from "@/lib/techniques";
-import { kgColor, kgCardStyle } from "@/lib/kekkei";
+import { kgColor } from "@/lib/kekkei";
 import { ownedKgsFull, ownedAffinities, type ProgressionState } from "@/lib/quintessence";
 import { ARTS_ALL, specRank, invocationSpecRank, type ArtsState } from "@/lib/arts";
+import { loadKgCatalogRows } from "@/lib/kekkei-server";
 
 const STATUS_LABEL: Record<string, string> = {
   DRAFT: "Brouillon",
@@ -80,6 +81,9 @@ export default async function FicheDetailPage({
   const authorState = ((author?.progressionState ?? {}) as unknown) as ProgressionState;
   const allowedKg = ownedKgsFull(author?.primaryKg, authorState, author?.kekkeiGenkai);
   const allowedElements = ownedAffinities(author?.primaryAffinity, author?.affinites);
+  const kgCatalog = await loadKgCatalogRows();
+  const kgNames = kgCatalog.map((kg) => kg.name);
+  const kgColors = Object.fromEntries(kgCatalog.map((kg) => [kg.name, kg.color]));
 
   // Rang de la spécialisation (calculé depuis l'état Arts de l'auteur).
   const authorArts = (author?.artsState ?? {}) as ArtsState;
@@ -144,7 +148,7 @@ export default async function FicheDetailPage({
       {readOnly ? (
         <>
           {/* Affichage fige (lecture seule) : telle que soumise puis validee. */}
-          <article className="hnk-tech" style={kgCardStyle(fiche.kekkeiGenkai)}>
+          <article className="hnk-tech" style={buildCardStyle(fiche.kekkeiGenkai, kgColors)}>
             <div className="hnk-tech-meta">
               Technique{fiche.coutXp ? ` · ${fiche.coutXp} XP` : ""}
             </div>
@@ -177,7 +181,10 @@ export default async function FicheDetailPage({
               {fiche.kekkeiGenkai && (
                 <span
                   className="hnk-tech-chip"
-                  style={{ color: kgColor(fiche.kekkeiGenkai), borderColor: kgColor(fiche.kekkeiGenkai) }}
+                  style={{
+                    color: resolveKgColor(fiche.kekkeiGenkai, kgColors),
+                    borderColor: resolveKgColor(fiche.kekkeiGenkai, kgColors),
+                  }}
                 >
                   KG · {fiche.kekkeiGenkai}
                 </span>
@@ -186,8 +193,8 @@ export default async function FicheDetailPage({
                 <span
                   className="hnk-tech-chip"
                   style={{
-                    color: kgColor(fiche.secondaryKekkeiGenkai),
-                    borderColor: kgColor(fiche.secondaryKekkeiGenkai),
+                    color: resolveKgColor(fiche.secondaryKekkeiGenkai, kgColors),
+                    borderColor: resolveKgColor(fiche.secondaryKekkeiGenkai, kgColors),
                   }}
                 >
                   KG · {fiche.secondaryKekkeiGenkai}
@@ -244,6 +251,8 @@ export default async function FicheDetailPage({
           rangClan={author?.rangClan ?? null}
           artsState={(author?.artsState ?? null) as import("@/lib/arts").ArtsState | null}
           villageRank={author?.rang ?? null}
+          kgNames={kgNames}
+          kgColors={kgColors}
           initial={{
             nom: fiche.nom,
             description: fiche.description,
@@ -264,4 +273,18 @@ export default async function FicheDetailPage({
       )}
     </div>
   );
+}
+
+function resolveKgColor(name: string, kgColors?: Record<string, string>) {
+  return kgColors?.[name] ?? kgColor(name);
+}
+
+function buildCardStyle(name: string | null, kgColors?: Record<string, string>) {
+  if (!name) return {};
+  const c = resolveKgColor(name, kgColors);
+  return {
+    backgroundImage: `linear-gradient(135deg, ${c}2e 0%, ${c}14 38%, rgba(0,0,0,0) 72%)`,
+    borderColor: `${c}66`,
+    boxShadow: `inset 4px 0 0 ${c}, 0 0 22px ${c}1f`,
+  };
 }

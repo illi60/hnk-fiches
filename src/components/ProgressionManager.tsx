@@ -48,12 +48,16 @@ export default function ProgressionManager({
   villageRank,
   clanRank,
   histoireRank,
+  kgNames = KG_NAMES,
+  kgColors,
 }: {
   progression: ProgressionState;
   xpAvailable: number;
   villageRank: string | null;
   clanRank: string | null;
   histoireRank: string | null;
+  kgNames?: string[];
+  kgColors?: Record<string, string>;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -73,8 +77,8 @@ export default function ProgressionManager({
   const takenKg = new Set(owned.filter((q) => q.kind === "KG").map((q) => q.target.toLowerCase()));
   const takenKg2 = new Set(owned.filter((q) => q.kind === "KG2").map((q) => q.target.toLowerCase()));
   const artOptions = (ART_OPTIONS as readonly string[]).filter((o) => !takenArt.has(o.toLowerCase()));
-  const kgOptions = KG_NAMES.filter((o) => !takenKg.has(o.toLowerCase()));
-  const kg2Options = KG_NAMES.filter((o) => !takenKg2.has(o.toLowerCase()));
+  const kgOptions = kgNames.filter((o) => !takenKg.has(o.toLowerCase()));
+  const kg2Options = kgNames.filter((o) => !takenKg2.has(o.toLowerCase()));
 
   // Une seule quintessence de la famille KG (KG OU 2nd KG) au total.
   const hasAnyKgFamily = hasKg || hasKg2;
@@ -181,7 +185,9 @@ export default function ProgressionManager({
                   key={i}
                   className="hnk-chip"
                   style={
-                    q.kind !== "ART"
+                    kgColors?.[q.target]
+                      ? { color: kgColors[q.target], borderColor: kgColors[q.target] }
+                      : q.kind === "ART"
                       ? { color: kgColor(q.target), borderColor: kgColor(q.target) }
                       : undefined
                   }

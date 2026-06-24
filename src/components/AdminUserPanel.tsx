@@ -48,10 +48,12 @@ export default function AdminUserPanel({
   user,
   currentUserId,
   canManageAdmins,
+  kgNames = KG_NAMES,
 }: {
   user: AdminUser;
   currentUserId: string;
   canManageAdmins: boolean;
+  kgNames?: string[];
 }) {
   return (
     <div className="space-y-8">
@@ -61,13 +63,14 @@ export default function AdminUserPanel({
         canManageAdmins={canManageAdmins}
       />
       <XpForm userId={user.id} />
-      <ProfilForm user={user} />
+      <ProfilForm user={user} kgNames={kgNames} />
       <PactAffinityAdminForm userId={user.id} current={user.pactAffinities ?? []} />
       <AddTechniqueForm
         userId={user.id}
         userClan={user.clan}
         artsState={(user.artsState ?? {}) as ArtsState}
         villageRank={user.rang}
+        kgNames={kgNames}
       />
       <AdminArtsForm userId={user.id} artsState={(user.artsState ?? {}) as ArtsState} />
       <AdminQuintForm
@@ -76,6 +79,7 @@ export default function AdminUserPanel({
           (user.progressionState as { quintessences?: { kind: string; target: string }[] } | null)
             ?.quintessences ?? []
         }
+        kgNames={kgNames}
       />
       <ModeForm user={user} />
       <ForumLinkPanel user={user} />
@@ -501,7 +505,7 @@ function XpForm({ userId }: { userId: string }) {
 
 // ===== Profil RP =====
 
-function ProfilForm({ user }: { user: AdminUser }) {
+function ProfilForm({ user, kgNames }: { user: AdminUser; kgNames: string[] }) {
   const router = useRouter();
   const [v, setV] = useState({
     primaryKg: user.primaryKg ?? "",
@@ -566,7 +570,7 @@ function ProfilForm({ user }: { user: AdminUser }) {
     <section className="border border-white/5 bg-ink-700 p-4">
       <h3 className="text-[10px] tracking-[0.28em] uppercase text-ember mb-3">Profil RP</h3>
       <div className="grid sm:grid-cols-3 gap-3">
-        <Sel label="1er KG" v={v.primaryKg} on={(x) => update("primaryKg", x)} options={KG_NAMES} />
+        <Sel label="1er KG" v={v.primaryKg} on={(x) => update("primaryKg", x)} options={kgNames} />
         <Sel
           label="1ère affinité"
           v={v.primaryAffinity}
@@ -616,7 +620,7 @@ function ProfilForm({ user }: { user: AdminUser }) {
           label="Kekkei Genkai"
           v={v.kekkeiGenkai}
           on={(x) => update("kekkeiGenkai", x)}
-          options={KG_NAMES}
+          options={kgNames}
         />
         <Inp
           label="Affinités (séparées par ,)"
@@ -719,11 +723,13 @@ function AddTechniqueForm({
   userClan,
   artsState,
   villageRank,
+  kgNames,
 }: {
   userId: string;
   userClan: string | null;
   artsState: ArtsState;
   villageRank: string | null;
+  kgNames: string[];
 }) {
   const router = useRouter();
   const [v, setV] = useState({
@@ -843,7 +849,7 @@ function AddTechniqueForm({
           label="Kekkei Genkai"
           v={v.kekkeiGenkai}
           on={(x) => up("kekkeiGenkai", x)}
-          options={KG_NAMES}
+          options={kgNames}
         />
         <Sel
           label="Nature"

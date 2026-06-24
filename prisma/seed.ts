@@ -1,5 +1,6 @@
 import { PrismaClient, Role } from "@prisma/client";
 import { hash } from "bcryptjs";
+import { DEFAULT_KEKKEI_GENKAI } from "../src/lib/kekkei";
 
 const prisma = new PrismaClient();
 
@@ -26,6 +27,31 @@ async function main() {
   });
 
   console.log(`✓ Admin ready: ${admin.email} (id=${admin.id})`);
+
+  for (const kg of DEFAULT_KEKKEI_GENKAI) {
+    await prisma.kekkeiGenkaiCatalog.upsert({
+      where: { name: kg.name },
+      update: {
+        subtitle: kg.subtitle,
+        clan: kg.clan ?? null,
+        color: kg.color,
+        category: kg.category,
+        quintessence: kg.evolutions?.quintessence ?? null,
+        kinjutsu: kg.evolutions?.kinjutsu ?? null,
+        finale: kg.evolutions?.finale ?? null,
+      },
+      create: {
+        name: kg.name,
+        subtitle: kg.subtitle,
+        clan: kg.clan ?? null,
+        color: kg.color,
+        category: kg.category,
+        quintessence: kg.evolutions?.quintessence ?? null,
+        kinjutsu: kg.evolutions?.kinjutsu ?? null,
+        finale: kg.evolutions?.finale ?? null,
+      },
+    });
+  }
 }
 
 main()

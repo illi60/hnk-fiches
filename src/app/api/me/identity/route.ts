@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser, jsonError } from "@/lib/permissions";
 import { identitySchema } from "@/lib/validators";
-import { KG_NAMES } from "@/lib/kekkei";
+import { isKnownKg } from "@/lib/kekkei-server";
 import { ELEMENTS } from "@/lib/techniques";
 import { RANKS, rankIndex } from "@/lib/arts";
 
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     const data: Record<string, string> = {};
     if (parsed.data.kg) {
       if (user.primaryKg) return NextResponse.json({ ok: false, error: "KG_DEJA_CHOISI" }, { status: 409 });
-      if (!KG_NAMES.includes(parsed.data.kg))
+      if (!(await isKnownKg(parsed.data.kg)))
         return NextResponse.json({ ok: false, error: "KG_INVALIDE" }, { status: 400 });
       data.primaryKg = parsed.data.kg;
     }

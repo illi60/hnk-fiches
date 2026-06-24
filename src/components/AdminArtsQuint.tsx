@@ -138,9 +138,11 @@ function RankPick({ label, v, on }: { label: string; v: string; on: (x: string) 
 export function AdminQuintForm({
   userId,
   quintessences,
+  kgNames = KG_NAMES,
 }: {
   userId: string;
   quintessences: { kind: string; target: string }[];
+  kgNames?: string[];
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -152,7 +154,7 @@ export function AdminQuintForm({
   const targetOptions =
     kind === "ART" ? [...ART_OPTIONS] :
     kind === "KUCHIYOSE" ? [...KUCHIYOSE.specs] :
-    KG_NAMES;
+    kgNames;
 
   function add() {
     if (!target) return;

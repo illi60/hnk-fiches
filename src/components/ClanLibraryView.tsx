@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { actionLabel } from "@/lib/techniques";
-import { kgColor, kgCardStyle } from "@/lib/kekkei";
+import { kgColor } from "@/lib/kekkei";
 import ForumCopyButton from "@/components/ForumCopyButton";
 
 export interface LibTech {
@@ -44,10 +44,12 @@ export default function ClanLibraryView({
   techniques,
   clan,
   showUsable = true,
+  kgColors,
 }: {
   techniques: LibTech[];
   clan: string;
   showUsable?: boolean;
+  kgColors?: Record<string, string>;
 }) {
   const [by, setBy] = useState<GroupBy>("actionType");
 
@@ -96,7 +98,7 @@ export default function ClanLibraryView({
           </h2>
           <div className="grid sm:grid-cols-2 gap-4">
             {list.map((t) => (
-              <div key={t.id} className="hnk-panel" data-kanji="蔵" style={kgCardStyle(t.kekkeiGenkai)}>
+              <div key={t.id} className="hnk-panel" data-kanji="蔵" style={buildCardStyle(t.kekkeiGenkai, kgColors)}>
                 <div className="flex items-start justify-between gap-2">
                   <h3 className="font-display uppercase tracking-wider text-lg text-white min-w-0 break-words">
                     {t.nom}
@@ -128,7 +130,10 @@ export default function ClanLibraryView({
                   {t.kekkeiGenkai && (
                     <span
                       className="hnk-tech-chip"
-                      style={{ color: kgColor(t.kekkeiGenkai), borderColor: kgColor(t.kekkeiGenkai) }}
+                      style={{
+                        color: resolveKgColor(t.kekkeiGenkai, kgColors),
+                        borderColor: resolveKgColor(t.kekkeiGenkai, kgColors),
+                      }}
                     >
                       KG · {t.kekkeiGenkai}
                     </span>
@@ -137,8 +142,8 @@ export default function ClanLibraryView({
                     <span
                       className="hnk-tech-chip"
                       style={{
-                        color: kgColor(t.secondaryKekkeiGenkai),
-                        borderColor: kgColor(t.secondaryKekkeiGenkai),
+                        color: resolveKgColor(t.secondaryKekkeiGenkai, kgColors),
+                        borderColor: resolveKgColor(t.secondaryKekkeiGenkai, kgColors),
                       }}
                     >
                       KG · {t.secondaryKekkeiGenkai}
@@ -181,4 +186,18 @@ export default function ClanLibraryView({
       ))}
     </div>
   );
+}
+
+function resolveKgColor(name: string, kgColors?: Record<string, string>) {
+  return kgColors?.[name] ?? kgColor(name);
+}
+
+function buildCardStyle(name: string | null, kgColors?: Record<string, string>) {
+  if (!name) return {};
+  const c = resolveKgColor(name, kgColors);
+  return {
+    backgroundImage: `linear-gradient(135deg, ${c}2e 0%, ${c}14 38%, rgba(0,0,0,0) 72%)`,
+    borderColor: `${c}66`,
+    boxShadow: `inset 4px 0 0 ${c}, 0 0 22px ${c}1f`,
+  };
 }

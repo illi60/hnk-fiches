@@ -12,11 +12,15 @@ export default function IdentityChooser({
   primaryAffinity,
   rang,
   secondAffinity,
+  kgNames = KG_NAMES,
+  kgColors,
 }: {
   primaryKg: string | null;
   primaryAffinity: string | null;
   rang?: string | null;
   secondAffinity?: string | null;
+  kgNames?: string[];
+  kgColors?: Record<string, string>;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -62,7 +66,10 @@ export default function IdentityChooser({
           {primaryKg ? (
             <span
               className="hnk-chip"
-              style={{ color: kgColor(primaryKg), borderColor: kgColor(primaryKg) }}
+              style={{
+                color: resolveKgColor(primaryKg, kgColors),
+                borderColor: resolveKgColor(primaryKg, kgColors),
+              }}
             >
               {primaryKg}
             </span>
@@ -70,7 +77,7 @@ export default function IdentityChooser({
             <div className="flex items-center gap-2">
               <select className="hnk-input" value={kg} onChange={(e) => setKg(e.target.value)}>
                 <option value="">— Choisir mon 1er KG</option>
-                {KG_NAMES.map((k) => (
+                {kgNames.map((k) => (
                   <option key={k} value={k}>
                     {k}
                   </option>
@@ -149,4 +156,8 @@ export default function IdentityChooser({
       {err && <p className="text-sm text-ember-hot mt-2">{err}</p>}
     </div>
   );
+}
+
+function resolveKgColor(name: string, kgColors?: Record<string, string>) {
+  return kgColors?.[name] ?? kgColor(name);
 }

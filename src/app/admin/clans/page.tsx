@@ -2,11 +2,16 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/permissions";
 import AddClanTechniqueForm from "@/components/AddClanTechniqueForm";
 import ClanLibraryView from "@/components/ClanLibraryView";
+import KekkeiCatalogAdmin from "@/components/KekkeiCatalogAdmin";
+import { loadKgCatalogRows } from "@/lib/kekkei-server";
 
 const KNOWN_CLANS = ["SENJU", "UCHIHA", "UZUMAKI", "SARUTOBI", "HYUGA"];
 
 export default async function AdminClansPage() {
   await requireAdmin();
+  const kgCatalog = await loadKgCatalogRows();
+  const kgNames = kgCatalog.map((kg) => kg.name);
+  const kgColors = Object.fromEntries(kgCatalog.map((kg) => [kg.name, kg.color]));
 
   // Clans connus + clans réellement présents sur les profils.
   const usersWithClan = await prisma.user.findMany({
@@ -59,7 +64,9 @@ export default async function AdminClansPage() {
         </p>
       </div>
 
-      <AddClanTechniqueForm clans={clans} />
+      <KekkeiCatalogAdmin kg={kgCatalog} />
+
+      <AddClanTechniqueForm clans={clans} kgNames={kgNames} />
 
       <div className="space-y-6">
         {clans.map((clan) => {
@@ -72,6 +79,7 @@ export default async function AdminClansPage() {
               <ClanLibraryView
                 clan={clan}
                 showUsable={false}
+                kgColors={kgColors}
                 techniques={list.map((t) => ({
                   id: t.id,
                   nom: t.nom,

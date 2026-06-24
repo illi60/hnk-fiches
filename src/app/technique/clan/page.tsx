@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { ownedKgsFull, type ProgressionState } from "@/lib/quintessence";
 import ClanLibraryView from "@/components/ClanLibraryView";
+import { loadKgCatalog } from "@/lib/kekkei-server";
 
 export const metadata = { title: "Bibliothèque de clan · Hi no Kuni" };
 
@@ -23,6 +24,8 @@ export default async function ClanLibraryPage() {
     (user.progressionState ?? {}) as unknown as ProgressionState,
     user.kekkeiGenkai
   ).map((k) => k.toLowerCase());
+  const kgCatalog = await loadKgCatalog();
+  const kgColors = Object.fromEntries(kgCatalog.map((kg) => [kg.name, kg.color]));
 
   const rows = await prisma.ficheTechnique.findMany({
     where: {
@@ -69,7 +72,7 @@ export default async function ClanLibraryPage() {
         </Link>
       </div>
 
-      <ClanLibraryView techniques={techniques} clan={user.clan} />
+      <ClanLibraryView techniques={techniques} clan={user.clan} kgColors={kgColors} />
     </div>
   );
 }

@@ -45,6 +45,8 @@ export async function POST(req: Request) {
         actionType: d.actionType ?? null,
         element: d.element ?? null,
         kekkeiGenkai: d.kekkeiGenkai,
+        secondaryElement: d.secondaryElement ?? null,
+        secondaryKekkeiGenkai: d.secondaryKekkeiGenkai ?? null,
         nature: "COLLECTIVE",
         clan: d.clan.trim(),
         coutXp: d.coutXp ?? 0,

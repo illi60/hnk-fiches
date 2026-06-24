@@ -11,6 +11,7 @@ import {
   type ProgressionState,
 } from "@/lib/quintessence";
 import InvocationsManager, { type Invocation } from "@/components/InvocationsManager";
+import { loadKgCatalogRows } from "@/lib/kekkei-server";
 
 export default async function InvocationsPage() {
   const session = await auth();
@@ -38,6 +39,9 @@ export default async function InvocationsPage() {
 
   const prog = getProgression((dbUser?.progressionState ?? {}) as unknown as ProgressionState);
   const ermiteStage = prog.mode?.path === "ERMITE" ? prog.mode?.stage ?? 0 : 0;
+  const kgCatalog = await loadKgCatalogRows();
+  const kgNames = kgCatalog.map((kg) => kg.name);
+  const kgColors = Object.fromEntries(kgCatalog.map((kg) => [kg.name, kg.color]));
 
   const rows = await prisma.invocation.findMany({
     where: { ownerId: session.user.id },
@@ -92,6 +96,8 @@ export default async function InvocationsPage() {
         pactSpecies={dbUser?.pactSpecies ?? null}
         ermitePerfect={ermiteStage >= 3}
         ownedKgs={ownedKgsFull(dbUser?.primaryKg, prog, dbUser?.kekkeiGenkai)}
+        kgNames={kgNames}
+        kgColors={kgColors}
         ficheCtx={{
           allowedKg: ownedKgs(dbUser?.primaryKg, prog),
           allowedElements: ownedAffinities(dbUser?.primaryAffinity, dbUser?.affinites),

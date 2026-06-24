@@ -48,6 +48,8 @@ export default function FicheForm({
   kuchyAllArts = false,
   artsState = null,
   villageRank = null,
+  kgNames = KG_NAMES,
+  kgColors,
 }: {
   initial?: FicheFormInitial;
   ficheId?: string;
@@ -61,6 +63,8 @@ export default function FicheForm({
   kuchyAllArts?: boolean; // Mode Ermite parfait : le kuchy accède à TOUS tes arts
   artsState?: ArtsState | null; // état des Arts du joueur (pour afficher les rangs de spés)
   villageRank?: string | null; // rang de village du joueur
+  kgNames?: string[];
+  kgColors?: Record<string, string>;
 }) {
   const router = useRouter();
 
@@ -133,7 +137,7 @@ export default function FicheForm({
 
   // KG / affinités : restreints à ceux du joueur, SAUF en Tag Team où l'on peut
   // utiliser ceux des partenaires (catalogue complet).
-  const kgPool = isTagTeam ? KG_NAMES : allowedKg ?? KG_NAMES;
+  const kgPool = isTagTeam ? kgNames : allowedKg ?? kgNames;
   const elementPool = isTagTeam ? (ELEMENTS as readonly string[]) : allowedElements ?? ELEMENTS;
   const kgOptions = Array.from(new Set([...kgPool, ...(v.kekkeiGenkai ? [v.kekkeiGenkai] : [])]));
   const elementOptions = Array.from(
@@ -147,6 +151,7 @@ export default function FicheForm({
   const clanKgName = clanKg(userClan);
   const ownsClanKg =
     !!clanKgName && (allowedKg ?? []).some((k) => k.toLowerCase() === clanKgName.toLowerCase());
+  const resolvedKgColor = (name?: string | null) => (name ? kgColors?.[name] ?? kgColor(name) : kgColor(name));
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -518,7 +523,10 @@ export default function FicheForm({
             {v.kekkeiGenkai && (
               <span
                 className="inline-block w-4 h-4 rounded-sm flex-none"
-                style={{ background: kgColor(v.kekkeiGenkai), boxShadow: `0 0 8px ${kgColor(v.kekkeiGenkai)}` }}
+                style={{
+                  background: resolvedKgColor(v.kekkeiGenkai),
+                  boxShadow: `0 0 8px ${resolvedKgColor(v.kekkeiGenkai)}`,
+                }}
                 title={v.kekkeiGenkai}
               />
             )}
@@ -565,7 +573,7 @@ export default function FicheForm({
               <>
                 <p className="text-sm text-bone">
                   Clan : <span className="text-ember">{userClan}</span> · KG du clan :{" "}
-                  <span style={{ color: kgColor(clanKgName) }}>{clanKgName}</span>
+                  <span style={{ color: resolvedKgColor(clanKgName) }}>{clanKgName}</span>
                 </p>
                 {!ownsClanKg && (
                   <p className="text-sm text-ember-hot">

@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import FicheForm from "@/components/FicheForm";
 import { ownedKgsFull, ownedAffinities, type ProgressionState } from "@/lib/quintessence";
+import { loadKgCatalogRows } from "@/lib/kekkei-server";
 
 export const metadata = { title: "Nouvelle technique · Hi no Kuni" };
 
@@ -28,6 +29,9 @@ export default async function NewFichePage() {
   const state = ((user?.progressionState ?? {}) as unknown) as ProgressionState;
   const allowedKg = ownedKgsFull(user?.primaryKg, state, user?.kekkeiGenkai);
   const allowedElements = ownedAffinities(user?.primaryAffinity, user?.affinites);
+  const kgCatalog = await loadKgCatalogRows();
+  const kgNames = kgCatalog.map((kg) => kg.name);
+  const kgColors = Object.fromEntries(kgCatalog.map((kg) => [kg.name, kg.color]));
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -46,6 +50,8 @@ export default async function NewFichePage() {
         rangClan={user?.rangClan ?? null}
         artsState={(user?.artsState ?? null) as import("@/lib/arts").ArtsState | null}
         villageRank={user?.rang ?? null}
+        kgNames={kgNames}
+        kgColors={kgColors}
       />
     </div>
   );

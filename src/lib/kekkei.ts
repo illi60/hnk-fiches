@@ -23,7 +23,7 @@ export interface KGDef {
   evolutions?: KGEvolutions;
 }
 
-export const KEKKEI_GENKAI: KGDef[] = [
+export const DEFAULT_KEKKEI_GENKAI: KGDef[] = [
   {
     name: "Mokuton",
     subtitle: "Bois · Senju",
@@ -106,11 +106,12 @@ export const KEKKEI_GENKAI: KGDef[] = [
   { name: "Arme à Kekkei Genkai", subtitle: "Arme porteuse de KG", color: "#ff8a4c", category: "SPECIAL" },
 ];
 
-export const KG_NAMES = KEKKEI_GENKAI.map((k) => k.name);
+export const KEKKEI_GENKAI = DEFAULT_KEKKEI_GENKAI;
+export const KG_NAMES = DEFAULT_KEKKEI_GENKAI.map((k) => k.name);
 
 export function kgDef(name?: string | null): KGDef | undefined {
   if (!name) return undefined;
-  return KEKKEI_GENKAI.find((k) => k.name.toLowerCase() === name.toLowerCase());
+  return DEFAULT_KEKKEI_GENKAI.find((k) => k.name.toLowerCase() === name.toLowerCase());
 }
 
 /** Couleur d'un KG (défaut ember si inconnu / libre). */

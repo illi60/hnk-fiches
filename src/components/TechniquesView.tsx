@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 
 import { actionLabel } from "@/lib/techniques";
-import { kgColor, kgCardStyle } from "@/lib/kekkei";
+import { kgColor } from "@/lib/kekkei";
 import ForumCopyButton from "@/components/ForumCopyButton";
 
 export interface MyTech {
@@ -63,7 +63,13 @@ function groupKey(t: MyTech, by: GroupBy): string {
   return "Toutes";
 }
 
-export default function TechniquesView({ techniques }: { techniques: MyTech[] }) {
+export default function TechniquesView({
+  techniques,
+  kgColors,
+}: {
+  techniques: MyTech[];
+  kgColors?: Record<string, string>;
+}) {
   const [by, setBy] = useState<GroupBy>("status");
 
   const groups = useMemo(() => {
@@ -107,7 +113,7 @@ export default function TechniquesView({ techniques }: { techniques: MyTech[] })
           </h2>
           <div className="grid sm:grid-cols-2 gap-4">
             {list.map((t) => (
-              <div key={t.id} className="hnk-panel" data-kanji="技" style={kgCardStyle(t.kekkeiGenkai)}>
+              <div key={t.id} className="hnk-panel" data-kanji="技" style={buildCardStyle(t.kekkeiGenkai, kgColors)}>
                 <div className="flex items-start justify-between gap-2">
                   <Link
                     href={`/technique/fiches/${t.id}`}
@@ -126,12 +132,16 @@ export default function TechniquesView({ techniques }: { techniques: MyTech[] })
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {t.art && (
                     <span className="hnk-tech-chip">
-                      {t.art}{t.spec ? ` · ${t.spec}` : ""}{t.specRank ? ` · ${t.specRank}` : ""}
+                      {t.art}
+                      {t.spec ? ` · ${t.spec}` : ""}
+                      {t.specRank ? ` · ${t.specRank}` : ""}
                     </span>
                   )}
                   {t.secondaryArt && (
                     <span className="hnk-tech-chip">
-                      + {t.secondaryArt}{t.secondarySpec ? ` · ${t.secondarySpec}` : ""}{t.secondarySpecRank ? ` · ${t.secondarySpecRank}` : ""}
+                      + {t.secondaryArt}
+                      {t.secondarySpec ? ` · ${t.secondarySpec}` : ""}
+                      {t.secondarySpecRank ? ` · ${t.secondarySpecRank}` : ""}
                     </span>
                   )}
                   {t.actionType && <span className="hnk-tech-chip">{actionLabel(t.actionType)}</span>}
@@ -140,7 +150,10 @@ export default function TechniquesView({ techniques }: { techniques: MyTech[] })
                   {t.kekkeiGenkai && (
                     <span
                       className="hnk-tech-chip"
-                      style={{ color: kgColor(t.kekkeiGenkai), borderColor: kgColor(t.kekkeiGenkai) }}
+                      style={{
+                        color: resolveKgColor(t.kekkeiGenkai, kgColors),
+                        borderColor: resolveKgColor(t.kekkeiGenkai, kgColors),
+                      }}
                     >
                       KG · {t.kekkeiGenkai}
                     </span>
@@ -149,8 +162,8 @@ export default function TechniquesView({ techniques }: { techniques: MyTech[] })
                     <span
                       className="hnk-tech-chip"
                       style={{
-                        color: kgColor(t.secondaryKekkeiGenkai),
-                        borderColor: kgColor(t.secondaryKekkeiGenkai),
+                        color: resolveKgColor(t.secondaryKekkeiGenkai, kgColors),
+                        borderColor: resolveKgColor(t.secondaryKekkeiGenkai, kgColors),
                       }}
                     >
                       KG · {t.secondaryKekkeiGenkai}
@@ -211,4 +224,18 @@ export default function TechniquesView({ techniques }: { techniques: MyTech[] })
       ))}
     </div>
   );
+}
+
+function resolveKgColor(name: string, kgColors?: Record<string, string>) {
+  return kgColors?.[name] ?? kgColor(name);
+}
+
+function buildCardStyle(name: string | null, kgColors?: Record<string, string>) {
+  if (!name) return {};
+  const c = resolveKgColor(name, kgColors);
+  return {
+    backgroundImage: `linear-gradient(135deg, ${c}2e 0%, ${c}14 38%, rgba(0,0,0,0) 72%)`,
+    borderColor: `${c}66`,
+    boxShadow: `inset 4px 0 0 ${c}, 0 0 22px ${c}1f`,
+  };
 }

@@ -12,10 +12,14 @@ import ProgressionManager from "@/components/ProgressionManager";
 import IdentityChooser from "@/components/IdentityChooser";
 import ChangePassword from "@/components/ChangePassword";
 import { type ProgressionState } from "@/lib/quintessence";
+import { loadKgCatalog } from "@/lib/kekkei-server";
 
 export default async function DashboardPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
+  const kgCatalog = await loadKgCatalog();
+  const kgNames = kgCatalog.map((kg) => kg.name);
+  const kgColors = Object.fromEntries(kgCatalog.map((kg) => [kg.name, kg.color]));
 
   // Read-through : rafraîchit depuis le forum si le cache a dépassé le TTL
   // (best-effort, jamais bloquant — sert le cache si le forum est lent).
@@ -114,6 +118,8 @@ export default async function DashboardPage() {
         primaryAffinity={user.primaryAffinity}
         rang={user.rang}
         secondAffinity={(user.affinites ?? []).find((a) => a && a !== user.primaryAffinity) ?? null}
+        kgNames={kgNames}
+        kgColors={kgColors}
       />
 
       {/* Fiche du personnage — remontée */}
@@ -169,6 +175,8 @@ export default async function DashboardPage() {
         villageRank={user.rangVillage}
         clanRank={user.rangClan}
         histoireRank={user.rangHistoire}
+        kgNames={kgNames}
+        kgColors={kgColors}
       />
 
       {user.forumProfileUrl && (

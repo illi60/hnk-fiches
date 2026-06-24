@@ -52,6 +52,8 @@ export default function InvocationsManager({
   pactSpecies,
   ermitePerfect,
   ownedKgs,
+  kgNames,
+  kgColors,
   ficheCtx,
 }: {
   initial: Invocation[];
@@ -60,6 +62,8 @@ export default function InvocationsManager({
   pactSpecies: string | null;
   ermitePerfect: boolean;
   ownedKgs: string[];
+  kgNames: string[];
+  kgColors?: Record<string, string>;
   ficheCtx: FicheFormCtx;
 }) {
   const router = useRouter();
@@ -103,6 +107,8 @@ export default function InvocationsManager({
                   pactAffinities={pactAffinities}
                   ermitePerfect={ermitePerfect}
                   ficheCtx={ficheCtx}
+                  kgNames={kgNames}
+                  kgColors={kgColors}
                   onEdit={() => setEditing(inv)}
                   onChanged={() => router.refresh()}
                 />
@@ -235,6 +241,8 @@ function InvocationCard({
   pactAffinities,
   ermitePerfect,
   ficheCtx,
+  kgNames,
+  kgColors,
   onEdit,
   onChanged,
 }: {
@@ -242,6 +250,8 @@ function InvocationCard({
   pactAffinities: string[];
   ermitePerfect: boolean;
   ficheCtx: FicheFormCtx;
+  kgNames: string[];
+  kgColors?: Record<string, string>;
   onEdit: () => void;
   onChanged: () => void;
 }) {
@@ -324,6 +334,8 @@ function InvocationCard({
             rangClan={ficheCtx.rangClan}
             artsState={ficheCtx.artsState}
             villageRank={ficheCtx.villageRank}
+            kgNames={kgNames}
+            kgColors={kgColors}
           />
           <button
             type="button"

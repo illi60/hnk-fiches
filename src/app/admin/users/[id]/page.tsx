@@ -6,6 +6,7 @@ import { requireAdmin } from "@/lib/permissions";
 import AdminUserPanel from "@/components/AdminUserPanel";
 import { AdminDeleteFicheButton, AdminDeleteInvocationButton } from "@/components/AdminDeleteButtons";
 import { levelProgress } from "@/lib/xp";
+import { loadKgNames } from "@/lib/kekkei-server";
 
 export default async function AdminUserDetail({
   params,
@@ -14,6 +15,7 @@ export default async function AdminUserDetail({
 }) {
   const me = await requireAdmin();
   const { id } = await params;
+  const kgNames = await loadKgNames();
 
   const [user, history, fiches, invocations] = await Promise.all([
     prisma.user.findUnique({
@@ -97,6 +99,7 @@ export default async function AdminUserDetail({
           user={user}
           currentUserId={me.id}
           canManageAdmins={me.canManageAdmins}
+          kgNames={kgNames}
         />
 
       <section>

@@ -4,8 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { requireFicheModerator } from "@/lib/permissions";
 import AdminFicheDecision from "@/components/AdminFicheDecision";
 import { actionLabel, natureLabel, ART_KANJI } from "@/lib/techniques";
-import { kgColor } from "@/lib/kekkei";
 import { ARTS_ALL, specRank, invocationSpecRank, type ArtsState } from "@/lib/arts";
+import { loadKgCatalogRows } from "@/lib/kekkei-server";
 
 export default async function AdminFichesPage({
   searchParams,
@@ -26,6 +26,8 @@ export default async function AdminFichesPage({
     REJECTED: "Refusées",
     DRAFT: "Brouillons",
   };
+  const kgCatalog = await loadKgCatalogRows();
+  const kgColors = Object.fromEntries(kgCatalog.map((kg) => [kg.name, kg.color]));
 
   const fiches = await prisma.ficheTechnique.findMany({
     where: { status, isActive: true },
@@ -158,7 +160,10 @@ export default async function AdminFichesPage({
                   {f.kekkeiGenkai && (
                     <span
                       className="hnk-chip"
-                      style={{ color: kgColor(f.kekkeiGenkai), borderColor: kgColor(f.kekkeiGenkai) }}
+                      style={{
+                        color: resolveKgColor(f.kekkeiGenkai, kgColors),
+                        borderColor: resolveKgColor(f.kekkeiGenkai, kgColors),
+                      }}
                     >
                       KG · {f.kekkeiGenkai}
                     </span>
@@ -167,8 +172,8 @@ export default async function AdminFichesPage({
                     <span
                       className="hnk-chip"
                       style={{
-                        color: kgColor(f.secondaryKekkeiGenkai),
-                        borderColor: kgColor(f.secondaryKekkeiGenkai),
+                        color: resolveKgColor(f.secondaryKekkeiGenkai, kgColors),
+                        borderColor: resolveKgColor(f.secondaryKekkeiGenkai, kgColors),
                       }}
                     >
                       KG · {f.secondaryKekkeiGenkai}
@@ -207,4 +212,8 @@ export default async function AdminFichesPage({
       </ul>
     </div>
   );
+}
+
+function resolveKgColor(name: string, kgColors?: Record<string, string>) {
+  return kgColors?.[name] ?? "#ff8a4c";
 }

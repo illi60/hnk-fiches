@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import TechniquesView, { type MyTech } from "@/components/TechniquesView";
 import { ARTS_ALL, specRank, invocationSpecRank, type ArtsState } from "@/lib/arts";
+import { loadKgCatalogRows } from "@/lib/kekkei-server";
 
 export default async function MyFichesPage() {
   const session = await auth();
@@ -17,6 +18,8 @@ export default async function MyFichesPage() {
   });
   const meArts = (me?.artsState ?? null) as ArtsState | null;
   const meVillageRank = me?.rang ?? null;
+  const kgCatalog = await loadKgCatalogRows();
+  const kgColors = Object.fromEntries(kgCatalog.map((kg) => [kg.name, kg.color]));
 
   // Mes fiches + celles où je suis participant (type d'action COLLECTIVE).
   const fiches = await prisma.ficheTechnique.findMany({
@@ -112,7 +115,7 @@ export default async function MyFichesPage() {
         </Link>
       </div>
 
-      <TechniquesView techniques={techniques} />
+      <TechniquesView techniques={techniques} kgColors={kgColors} />
     </div>
   );
 }
