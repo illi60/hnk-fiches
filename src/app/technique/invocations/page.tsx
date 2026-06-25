@@ -11,7 +11,7 @@ import {
   type ProgressionState,
 } from "@/lib/quintessence";
 import InvocationsManager, { type Invocation } from "@/components/InvocationsManager";
-import { loadKgCatalogRows } from "@/lib/kekkei-server";
+import { loadClanLibraryAccess, loadKgCatalogRows } from "@/lib/kekkei-server";
 
 export default async function InvocationsPage() {
   const session = await auth();
@@ -42,6 +42,7 @@ export default async function InvocationsPage() {
   const kgCatalog = await loadKgCatalogRows();
   const kgNames = kgCatalog.map((kg) => kg.name);
   const kgColors = Object.fromEntries(kgCatalog.map((kg) => [kg.name, kg.color]));
+  const clanLibraryAccess = await loadClanLibraryAccess(dbUser?.clan ?? null);
 
   const rows = await prisma.invocation.findMany({
     where: { ownerId: session.user.id },
@@ -105,6 +106,7 @@ export default async function InvocationsPage() {
           rangClan: dbUser?.rangClan ?? null,
           artsState: (dbUser?.artsState ?? null) as import("@/lib/arts").ArtsState | null,
           villageRank: dbUser?.rang ?? null,
+          clanLibraryAccess,
         }}
       />
     </div>

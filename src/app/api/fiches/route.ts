@@ -5,8 +5,8 @@ import { requireUser, jsonError } from "@/lib/permissions";
 import { rateLimit } from "@/lib/rate-limit";
 import { ficheCreateSchema } from "@/lib/validators";
 import { ficheTotalCost } from "@/lib/techniques";
-import { clanKg } from "@/lib/kekkei";
-import { ownedKgsFull, type ProgressionState } from "@/lib/quintessence";
+import { canUseCollectiveManifestation, loadClanLibraryAccess } from "@/lib/kekkei-server";
+import { ownedAffinities, ownedKgsFull, type ProgressionState } from "@/lib/quintessence";
 
 /**
  * GET /api/fiches?scope=mine|public
@@ -117,7 +117,14 @@ export async function POST(req: Request) {
     if (natureEff === "COLLECTIVE") {
       const u = await prisma.user.findUnique({
         where: { id: me.id },
-        select: { clan: true, primaryKg: true, kekkeiGenkai: true, progressionState: true },
+        select: {
+          clan: true,
+          primaryKg: true,
+          kekkeiGenkai: true,
+          progressionState: true,
+          primaryAffinity: true,
+          affinites: true,
+        },
       });
       meUserClan = u?.clan ?? null;
       isKonoha = meUserClan?.toLowerCase().trim() === "konoha";
@@ -125,17 +132,21 @@ export async function POST(req: Request) {
       if (!meUserClan) return NextResponse.json({ error: "CLAN_REQUIS" }, { status: 400 });
       // Konoha : pas de technique collective.
       if (isKonoha) return NextResponse.json({ error: "CLAN_SANS_KG" }, { status: 400 });
-      const ck = clanKg(meUserClan);
-      if (!ck) return NextResponse.json({ error: "CLAN_SANS_KG" }, { status: 400 });
-      const owned = ownedKgsFull(
-        u?.primaryKg ?? null,
-        (u?.progressionState ?? {}) as unknown as ProgressionState,
-        u?.kekkeiGenkai ?? null
-      ).map((k) => k.toLowerCase());
-      if (!owned.includes(ck.toLowerCase()))
-        return NextResponse.json({ error: "KG_CLAN_REQUIS" }, { status: 403 });
+      const prog = (u?.progressionState ?? {}) as unknown as ProgressionState;
+      const access = await loadClanLibraryAccess(meUserClan);
+      const owned = {
+        kg: ownedKgsFull(u?.primaryKg ?? null, prog, u?.kekkeiGenkai ?? null),
+        affinities: ownedAffinities(u?.primaryAffinity ?? null, u?.affinites ?? []),
+      };
+      if (
+        !canUseCollectiveManifestation(access, owned, {
+          kg: parsed.data.kekkeiGenkai ?? null,
+          affinity: parsed.data.element ?? null,
+        })
+      ) {
+        return NextResponse.json({ error: "CLAN_LIBRARY_REQUIS" }, { status: 403 });
+      }
       clan = meUserClan;
-      kekkeiGenkaiEff = ck; // KG imposé du clan
     } else if (natureEff === "PERSONNELLE") {
       const u = await prisma.user.findUnique({ where: { id: me.id }, select: { clan: true } });
       meUserClan = u?.clan ?? null;

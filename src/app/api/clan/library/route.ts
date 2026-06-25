@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
 import { requireUser, jsonError } from "@/lib/permissions";
-import { ownedKgsFull, type ProgressionState } from "@/lib/quintessence";
+import { ownedAffinities, ownedKgsFull, type ProgressionState } from "@/lib/quintessence";
 
 // GET /api/clan/library — bibliothèque commune du clan du joueur.
 //
@@ -15,7 +15,14 @@ export async function GET() {
 
     const user = await prisma.user.findUnique({
       where: { id: me.id },
-      select: { clan: true, primaryKg: true, kekkeiGenkai: true, progressionState: true },
+      select: {
+        clan: true,
+        primaryKg: true,
+        kekkeiGenkai: true,
+        progressionState: true,
+        primaryAffinity: true,
+        affinites: true,
+      },
     });
     if (!user?.clan) return NextResponse.json({ ok: false, error: "NO_CLAN" }, { status: 403 });
 
@@ -24,6 +31,7 @@ export async function GET() {
       (user.progressionState ?? {}) as unknown as ProgressionState,
       user.kekkeiGenkai
     ).map((k) => k.toLowerCase());
+    const affinities = ownedAffinities(user.primaryAffinity, user.affinites).map((a) => a.toLowerCase());
 
     const rows = await prisma.ficheTechnique.findMany({
       where: {
@@ -49,7 +57,9 @@ export async function GET() {
 
     const techniques = rows.map((t) => ({
       ...t,
-      usable: !!t.kekkeiGenkai && owned.includes(t.kekkeiGenkai.toLowerCase()),
+      usable:
+        (!!t.kekkeiGenkai && owned.includes(t.kekkeiGenkai.toLowerCase())) ||
+        (!!t.element && affinities.includes(t.element.toLowerCase())),
     }));
 
     return NextResponse.json({ ok: true, clan: user.clan, techniques });

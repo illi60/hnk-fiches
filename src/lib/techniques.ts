@@ -112,12 +112,14 @@ export interface TechniqueExportData {
   actionType: string | null;
   element: string | null;
   kekkeiGenkai: string | null;
+  kgColorHex?: string | null;
   nature: string | null;
   kinjutsuScope: string | null;
   clan?: string | null;
   espece?: string | null; // espèce de l'invocation (techniques de Kuchiyose)
   secondaryElement?: string | null; // 2e affinité (COMBINEE)
   secondaryKekkeiGenkai?: string | null; // 2e KG (COMBINEE)
+  secondaryKgColorHex?: string | null;
   description: string;
   coutXp: number;
 }
@@ -134,7 +136,7 @@ function escapeHtml(s: string): string {
 // importée une fois dans la CSS du forum). Seule la couleur du KG est passée
 // en variable inline `--kg` → la carte se teinte sans alourdir le message.
 export function techniqueForumHtml(t: TechniqueExportData): string {
-  const accent = t.kekkeiGenkai ? kgColor(t.kekkeiGenkai) : "#ff8a4c";
+  const accent = t.kgColorHex ?? (t.kekkeiGenkai ? kgColor(t.kekkeiGenkai) : "#ff8a4c");
 
   const chip = (txt: string, kg = false) =>
     `<span class="hnk-tech-chip${kg ? " hnk-tech-chip--kg" : ""}">${escapeHtml(txt)}</span>`;

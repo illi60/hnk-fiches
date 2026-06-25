@@ -50,6 +50,7 @@ export default function FicheForm({
   villageRank = null,
   kgNames = KG_NAMES,
   kgColors,
+  clanLibraryAccess = { kg: [], affinities: [] },
 }: {
   initial?: FicheFormInitial;
   ficheId?: string;
@@ -65,6 +66,7 @@ export default function FicheForm({
   villageRank?: string | null; // rang de village du joueur
   kgNames?: string[];
   kgColors?: Record<string, string>;
+  clanLibraryAccess?: { kg: string[]; affinities: string[] };
 }) {
   const router = useRouter();
 
@@ -146,29 +148,47 @@ export default function FicheForm({
   // Kuchy : Art verrouillé sur celui de l'invocation, sauf Mode Ermite parfait.
   const artLocked = !!invocationId && !kuchyAllArts;
 
-  // Technique de clan (nature COLLECTIVE) : KG imposé = KG du clan, et le joueur
-  // doit le posséder.
+  // Technique de clan (nature COLLECTIVE) : KG/affinités autorisés par la bibliothèque.
   const clanKgName = clanKg(userClan);
-  const ownsClanKg =
-    !!clanKgName && (allowedKg ?? []).some((k) => k.toLowerCase() === clanKgName.toLowerCase());
+  const collectiveKgOptions = Array.from(
+    new Set([...(clanLibraryAccess.kg ?? []), ...(clanKgName ? [clanKgName] : [])])
+  );
+  const collectiveAffinityOptions = Array.from(new Set(clanLibraryAccess.affinities ?? []));
+  const ownsSelectedCollectiveKg =
+    !!v.kekkeiGenkai &&
+    (allowedKg ?? []).some((k) => k.toLowerCase() === v.kekkeiGenkai.toLowerCase());
+  const ownsSelectedCollectiveAffinity =
+    !!v.element && (allowedElements ?? []).some((a) => a.toLowerCase() === v.element.toLowerCase());
+  const selectedKgAllowed =
+    !!v.kekkeiGenkai &&
+    collectiveKgOptions.some((k) => k.toLowerCase() === v.kekkeiGenkai.toLowerCase());
+  const selectedAffinityAllowed =
+    !!v.element &&
+    collectiveAffinityOptions.some((a) => a.toLowerCase() === v.element.toLowerCase());
   const resolvedKgColor = (name?: string | null) => (name ? kgColors?.[name] ?? kgColor(name) : kgColor(name));
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
 
-    // Nature COLLECTIVE : être du clan + posséder le KG du clan.
+    // Nature COLLECTIVE : être du clan + utiliser une option autorisée et possédée.
     if (v.nature === "COLLECTIVE") {
       if (!userClan) {
         setError("Tu dois appartenir à un clan pour créer une technique de clan.");
         return;
       }
-      if (!clanKgName) {
-        setError("Ton clan n'a pas de Kekkei Genkai répertorié (clans : Hyuga, Uchiha, Senju, Sarutobi, Uzumaki).");
-        return;
-      }
-      if (!ownsClanKg) {
-        setError(`Tu dois posséder le ${clanKgName} de ton clan pour proposer une technique de clan.`);
+      const usesAllowedKg =
+        v.manifestation === "KEKKEI_GENKAI" &&
+        !!v.kekkeiGenkai &&
+        selectedKgAllowed &&
+        ownsSelectedCollectiveKg;
+      const usesAllowedAffinity =
+        v.manifestation === "ELEMENT" &&
+        !!v.element &&
+        selectedAffinityAllowed &&
+        ownsSelectedCollectiveAffinity;
+      if (!usesAllowedKg && !usesAllowedAffinity) {
+        setError("Choisis un KG ou une affinité autorisé(e) par la bibliothèque de ton clan, et que tu possèdes.");
         return;
       }
     }
@@ -199,8 +219,6 @@ export default function FicheForm({
       element: v.manifestation === "ELEMENT" ? v.element || null : null,
       kekkeiGenkai: isKuchy
         ? null
-        : v.nature === "COLLECTIVE"
-        ? clanKgName // KG imposé du clan
         : v.manifestation === "KEKKEI_GENKAI"
         ? v.kekkeiGenkai.trim() || null
         : null,
@@ -560,24 +578,64 @@ export default function FicheForm({
           <div className="space-y-2">
             <p className="text-[11px] text-smoke leading-relaxed">
               Technique versée dans la <span className="text-bone">bibliothèque commune</span> de ton
-              clan. Visible par tous les membres, utilisable seulement par ceux qui possèdent le
-              Kekkei Genkai du clan.
+              clan. Elle doit utiliser un KG ou une affinité autorisé(e) par cette bibliothèque,
+              et que ton personnage possède.
             </p>
             {!userClan ? (
               <p className="text-sm text-ember-hot">Aucun clan défini sur ta fiche — demande au staff.</p>
-            ) : !clanKgName ? (
+            ) : collectiveKgOptions.length === 0 && collectiveAffinityOptions.length === 0 ? (
               <p className="text-sm text-ember-hot">
-                Clan « {userClan} » sans Kekkei Genkai répertorié.
+                Aucun KG ou affinité autorisé pour la bibliothèque du clan {userClan}.
               </p>
             ) : (
               <>
                 <p className="text-sm text-bone">
-                  Clan : <span className="text-ember">{userClan}</span> · KG du clan :{" "}
-                  <span style={{ color: resolvedKgColor(clanKgName) }}>{clanKgName}</span>
+                  Clan : <span className="text-ember">{userClan}</span>
                 </p>
-                {!ownsClanKg && (
+                {collectiveKgOptions.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    <span className="text-[10px] uppercase tracking-[0.2em] text-smoke">KG acceptés</span>
+                    {collectiveKgOptions.map((kg) => (
+                      <span
+                        key={kg}
+                        className="hnk-tech-chip"
+                        style={{ color: resolvedKgColor(kg), borderColor: resolvedKgColor(kg) }}
+                      >
+                        {kg}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {collectiveAffinityOptions.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    <span className="text-[10px] uppercase tracking-[0.2em] text-smoke">
+                      Affinités acceptées
+                    </span>
+                    {collectiveAffinityOptions.map((affinity) => (
+                      <span key={affinity} className="hnk-tech-chip">
+                        {affinity}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {v.manifestation === "KEKKEI_GENKAI" && v.kekkeiGenkai && !selectedKgAllowed && (
                   <p className="text-sm text-ember-hot">
-                    Tu ne possèdes pas le {clanKgName} — tu ne peux pas proposer de technique de ce clan.
+                    {v.kekkeiGenkai} n&apos;est pas autorisé dans cette bibliothèque de clan.
+                  </p>
+                )}
+                {v.manifestation === "KEKKEI_GENKAI" && v.kekkeiGenkai && selectedKgAllowed && !ownsSelectedCollectiveKg && (
+                  <p className="text-sm text-ember-hot">
+                    Tu ne possèdes pas {v.kekkeiGenkai}.
+                  </p>
+                )}
+                {v.manifestation === "ELEMENT" && v.element && !selectedAffinityAllowed && (
+                  <p className="text-sm text-ember-hot">
+                    {v.element} n&apos;est pas autorisée dans cette bibliothèque de clan.
+                  </p>
+                )}
+                {v.manifestation === "ELEMENT" && v.element && selectedAffinityAllowed && !ownsSelectedCollectiveAffinity && (
+                  <p className="text-sm text-ember-hot">
+                    Tu ne possèdes pas l&apos;affinité {v.element}.
                   </p>
                 )}
               </>

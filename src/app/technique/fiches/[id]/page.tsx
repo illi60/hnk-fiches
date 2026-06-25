@@ -10,7 +10,7 @@ import { actionLabel, natureLabel, ART_KANJI } from "@/lib/techniques";
 import { kgColor } from "@/lib/kekkei";
 import { ownedKgsFull, ownedAffinities, type ProgressionState } from "@/lib/quintessence";
 import { ARTS_ALL, specRank, invocationSpecRank, type ArtsState } from "@/lib/arts";
-import { loadKgCatalogRows } from "@/lib/kekkei-server";
+import { loadClanLibraryAccess, loadKgCatalogRows } from "@/lib/kekkei-server";
 
 const STATUS_LABEL: Record<string, string> = {
   DRAFT: "Brouillon",
@@ -84,6 +84,7 @@ export default async function FicheDetailPage({
   const kgCatalog = await loadKgCatalogRows();
   const kgNames = kgCatalog.map((kg) => kg.name);
   const kgColors = Object.fromEntries(kgCatalog.map((kg) => [kg.name, kg.color]));
+  const clanLibraryAccess = await loadClanLibraryAccess(author?.clan ?? null);
 
   // Rang de la spécialisation (calculé depuis l'état Arts de l'auteur).
   const authorArts = (author?.artsState ?? {}) as ArtsState;
@@ -230,8 +231,12 @@ export default async function FicheDetailPage({
                 actionType: fiche.actionType,
                 element: fiche.element,
                 kekkeiGenkai: fiche.kekkeiGenkai,
+                kgColorHex: fiche.kekkeiGenkai ? resolveKgColor(fiche.kekkeiGenkai, kgColors) : null,
                 secondaryElement: fiche.secondaryElement,
                 secondaryKekkeiGenkai: fiche.secondaryKekkeiGenkai,
+                secondaryKgColorHex: fiche.secondaryKekkeiGenkai
+                  ? resolveKgColor(fiche.secondaryKekkeiGenkai, kgColors)
+                  : null,
                 nature: fiche.nature,
                 kinjutsuScope: fiche.kinjutsuScope,
                 clan: fiche.clan,
@@ -253,6 +258,7 @@ export default async function FicheDetailPage({
           villageRank={author?.rang ?? null}
           kgNames={kgNames}
           kgColors={kgColors}
+          clanLibraryAccess={clanLibraryAccess}
           initial={{
             nom: fiche.nom,
             description: fiche.description,

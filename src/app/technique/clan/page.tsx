@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { ownedKgsFull, type ProgressionState } from "@/lib/quintessence";
+import { ownedAffinities, ownedKgsFull, type ProgressionState } from "@/lib/quintessence";
 import ClanLibraryView from "@/components/ClanLibraryView";
 import { loadKgCatalog } from "@/lib/kekkei-server";
 
@@ -15,7 +15,14 @@ export default async function ClanLibraryPage() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { clan: true, primaryKg: true, kekkeiGenkai: true, progressionState: true },
+    select: {
+      clan: true,
+      primaryKg: true,
+      kekkeiGenkai: true,
+      progressionState: true,
+      primaryAffinity: true,
+      affinites: true,
+    },
   });
   if (!user?.clan) redirect("/technique");
 
@@ -24,6 +31,7 @@ export default async function ClanLibraryPage() {
     (user.progressionState ?? {}) as unknown as ProgressionState,
     user.kekkeiGenkai
   ).map((k) => k.toLowerCase());
+  const affinities = ownedAffinities(user.primaryAffinity, user.affinites).map((a) => a.toLowerCase());
   const kgCatalog = await loadKgCatalog();
   const kgColors = Object.fromEntries(kgCatalog.map((kg) => [kg.name, kg.color]));
 
@@ -54,7 +62,9 @@ export default async function ClanLibraryPage() {
   });
   const techniques = rows.map((t) => ({
     ...t,
-    usable: !!t.kekkeiGenkai && owned.includes(t.kekkeiGenkai.toLowerCase()),
+    usable:
+      (!!t.kekkeiGenkai && owned.includes(t.kekkeiGenkai.toLowerCase())) ||
+      (!!t.element && affinities.includes(t.element.toLowerCase())),
   }));
 
   return (

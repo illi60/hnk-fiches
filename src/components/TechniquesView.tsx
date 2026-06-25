@@ -204,8 +204,12 @@ export default function TechniquesView({
                           actionType: t.actionType,
                           element: t.element,
                           kekkeiGenkai: t.kekkeiGenkai,
+                          kgColorHex: t.kekkeiGenkai ? resolveKgColor(t.kekkeiGenkai, kgColors) : null,
                           secondaryElement: t.secondaryElement,
                           secondaryKekkeiGenkai: t.secondaryKekkeiGenkai,
+                          secondaryKgColorHex: t.secondaryKekkeiGenkai
+                            ? resolveKgColor(t.secondaryKekkeiGenkai, kgColors)
+                            : null,
                           nature: t.nature,
                           kinjutsuScope: t.kinjutsuScope,
                           clan: t.clan,

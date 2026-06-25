@@ -25,30 +25,18 @@ export async function POST(req: Request) {
 
     const kg = existing
       ? await prisma.kekkeiGenkaiCatalog.update({
-          where: { id: existing.id },
-          data: {
-            name,
-            subtitle: d.subtitle?.trim() || null,
-            clan: d.clan?.trim() || null,
-            color: d.color,
-            category: d.category,
-            quintessence: d.quintessence?.trim() || null,
-            kinjutsu: d.kinjutsu?.trim() || null,
-            finale: d.finale?.trim() || null,
-          },
-        })
+        where: { id: existing.id },
+        data: {
+          name,
+          color: d.color,
+        },
+      })
       : await prisma.kekkeiGenkaiCatalog.create({
-          data: {
-            name,
-            subtitle: d.subtitle?.trim() || null,
-            clan: d.clan?.trim() || null,
-            color: d.color,
-            category: d.category,
-            quintessence: d.quintessence?.trim() || null,
-            kinjutsu: d.kinjutsu?.trim() || null,
-            finale: d.finale?.trim() || null,
-          },
-        });
+        data: {
+          name,
+          color: d.color,
+        },
+      });
 
     return NextResponse.json({ ok: true, kg });
   } catch (e) {

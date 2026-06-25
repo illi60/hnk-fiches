@@ -4,8 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, jsonError } from "@/lib/permissions";
 import { ficheUpdateSchema } from "@/lib/validators";
 import { ficheTotalCost } from "@/lib/techniques";
-import { clanKg } from "@/lib/kekkei";
-import { ownedKgsFull, type ProgressionState } from "@/lib/quintessence";
+import { canUseCollectiveManifestation, loadClanLibraryAccess } from "@/lib/kekkei-server";
+import { ownedAffinities, ownedKgsFull, type ProgressionState } from "@/lib/quintessence";
 
 // PATCH /api/fiches/[id] — éditer SON propre DRAFT.
 // Une fois PENDING/VALIDATED/REJECTED, plus d'édition côté joueur
@@ -21,7 +21,16 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     const fiche = await prisma.ficheTechnique.findUnique({
       where: { id },
-      select: { id: true, authorId: true, status: true, actionType: true, nature: true, isActive: true },
+      select: {
+        id: true,
+        authorId: true,
+        status: true,
+        actionType: true,
+        nature: true,
+        element: true,
+        kekkeiGenkai: true,
+        isActive: true,
+      },
     });
     if (!fiche || !fiche.isActive) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
     if (fiche.authorId !== me.id) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
@@ -34,25 +43,43 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const newNature = parsed.data.nature !== undefined ? parsed.data.nature : fiche.nature;
     const coutXp = ficheTotalCost(newActionType ?? null, newNature ?? null);
 
-    // Nature COLLECTIVE → être du clan + posséder le KG du clan ; KG imposé.
-    let clanUpdate: { clan?: string | null; kekkeiGenkai?: string | null } = {};
-    if (parsed.data.nature !== undefined) {
-      if (parsed.data.nature === "COLLECTIVE") {
+    // Nature COLLECTIVE -> être du clan + utiliser une option autorisée et possédée.
+    let clanUpdate: { clan?: string | null } = {};
+    const collectiveFieldsChanged =
+      parsed.data.nature !== undefined ||
+      parsed.data.element !== undefined ||
+      parsed.data.kekkeiGenkai !== undefined;
+    if (collectiveFieldsChanged) {
+      if (newNature === "COLLECTIVE") {
         const u = await prisma.user.findUnique({
           where: { id: me.id },
-          select: { clan: true, primaryKg: true, kekkeiGenkai: true, progressionState: true },
+          select: {
+            clan: true,
+            primaryKg: true,
+            kekkeiGenkai: true,
+            progressionState: true,
+            primaryAffinity: true,
+            affinites: true,
+          },
         });
         if (!u?.clan) return NextResponse.json({ error: "CLAN_REQUIS" }, { status: 400 });
-        const ck = clanKg(u.clan);
-        if (!ck) return NextResponse.json({ error: "CLAN_SANS_KG" }, { status: 400 });
-        const owned = ownedKgsFull(
-          u.primaryKg,
-          (u.progressionState ?? {}) as unknown as ProgressionState,
-          u.kekkeiGenkai
-        ).map((k) => k.toLowerCase());
-        if (!owned.includes(ck.toLowerCase()))
-          return NextResponse.json({ error: "KG_CLAN_REQUIS" }, { status: 403 });
-        clanUpdate = { clan: u.clan, kekkeiGenkai: ck };
+        if (u.clan.toLowerCase().trim() === "konoha")
+          return NextResponse.json({ error: "CLAN_SANS_KG" }, { status: 400 });
+        const prog = (u.progressionState ?? {}) as unknown as ProgressionState;
+        const access = await loadClanLibraryAccess(u.clan);
+        const owned = {
+          kg: ownedKgsFull(u.primaryKg, prog, u.kekkeiGenkai),
+          affinities: ownedAffinities(u.primaryAffinity, u.affinites),
+        };
+        if (
+          !canUseCollectiveManifestation(access, owned, {
+            kg: parsed.data.kekkeiGenkai !== undefined ? parsed.data.kekkeiGenkai : fiche.kekkeiGenkai,
+            affinity: parsed.data.element !== undefined ? parsed.data.element : fiche.element,
+          })
+        ) {
+          return NextResponse.json({ error: "CLAN_LIBRARY_REQUIS" }, { status: 403 });
+        }
+        clanUpdate = { clan: u.clan };
       } else {
         clanUpdate = { clan: null };
       }

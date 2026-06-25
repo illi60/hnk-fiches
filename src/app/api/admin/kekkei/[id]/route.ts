@@ -29,13 +29,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       where: { id },
       data: {
         name: d.name.trim(),
-        subtitle: d.subtitle?.trim() || null,
-        clan: d.clan?.trim() || null,
         color: d.color,
-        category: d.category,
-        quintessence: d.quintessence?.trim() || null,
-        kinjutsu: d.kinjutsu?.trim() || null,
-        finale: d.finale?.trim() || null,
       },
     });
 

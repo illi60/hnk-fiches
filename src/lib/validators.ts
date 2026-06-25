@@ -390,43 +390,15 @@ export type AdminFicheCreateInput = z.infer<typeof adminFicheCreateSchema>;
 
 export const adminKekkeiCatalogSchema = z.object({
   name: z.string().min(2).max(80),
-  subtitle: z.string().max(120).optional().nullable(),
-  clan: z.string().max(60).optional().nullable(),
   color: z
     .string()
     .regex(/^#([0-9a-fA-F]{6})$/, "Couleur hexadécimale attendue (#RRGGBB)"),
-  category: z.enum(["CLANIQUE", "ELEMENTAIRE", "DOJUTSU", "SPECIAL"]),
-  quintessence: z.string().max(180).optional().nullable(),
-  kinjutsu: z.string().max(180).optional().nullable(),
-  finale: z.string().max(180).optional().nullable(),
 });
 export type AdminKekkeiCatalogInput = z.infer<typeof adminKekkeiCatalogSchema>;
 
-// Admin : ajout d'une technique dans la bibliothèque commune d'un clan
-// (créée VALIDATED, nature COLLECTIVE, auteur = admin). KG associé requis.
-export const adminClanLibrarySchema = z.object({
+export const adminClanLibraryPermissionSchema = z.object({
   clan: z.string().min(1).max(60),
-  nom: z.string().min(2).max(120),
-  description: z.string().min(1).max(20000),
-  art: z.string().max(40).optional().nullable(),
-  actionType: z
-    .enum([
-      "EVOLUTIVE",
-      "UNIQUE",
-      "DURABLE",
-      "CHARGEE",
-      "COMPLEXE",
-      "COMBINEE",
-      "COLLECTIVE",
-      "ULTIME",
-      "SUPREME",
-    ])
-    .optional()
-    .nullable(),
-  element: z.string().max(40).optional().nullable(),
-  kekkeiGenkai: z.string().min(1).max(60),
-  secondaryElement: z.string().max(40).optional().nullable(),
-  secondaryKekkeiGenkai: z.string().max(60).optional().nullable(),
-  coutXp: z.number().int().min(0).max(100_000).optional(),
+  kind: z.enum(["KG", "AFFINITY"]),
+  value: z.string().min(1).max(80),
 });
-export type AdminClanLibraryInput = z.infer<typeof adminClanLibrarySchema>;
+export type AdminClanLibraryPermissionInput = z.infer<typeof adminClanLibraryPermissionSchema>;

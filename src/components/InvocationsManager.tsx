@@ -36,6 +36,7 @@ export interface FicheFormCtx {
   rangClan: string | null;
   artsState?: ArtsState | null;
   villageRank?: string | null;
+  clanLibraryAccess?: { kg: string[]; affinities: string[] };
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -336,6 +337,7 @@ function InvocationCard({
             villageRank={ficheCtx.villageRank}
             kgNames={kgNames}
             kgColors={kgColors}
+            clanLibraryAccess={ficheCtx.clanLibraryAccess}
           />
           <button
             type="button"
