@@ -6,18 +6,13 @@ import { prisma } from "@/lib/prisma";
 import FicheForm from "@/components/FicheForm";
 import FicheActions from "@/components/FicheActions";
 import TechniqueExport from "@/components/TechniqueExport";
-import { actionLabel, natureLabel, ART_KANJI } from "@/lib/techniques";
+import { actionLabel, natureLabel, techniqueArtChipLabel } from "@/lib/techniques";
+import { ficheStatusLabel, isFicheEditable } from "@/lib/fiche-status";
+import { resolveTechniqueSpecRanks } from "@/lib/technique-display";
 import { kgColor } from "@/lib/kekkei";
 import { ownedKgsFull, ownedAffinities, type ProgressionState } from "@/lib/quintessence";
-import { ARTS_ALL, specRank, invocationSpecRank, type ArtsState } from "@/lib/arts";
+import { ARTS_ALL, type ArtsState } from "@/lib/arts";
 import { loadClanLibraryAccess, loadKgCatalogRows } from "@/lib/kekkei-server";
-
-const STATUS_LABEL: Record<string, string> = {
-  DRAFT: "Brouillon",
-  PENDING: "En attente de validation",
-  VALIDATED: "Validée",
-  REJECTED: "Refusée",
-};
 
 export default async function FicheDetailPage({
   params,
@@ -60,8 +55,15 @@ export default async function FicheDetailPage({
   if (!fiche || !fiche.isActive) notFound();
   if (fiche.authorId !== session.user.id && session.user.role !== "ADMIN") notFound();
 
-  // Éditable tant que c'est un brouillon ou une technique refusée (à corriger).
-  const readOnly = fiche.status === "PENDING" || fiche.status === "VALIDATED";
+  // Profil du lecteur courant : les techniques collectives affichent leurs spés
+  // selon celui qui les copie, pas selon l'auteur.
+  const viewer = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { artsState: true, rang: true },
+  });
+
+  // Seule la version validée est figée. Une fiche en attente peut encore être corrigée.
+  const readOnly = !isFicheEditable(fiche.status);
 
   // KG / affinités possédés par l'AUTEUR (pour restreindre les choix à l'édition).
   const author = await prisma.user.findUnique({
@@ -86,41 +88,41 @@ export default async function FicheDetailPage({
   const kgColors = Object.fromEntries(kgCatalog.map((kg) => [kg.name, kg.color]));
   const clanLibraryAccess = await loadClanLibraryAccess(author?.clan ?? null);
 
-  // Rang de la spécialisation (calculé depuis l'état Arts de l'auteur).
+  // Rang de la spécialisation : pour une technique collective, on l'évalue avec
+  // le lecteur courant ; sinon on garde le profil de l'auteur.
   const authorArts = (author?.artsState ?? {}) as ArtsState;
+  const viewerArts = (viewer?.artsState ?? {}) as ArtsState;
   const artKey = fiche.art
     ? fiche.art.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
     : null;
   const artDef = artKey ? ARTS_ALL.find((a) => a.key === artKey) : null;
-  const specIdx = artDef && fiche.spec
-    ? (artDef.specs as string[]).indexOf(fiche.spec)
-    : -1;
-  // Kuchy : la spé suit le rang global de l'auteur (auto, plafond B), pas l'artsState.
+  const resolvedSpec = fiche.spec ?? (fiche.nature === "COLLECTIVE" ? artDef?.specs[0] ?? null : null);
+  const specIdx = artDef && resolvedSpec ? (artDef.specs as string[]).indexOf(resolvedSpec) : -1;
   const isKuchy = fiche.invocation != null;
-  const ficheSpecRank =
-    artDef && specIdx >= 0 && author?.rang != null
-      ? isKuchy
-        ? invocationSpecRank(author.rang)
-        : author?.artsState != null
-        ? specRank(artDef.key, specIdx, authorArts, author.rang)
-        : null
-      : null;
 
   const secondaryArtKey = fiche.secondaryArt
     ? fiche.secondaryArt.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
     : null;
   const secondaryArtDef = secondaryArtKey ? ARTS_ALL.find((a) => a.key === secondaryArtKey) : null;
-  const secondarySpecIdx = secondaryArtDef && fiche.secondarySpec
-    ? (secondaryArtDef.specs as string[]).indexOf(fiche.secondarySpec)
+  const resolvedSecondarySpec =
+    fiche.secondarySpec ??
+    (fiche.nature === "COLLECTIVE" ? secondaryArtDef?.specs[0] ?? null : null);
+  const secondarySpecIdx = secondaryArtDef && resolvedSecondarySpec
+    ? (secondaryArtDef.specs as string[]).indexOf(resolvedSecondarySpec)
     : -1;
-  const ficheSecondarySpecRank =
-    secondaryArtDef && secondarySpecIdx >= 0 && author?.rang != null
-      ? isKuchy
-        ? invocationSpecRank(author.rang)
-        : author?.artsState != null
-        ? specRank(secondaryArtDef.key, secondarySpecIdx, authorArts, author.rang)
-        : null
-      : null;
+  const { specRank: ficheSpecRank, secondarySpecRank: ficheSecondarySpecRank } =
+    resolveTechniqueSpecRanks({
+      artKey,
+      specIdx,
+      secondaryArtKey,
+      secondarySpecIdx,
+      nature: fiche.nature,
+      invocationId: fiche.invocation ? "present" : null,
+      viewerArtsState: viewerArts,
+      viewerRank: viewer?.rang ?? null,
+      authorArtsState: authorArts,
+      authorRank: author?.rang ?? null,
+    });
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -131,7 +133,7 @@ export default async function FicheDetailPage({
           </Link>
           <h1 className="font-serif text-3xl text-white2 mt-2">{fiche.nom}</h1>
           <p className="text-[10px] tracking-[0.24em] uppercase text-ember mt-1">
-            {STATUS_LABEL[fiche.status]} · {fiche.coutXp} XP
+            {ficheStatusLabel(fiche.status)} · {fiche.coutXp} XP
           </p>
         </div>
         <FicheActions ficheId={fiche.id} status={fiche.status} />
@@ -155,18 +157,34 @@ export default async function FicheDetailPage({
             </div>
             <div className="hnk-tech-name">{fiche.nom}</div>
             <div className="hnk-tech-chips">
-              {fiche.art && (
+              {techniqueArtChipLabel({
+                art: fiche.art,
+                spec: resolvedSpec,
+                specRank: ficheSpecRank,
+                nature: fiche.nature,
+              }) && (
                 <span className="hnk-tech-chip">
-                  {`${ART_KANJI[fiche.art] ?? ""} ${fiche.art}`}
-                  {fiche.spec ? ` · ${fiche.spec}` : ""}
-                  {ficheSpecRank ? ` · ${ficheSpecRank}` : ""}
+                  {techniqueArtChipLabel({
+                    art: fiche.art,
+                    spec: resolvedSpec,
+                    specRank: ficheSpecRank,
+                    nature: fiche.nature,
+                  })}
                 </span>
               )}
-              {fiche.secondaryArt && (
+              {techniqueArtChipLabel({
+                art: fiche.secondaryArt,
+                spec: resolvedSecondarySpec,
+                specRank: ficheSecondarySpecRank,
+                nature: fiche.nature,
+              }) && (
                 <span className="hnk-tech-chip">
-                  {`${ART_KANJI[fiche.secondaryArt] ?? ""} ${fiche.secondaryArt}`}
-                  {fiche.secondarySpec ? ` · ${fiche.secondarySpec}` : ""}
-                  {ficheSecondarySpecRank ? ` · ${ficheSecondarySpecRank}` : ""}
+                  {techniqueArtChipLabel({
+                    art: fiche.secondaryArt,
+                    spec: resolvedSecondarySpec,
+                    specRank: ficheSecondarySpecRank,
+                    nature: fiche.nature,
+                  })}
                 </span>
               )}
               {fiche.invocation?.espece && (
@@ -214,7 +232,7 @@ export default async function FicheDetailPage({
 
           {fiche.status === "PENDING" && (
             <p className="text-xs text-smoke italic">
-              En attente de validation par le staff — non modifiable.
+              Version en attente : tu peux encore corriger le brouillon envoyé ou le retirer de la file.
             </p>
           )}
 
@@ -223,10 +241,10 @@ export default async function FicheDetailPage({
               data={{
                 nom: fiche.nom,
                 art: fiche.art,
-                spec: fiche.spec ?? null,
+                spec: resolvedSpec,
                 specRank: ficheSpecRank ?? null,
                 secondaryArt: fiche.secondaryArt,
-                secondarySpec: fiche.secondarySpec ?? null,
+                secondarySpec: resolvedSecondarySpec,
                 secondarySpecRank: ficheSecondarySpecRank ?? null,
                 actionType: fiche.actionType,
                 element: fiche.element,
@@ -250,6 +268,7 @@ export default async function FicheDetailPage({
       ) : (
         <FicheForm
           ficheId={fiche.id}
+          status={fiche.status}
           allowedKg={allowedKg}
           allowedElements={allowedElements}
           userClan={author?.clan ?? null}

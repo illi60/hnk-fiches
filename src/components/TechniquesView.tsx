@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 
-import { actionLabel } from "@/lib/techniques";
+import { actionLabel, techniqueArtChipLabel } from "@/lib/techniques";
 import { kgColor } from "@/lib/kekkei";
 import ForumCopyButton from "@/components/ForumCopyButton";
 
@@ -130,20 +130,28 @@ export default function TechniquesView({
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-1.5 mt-2">
-                  {t.art && (
-                    <span className="hnk-tech-chip">
-                      {t.art}
-                      {t.spec ? ` · ${t.spec}` : ""}
-                      {t.specRank ? ` · ${t.specRank}` : ""}
-                    </span>
-                  )}
-                  {t.secondaryArt && (
-                    <span className="hnk-tech-chip">
-                      + {t.secondaryArt}
-                      {t.secondarySpec ? ` · ${t.secondarySpec}` : ""}
-                      {t.secondarySpecRank ? ` · ${t.secondarySpecRank}` : ""}
-                    </span>
-                  )}
+                  {techniqueArtChipLabel({
+                    art: t.art,
+                    spec: t.spec ?? null,
+                    specRank: t.specRank ?? null,
+                    nature: t.nature,
+                  }) && <span className="hnk-tech-chip">{techniqueArtChipLabel({
+                    art: t.art,
+                    spec: t.spec ?? null,
+                    specRank: t.specRank ?? null,
+                    nature: t.nature,
+                  })}</span>}
+                  {techniqueArtChipLabel({
+                    art: t.secondaryArt,
+                    spec: t.secondarySpec ?? null,
+                    specRank: t.secondarySpecRank ?? null,
+                    nature: t.nature,
+                  }) && <span className="hnk-tech-chip">+ {techniqueArtChipLabel({
+                    art: t.secondaryArt,
+                    spec: t.secondarySpec ?? null,
+                    specRank: t.secondarySpecRank ?? null,
+                    nature: t.nature,
+                  })}</span>}
                   {t.actionType && <span className="hnk-tech-chip">{actionLabel(t.actionType)}</span>}
                   {t.element && <span className="hnk-tech-chip">{t.element}</span>}
                   {t.secondaryElement && <span className="hnk-tech-chip">{t.secondaryElement}</span>}

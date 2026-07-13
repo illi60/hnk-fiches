@@ -7,9 +7,8 @@ import { ficheTotalCost } from "@/lib/techniques";
 import { canUseCollectiveManifestation, loadClanLibraryAccess } from "@/lib/kekkei-server";
 import { ownedAffinities, ownedKgsFull, type ProgressionState } from "@/lib/quintessence";
 
-// PATCH /api/fiches/[id] — éditer SON propre DRAFT.
-// Une fois PENDING/VALIDATED/REJECTED, plus d'édition côté joueur
-// (sauf admin via route admin).
+// PATCH /api/fiches/[id] — éditer SA propre fiche tant qu'elle n'est pas validée.
+// Le joueur peut corriger un DRAFT, un REJECTED ou une fiche PENDING.
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const me = await requireUser();
@@ -34,7 +33,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     });
     if (!fiche || !fiche.isActive) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
     if (fiche.authorId !== me.id) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
-    if (fiche.status !== "DRAFT" && fiche.status !== "REJECTED")
+    if (fiche.status !== "DRAFT" && fiche.status !== "REJECTED" && fiche.status !== "PENDING")
       return NextResponse.json({ error: "INVALID_STATE" }, { status: 409 });
 
     // Le coût dérive du type d'action (+ surcharge personnelle) — recalculé serveur.
@@ -154,7 +153,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 }
 
-// DELETE /api/fiches/[id] — soft-delete d'un DRAFT du joueur.
+// DELETE /api/fiches/[id] — soft-delete d'un DRAFT ou d'une fiche refusée.
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const me = await requireUser();

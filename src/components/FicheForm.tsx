@@ -15,6 +15,7 @@ import {
 } from "@/lib/techniques";
 import { KG_NAMES, kgColor, clanKg } from "@/lib/kekkei";
 import { ARTS_ALL, specRank, invocationSpecRank, type ArtsState } from "@/lib/arts";
+import { canSubmitFiche } from "@/lib/fiche-status";
 
 export interface FicheFormInitial {
   slug?: string;
@@ -38,6 +39,7 @@ export interface FicheFormInitial {
 export default function FicheForm({
   initial,
   ficheId,
+  status,
   readOnly = false,
   allowedKg,
   allowedElements,
@@ -54,6 +56,7 @@ export default function FicheForm({
 }: {
   initial?: FicheFormInitial;
   ficheId?: string;
+  status?: string;
   readOnly?: boolean;
   allowedKg?: string[]; // KG réellement possédés ; défaut = catalogue complet
   allowedElements?: string[]; // affinités possédées ; défaut = 5 éléments
@@ -136,6 +139,7 @@ export default function FicheForm({
     : MANIFESTATIONS;
   const cost = ficheTotalCost(v.actionType, isKuchy || isKonoha ? null : v.nature);
   const disabled = readOnly || pending;
+  const canSecondarySubmit = canSubmitFiche(status);
 
   // KG / affinités : restreints à ceux du joueur, SAUF en Tag Team où l'on peut
   // utiliser ceux des partenaires (catalogue complet).
@@ -167,15 +171,12 @@ export default function FicheForm({
     collectiveAffinityOptions.some((a) => a.toLowerCase() === v.element.toLowerCase());
   const resolvedKgColor = (name?: string | null) => (name ? kgColors?.[name] ?? kgColor(name) : kgColor(name));
 
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setError("");
-
+  function buildPayload() {
     // Nature COLLECTIVE : être du clan + utiliser une option autorisée et possédée.
     if (v.nature === "COLLECTIVE") {
       if (!userClan) {
         setError("Tu dois appartenir à un clan pour créer une technique de clan.");
-        return;
+        return null;
       }
       const usesAllowedKg =
         v.manifestation === "KEKKEI_GENKAI" &&
@@ -188,8 +189,10 @@ export default function FicheForm({
         selectedAffinityAllowed &&
         ownsSelectedCollectiveAffinity;
       if (!usesAllowedKg && !usesAllowedAffinity) {
-        setError("Choisis un KG ou une affinité autorisé(e) par la bibliothèque de ton clan, et que tu possèdes.");
-        return;
+        setError(
+          "Choisis un KG ou une affinité autorisé(e) par la bibliothèque de ton clan, et que tu possèdes."
+        );
+        return null;
       }
     }
 
@@ -204,11 +207,11 @@ export default function FicheForm({
             ? "Renseigne le pseudo exact d'au moins 1 partenaire."
             : "Renseigne le pseudo exact des 2 partenaires."
         );
-        return;
+        return null;
       }
     }
 
-    const payload = {
+    return {
       nom: v.nom.trim(),
       description: v.description.trim(),
       art: v.art || null,
@@ -235,6 +238,13 @@ export default function FicheForm({
       comment: v.comment.trim() || null,
       ...(invocationId ? { invocationId } : {}),
     };
+  }
+
+  function saveDraft(e: React.MouseEvent<HTMLButtonElement> | React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError("");
+    const payload = buildPayload();
+    if (!payload) return;
 
     start(async () => {
       const res = await fetch(ficheId ? `/api/fiches/${ficheId}` : "/api/fiches", {
@@ -253,6 +263,47 @@ export default function FicheForm({
       if (!ficheId && json.fiche?.id) router.push(`/technique/fiches/${json.fiche.id}`);
       else router.refresh();
     });
+  }
+
+  function saveAndSubmit(e: React.MouseEvent<HTMLButtonElement>) {
+    e.preventDefault();
+    setError("");
+    const payload = buildPayload();
+    if (!payload) return;
+    if (!ficheId) {
+      setError("Crée d'abord le brouillon avant de le soumettre.");
+      return;
+    }
+
+    start(async () => {
+      const saveRes = await fetch(`/api/fiches/${ficheId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!saveRes.ok) {
+        if (saveRes.status === 409) setError("Slug déjà utilisé.");
+        else if (saveRes.status === 400) setError("Champs invalides.");
+        else if (saveRes.status === 429) setError("Trop de créations, attends un peu.");
+        else setError("Erreur serveur.");
+        return;
+      }
+
+      const submitRes = await fetch(`/api/fiches/${ficheId}/submit`, { method: "POST" });
+      if (!submitRes.ok) {
+        if (submitRes.status === 409) setError("Cette technique ne peut plus être soumise.");
+        else if (submitRes.status === 400) setError("Champs invalides.");
+        else if (submitRes.status === 429) setError("Trop de soumissions, attends un peu.");
+        else setError("Erreur serveur.");
+        return;
+      }
+
+      router.refresh();
+    });
+  }
+
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    saveDraft(e);
   }
 
   return (
@@ -684,6 +735,11 @@ export default function FicheForm({
           <button type="submit" disabled={pending} className="hnk-btn">
             {pending ? "Enregistrement…" : ficheId ? "Enregistrer" : "Créer le brouillon"}
           </button>
+          {ficheId && canSecondarySubmit && (
+            <button type="button" onClick={saveAndSubmit} disabled={pending} className="hnk-btn-ghost">
+              {pending ? "…" : status === "REJECTED" ? "Re-soumettre" : "Enregistrer et soumettre"}
+            </button>
+          )}
           <span className="text-xs text-smoke">
             Coût à la validation : <span className="text-ember tabular-nums">{cost} XP</span>
           </span>

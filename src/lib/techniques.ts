@@ -6,6 +6,7 @@
 // ============================================================
 
 import { ACTION_COST } from "@/lib/arts";
+import { ARTS_ALL } from "@/lib/arts";
 import { kgColor } from "@/lib/kekkei";
 
 export const ART_OPTIONS = [
@@ -86,6 +87,28 @@ export function natureLabel(key?: string | null, scope?: string | null, clan?: s
   return "—";
 }
 
+export function techniqueArtChipLabel({
+  art,
+  spec,
+  specRank,
+  nature,
+}: {
+  art: string | null;
+  spec: string | null;
+  specRank: string | null;
+  nature: string | null;
+}) {
+  if (!art) return null;
+  const key = art.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const defaultSpec = nature === "COLLECTIVE" ? ARTS_ALL.find((a) => a.key === key)?.specs[0] ?? null : null;
+  const resolvedSpec = spec ?? defaultSpec;
+  let label = `${ART_KANJI[art] ?? ""} ${art}`.trim();
+  if (resolvedSpec || specRank) {
+    label += ` - ${resolvedSpec ?? ""}${specRank ? ` (${specRank})` : ""}`;
+  }
+  return label;
+}
+
 export const ART_KANJI: Record<string, string> = {
   Ninjutsu: "忍",
   Taijutsu: "体",
@@ -142,18 +165,20 @@ export function techniqueForumHtml(t: TechniqueExportData): string {
     `<span class="hnk-tech-chip${kg ? " hnk-tech-chip--kg" : ""}">${escapeHtml(txt)}</span>`;
 
   const chips: string[] = [];
-  if (t.art) {
-    let artLabel = `${ART_KANJI[t.art] ?? ""} ${t.art}`.trim();
-    if (t.spec) artLabel += ` · ${t.spec}`;
-    if (t.specRank) artLabel += ` · ${t.specRank}`;
-    chips.push(chip(artLabel));
-  }
-  if (t.secondaryArt) {
-    let secondaryLabel = `${ART_KANJI[t.secondaryArt] ?? ""} ${t.secondaryArt}`.trim();
-    if (t.secondarySpec) secondaryLabel += ` · ${t.secondarySpec}`;
-    if (t.secondarySpecRank) secondaryLabel += ` · ${t.secondarySpecRank}`;
-    chips.push(chip(secondaryLabel));
-  }
+  const artLabel = techniqueArtChipLabel({
+    art: t.art,
+    spec: t.spec ?? null,
+    specRank: t.specRank ?? null,
+    nature: t.nature,
+  });
+  if (artLabel) chips.push(chip(artLabel));
+  const secondaryLabel = techniqueArtChipLabel({
+    art: t.secondaryArt ?? null,
+    spec: t.secondarySpec ?? null,
+    specRank: t.secondarySpecRank ?? null,
+    nature: t.nature,
+  });
+  if (secondaryLabel && t.secondaryArt) chips.push(chip(secondaryLabel));
   if (t.espece) chips.push(chip(`口 ${t.espece}`));
   if (t.actionType) chips.push(chip(actionLabel(t.actionType)));
   if (t.element) chips.push(chip(t.element));

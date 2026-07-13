@@ -3,16 +3,11 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 
+import { canDeleteFiche, canWithdrawFiche } from "@/lib/fiche-status";
+
 export default function FicheActions({ ficheId, status }: { ficheId: string; status: string }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-
-  function submit() {
-    start(async () => {
-      const res = await fetch(`/api/fiches/${ficheId}/submit`, { method: "POST" });
-      if (res.ok) router.refresh();
-    });
-  }
 
   function softDelete() {
     if (!confirm("Supprimer cette technique ?")) return;
@@ -22,22 +17,34 @@ export default function FicheActions({ ficheId, status }: { ficheId: string; sta
     });
   }
 
-  // Actions joueur : seulement sur ses brouillons ou ses techniques refusées.
-  if (status !== "DRAFT" && status !== "REJECTED") return null;
+  function withdraw() {
+    if (!confirm("Retirer cette technique de la validation ?")) return;
+    start(async () => {
+      const res = await fetch(`/api/fiches/${ficheId}/withdraw`, { method: "POST" });
+      if (res.ok) router.refresh();
+    });
+  }
+
+  const showWithdraw = canWithdrawFiche(status);
+  const showDelete = canDeleteFiche(status);
+  if (!showWithdraw && !showDelete) return null;
 
   return (
     <div className="flex gap-3">
-      <button type="button" onClick={submit} disabled={pending} className="hnk-btn">
-        {pending ? "…" : status === "REJECTED" ? "Renvoyer en validation" : "Soumettre au staff"}
-      </button>
-      <button
-        type="button"
-        onClick={softDelete}
-        disabled={pending}
-        className="hnk-btn-ghost !text-red-400 !border-red-500/40"
-      >
-        Supprimer
-      </button>
+      {showWithdraw ? (
+        <button type="button" onClick={withdraw} disabled={pending} className="hnk-btn-ghost">
+          {pending ? "…" : "Retirer de la validation"}
+        </button>
+      ) : showDelete ? (
+        <button
+          type="button"
+          onClick={softDelete}
+          disabled={pending}
+          className="hnk-btn-ghost !text-red-400 !border-red-500/40"
+        >
+          Supprimer
+        </button>
+      ) : null}
     </div>
   );
 }

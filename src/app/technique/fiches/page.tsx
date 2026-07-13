@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import TechniquesView, { type MyTech } from "@/components/TechniquesView";
-import { ARTS_ALL, specRank, invocationSpecRank, type ArtsState } from "@/lib/arts";
+import { ARTS_ALL, type ArtsState } from "@/lib/arts";
+import { resolveTechniqueSpecRanks } from "@/lib/technique-display";
 import { loadKgCatalogRows } from "@/lib/kekkei-server";
 
 export default async function MyFichesPage() {
@@ -53,39 +54,37 @@ export default async function MyFichesPage() {
       ? f.art.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
       : null;
     const artDef = artKey ? ARTS_ALL.find((a) => a.key === artKey) : null;
-    const specIdx = artDef && f.spec ? (artDef.specs as string[]).indexOf(f.spec) : -1;
-    // Kuchy : la spé suit le rang global du joueur (auto, plafond B), pas l'artsState.
-    const isKuchy = f.invocation != null;
-    const ficheSpecRank =
-      artDef && specIdx >= 0 && meVillageRank != null
-        ? isKuchy
-          ? invocationSpecRank(meVillageRank)
-          : meArts != null
-          ? specRank(artDef.key, specIdx, meArts, meVillageRank)
-          : null
-        : null;
+    const resolvedSpec = f.spec ?? (f.nature === "COLLECTIVE" ? artDef?.specs[0] ?? null : null);
+    const specIdx = artDef && resolvedSpec ? (artDef.specs as string[]).indexOf(resolvedSpec) : -1;
     const secArtKey = f.secondaryArt
       ? f.secondaryArt.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
       : null;
     const secArtDef = secArtKey ? ARTS_ALL.find((a) => a.key === secArtKey) : null;
-    const secSpecIdx = secArtDef && f.secondarySpec ? (secArtDef.specs as string[]).indexOf(f.secondarySpec) : -1;
-    const ficheSecondarySpecRank =
-      secArtDef && secSpecIdx >= 0 && meVillageRank != null
-        ? isKuchy
-          ? invocationSpecRank(meVillageRank)
-          : meArts != null
-          ? specRank(secArtDef.key, secSpecIdx, meArts, meVillageRank)
-          : null
-        : null;
+    const resolvedSecondarySpec =
+      f.secondarySpec ?? (f.nature === "COLLECTIVE" ? secArtDef?.specs[0] ?? null : null);
+    const secSpecIdx = secArtDef && resolvedSecondarySpec ? (secArtDef.specs as string[]).indexOf(resolvedSecondarySpec) : -1;
+    const { specRank: ficheSpecRank, secondarySpecRank: ficheSecondarySpecRank } =
+      resolveTechniqueSpecRanks({
+        artKey,
+        specIdx,
+        secondaryArtKey: secArtKey,
+        secondarySpecIdx: secSpecIdx,
+        nature: f.nature,
+        invocationId: f.invocation ? "present" : null,
+        viewerArtsState: meArts,
+        viewerRank: meVillageRank,
+        authorArtsState: meArts,
+        authorRank: meVillageRank,
+      });
     return {
     id: f.id,
     nom: f.nom,
     description: f.description,
     art: f.art,
-    spec: f.spec,
+    spec: resolvedSpec,
     specRank: ficheSpecRank,
     secondaryArt: f.secondaryArt,
-    secondarySpec: f.secondarySpec,
+    secondarySpec: resolvedSecondarySpec,
     secondarySpecRank: ficheSecondarySpecRank,
     actionType: f.actionType,
     element: f.element,

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 
-import { actionLabel } from "@/lib/techniques";
+import { actionLabel, techniqueArtChipLabel } from "@/lib/techniques";
 import { kgColor } from "@/lib/kekkei";
 import ForumCopyButton from "@/components/ForumCopyButton";
 
@@ -12,8 +12,10 @@ export interface LibTech {
   description: string | null;
   art: string | null;
   spec?: string | null;
+  specRank?: string | null;
   secondaryArt?: string | null;
   secondarySpec?: string | null;
+  secondarySpecRank?: string | null;
   actionType: string | null;
   element: string | null;
   kekkeiGenkai: string | null;
@@ -114,14 +116,34 @@ export default function ClanLibraryView({
                   )}
                 </div>
                 <div className="flex flex-wrap gap-1.5 mt-2">
-                  {t.art && (
+                  {techniqueArtChipLabel({
+                    art: t.art,
+                    spec: t.spec ?? null,
+                    specRank: t.specRank ?? null,
+                    nature: "COLLECTIVE",
+                  }) && (
                     <span className="hnk-tech-chip">
-                      {t.art}{t.spec ? ` · ${t.spec}` : ""}
+                      {techniqueArtChipLabel({
+                        art: t.art,
+                        spec: t.spec ?? null,
+                        specRank: t.specRank ?? null,
+                        nature: "COLLECTIVE",
+                      })}
                     </span>
                   )}
-                  {t.secondaryArt && (
+                  {techniqueArtChipLabel({
+                    art: t.secondaryArt ?? null,
+                    spec: t.secondarySpec ?? null,
+                    specRank: t.secondarySpecRank ?? null,
+                    nature: "COLLECTIVE",
+                  }) && (
                     <span className="hnk-tech-chip">
-                      + {t.secondaryArt}{t.secondarySpec ? ` · ${t.secondarySpec}` : ""}
+                      + {techniqueArtChipLabel({
+                        art: t.secondaryArt ?? null,
+                        spec: t.secondarySpec ?? null,
+                        specRank: t.secondarySpecRank ?? null,
+                        nature: "COLLECTIVE",
+                      })}
                     </span>
                   )}
                   {t.actionType && <span className="hnk-tech-chip">{actionLabel(t.actionType)}</span>}
@@ -164,7 +186,11 @@ export default function ClanLibraryView({
                       data={{
                         nom: t.nom,
                         art: t.art,
+                        spec: t.spec ?? null,
+                        specRank: t.specRank ?? null,
                         secondaryArt: t.secondaryArt,
+                        secondarySpec: t.secondarySpec ?? null,
+                        secondarySpecRank: t.secondarySpecRank ?? null,
                         actionType: t.actionType,
                         element: t.element,
                         kekkeiGenkai: t.kekkeiGenkai,
