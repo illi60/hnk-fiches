@@ -42,8 +42,6 @@ export interface ProgCond {
 export interface ProgExtra {
   id: string;
   label: string;
-  /** true = bloc obligatoire (ex : Mode Spécial final au Rang S Histoire). */
-  required?: boolean;
   /** Choix mutuellement alternatifs : un seul à valider. */
   choices: ProgCond[];
 }
@@ -54,8 +52,10 @@ export interface ProgIndividual {
   xp: number;
   /** Alternatives au raccourci XP (toutes requises si on ne paie pas l'XP). */
   alternatives: ProgCond[];
-  /** Blocs optionnels / obligatoires supplémentaires (Histoire). */
-  extras?: ProgExtra[];
+  /** Blocs supplémentaires obligatoires au rang (Histoire final). */
+  requiredExtras?: ProgExtra[];
+  /** Blocs optionnels séparés de la progression de rang. */
+  optionalExtras?: ProgExtra[];
 }
 
 export interface ProgPalier {
@@ -544,14 +544,15 @@ const HISTOIRE: ProgTrackDef = {
           { id: "HISTOIRE.B.i8", label: "Réaliser 1 Intrigue personnelle.", count: 1 },
           { id: "HISTOIRE.B.i9", label: "Avoir 1 Titre.", count: 1 },
         ],
-        extras: [
+        optionalExtras: [
           {
             id: "HISTOIRE.B.x1",
             label: "Pour accéder en plus à l'intrigue anomalie (optionnel)",
             choices: [
               { id: "HISTOIRE.B.x1.1", label: "Purifier 20 Anomalies (voie E).", count: 20 },
               { id: "HISTOIRE.B.x1.2", label: "Aggraver 20 Anomalies (voie J).", count: 20 },
-              { id: "HISTOIRE.B.x1.3", label: "Purifier 15 Anomalies et aggraver 15 Anomalies (voie O)." },
+              { id: "HISTOIRE.B.x1.3.p", label: "Purifier 15 Anomalies (voie O).", count: 15 },
+              { id: "HISTOIRE.B.x1.3.j", label: "Aggraver 15 Anomalies (voie O).", count: 15 },
             ],
           },
         ],
@@ -578,14 +579,15 @@ const HISTOIRE: ProgTrackDef = {
           { id: "HISTOIRE.A.i7", label: "Réaliser les objectifs imposés par l'intrigue anomalie.", count: 1 },
           { id: "HISTOIRE.A.i8", label: "Participer à 1 Anomalie narrée minimum.", count: 1 },
         ],
-        extras: [
+        optionalExtras: [
           {
             id: "HISTOIRE.A.x1",
             label: "Pour accéder en plus au Mode Spécial initial (optionnel)",
             choices: [
               { id: "HISTOIRE.A.x1.1", label: "Purifier 50 Anomalies au total (voie E).", count: 50 },
               { id: "HISTOIRE.A.x1.2", label: "Aggraver 50 Anomalies au total (voie J).", count: 50 },
-              { id: "HISTOIRE.A.x1.3", label: "Purifier 30 Anomalies et aggraver 30 Anomalies au total (voie O)." },
+              { id: "HISTOIRE.A.x1.3.p", label: "Purifier 30 Anomalies (voie O).", count: 30 },
+              { id: "HISTOIRE.A.x1.3.j", label: "Aggraver 30 Anomalies (voie O).", count: 30 },
             ],
           },
         ],
@@ -613,15 +615,15 @@ const HISTOIRE: ProgTrackDef = {
           { id: "HISTOIRE.S.i7", label: "Atteindre le Mode Spécial initial.", count: 1 },
           { id: "HISTOIRE.S.i8", label: "Remplir les conditions du Mode Spécial final.", count: 1 },
         ],
-        extras: [
+        requiredExtras: [
           {
             id: "HISTOIRE.S.x1",
             label: "Pour accéder au Mode Spécial final (obligatoire)",
-            required: true,
             choices: [
               { id: "HISTOIRE.S.x1.1", label: "Purifier 100 Anomalies au total (voie E).", count: 100 },
               { id: "HISTOIRE.S.x1.2", label: "Aggraver 100 Anomalies au total (voie J).", count: 100 },
-              { id: "HISTOIRE.S.x1.3", label: "Purifier 60 Anomalies et aggraver 60 Anomalies au total (voie O)." },
+              { id: "HISTOIRE.S.x1.3.p", label: "Purifier 60 Anomalies (voie O).", count: 60 },
+              { id: "HISTOIRE.S.x1.3.j", label: "Aggraver 60 Anomalies (voie O).", count: 60 },
             ],
           },
         ],
@@ -690,9 +692,9 @@ const ONESHOT_IDS = new Set<string>([
   "CLAN.A.c6", "CLAN.A.c8", "CLAN.A.c9", "CLAN.A.i2", "CLAN.A.i5",
   "CLAN.S.c6", "CLAN.S.c7", "CLAN.S.c8", "CLAN.S.c10", "CLAN.S.c11", "CLAN.S.c12",
   "HISTOIRE.C.i5",
-  "HISTOIRE.B.i1", "HISTOIRE.B.i7", "HISTOIRE.B.i9", "HISTOIRE.B.x1.3",
-  "HISTOIRE.A.i1", "HISTOIRE.A.i6", "HISTOIRE.A.i7", "HISTOIRE.A.x1.3",
-  "HISTOIRE.S.i2", "HISTOIRE.S.i6", "HISTOIRE.S.i7", "HISTOIRE.S.i8", "HISTOIRE.S.x1.3",
+  "HISTOIRE.B.i1", "HISTOIRE.B.i7", "HISTOIRE.B.i9",
+  "HISTOIRE.A.i1", "HISTOIRE.A.i6", "HISTOIRE.A.i7",
+  "HISTOIRE.S.i2", "HISTOIRE.S.i6", "HISTOIRE.S.i7", "HISTOIRE.S.i8",
 ]);
 
 // « Avoir N personnages de Rang X » — AUTO : compte les personnages du scope
@@ -716,6 +718,18 @@ export function isAdminManaged(id: string): boolean {
 
 // Conditions qui doivent rester des demandes de validation manuelle.
 const MANUAL_REVIEW_IDS = new Set<string>(["HISTOIRE.B.i1", "HISTOIRE.A.i1"]);
+
+// Conditions optionnelles, séparées du chemin principal du rang.
+const OPTIONAL_COND_IDS = new Set<string>([
+  "HISTOIRE.B.x1.1",
+  "HISTOIRE.B.x1.2",
+  "HISTOIRE.B.x1.3.p",
+  "HISTOIRE.B.x1.3.j",
+  "HISTOIRE.A.x1.1",
+  "HISTOIRE.A.x1.2",
+  "HISTOIRE.A.x1.3.p",
+  "HISTOIRE.A.x1.3.j",
+]);
 
 // Conditions qui exigent de saisir les pseudos exacts des autres participants.
 // Règle métier actuelle : RP libres / trivia / défis / missions = co-participants requis.
@@ -770,6 +784,7 @@ export interface CondMeta {
   mode: CondMode;
   target: number;
   adminManaged: boolean;
+  optional: boolean;
 }
 
 // Catalogue plat id → métadonnée. Toute soumission est vérifiée contre ce
@@ -787,13 +802,17 @@ export const COND_CATALOG: Map<string, CondMeta> = (() => {
       mode: condMode(c.id),
       target: condTarget(c.id, c.count),
       adminManaged: isAdminManaged(c.id),
+      optional: OPTIONAL_COND_IDS.has(c.id),
     });
   for (const def of PROGRESSION_LIST) {
     for (const p of def.paliers) {
       for (const c of p.community ?? []) add(c, def.key, p.rank, "COMMUNITY");
       if (p.individual) {
         for (const c of p.individual.alternatives) add(c, def.key, p.rank, "INDIVIDUAL");
-        for (const ex of p.individual.extras ?? []) {
+        for (const ex of p.individual.requiredExtras ?? []) {
+          for (const c of ex.choices) add(c, def.key, p.rank, "INDIVIDUAL");
+        }
+        for (const ex of p.individual.optionalExtras ?? []) {
           for (const c of ex.choices) add(c, def.key, p.rank, "INDIVIDUAL");
         }
       }
@@ -924,8 +943,8 @@ export function individualConditionsMet(track: ProgTrack, rank: Rank, up: UserPr
   const p = palierAt(track, rank);
   if (!p || !p.individual) return true; // E (ou palier sans individuel)
   if (!p.individual.alternatives.every((c) => individualCondMet(c, up))) return false;
-  for (const ex of p.individual.extras ?? []) {
-    if (ex.required && !ex.choices.some((c) => individualCondMet(c, up))) return false;
+  for (const ex of p.individual.requiredExtras ?? []) {
+    if (!ex.choices.some((c) => individualCondMet(c, up))) return false;
   }
   return true;
 }
@@ -971,6 +990,7 @@ export function submissionGate(
   ctx: { personalRank: Rank; effectiveCommRank: Rank }
 ): { ok: boolean; reason?: string } {
   if (isAutoMode(meta.mode)) return { ok: false, reason: "AUTO" };
+  if (meta.optional) return { ok: true };
   const scope = PROGRESSION[meta.track].scope;
   if (meta.tier === "COMMUNITY") {
     const st = communityPalierStatus(meta.rank, ctx.effectiveCommRank);

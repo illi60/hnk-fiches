@@ -891,9 +891,11 @@ function ModeForm({ user }: { user: AdminUser }) {
   const [path, setPath] = useState(mode?.path ?? "");
   const [stage, setStage] = useState(String(mode?.stage ?? 0));
   const [saved, setSaved] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
   function submit() {
+    setErr(null);
     start(async () => {
       const res = await fetch(`/api/admin/users/${user.id}/mode`, {
         method: "POST",
@@ -903,6 +905,9 @@ function ModeForm({ user }: { user: AdminUser }) {
       if (res.ok) {
         setSaved(true);
         router.refresh();
+      } else {
+        const j = await res.json().catch(() => ({}));
+        setErr(j.error === "MODE_DEJA_CHOISI" ? "Cette voie est déjà engagée." : "Action impossible.");
       }
     });
   }
@@ -938,6 +943,7 @@ function ModeForm({ user }: { user: AdminUser }) {
         </button>
         {saved && <span className="text-xs text-emerald-400">Enregistré.</span>}
       </div>
+      {err && <p className="mt-2 text-xs text-ember-hot">{err}</p>}
     </section>
   );
 }

@@ -33,6 +33,7 @@ import ProgressionBoard, {
   type CondView,
   type PalierView,
   type SubView,
+  type OptionalView,
 } from "@/components/ProgressionBoard";
 
 export default async function ProgressionPage() {
@@ -181,6 +182,7 @@ export default async function ProgressionPage() {
       met,
       auto,
       adminManaged,
+      optional: false,
       myPending,
       submittable,
       lockReason: palierStatus === "LOCKED" ? "LOCKED" : undefined,
@@ -188,7 +190,7 @@ export default async function ProgressionPage() {
     };
   }
 
-  function condIndividual(c: ProgCond, palierStatus: PalierStatus): CondView {
+  function condIndividual(c: ProgCond, palierStatus: PalierStatus, anytime = false): CondView {
     const mode = condMode(c.id);
     const auto = isAutoMode(mode);
     const adminManaged = isAdminManaged(c.id);
@@ -196,7 +198,11 @@ export default async function ProgressionPage() {
     const met = individualCondMet(c, userProg);
     const myPending = myPendingIndividual(c.id);
     const submittable =
-      palierStatus === "ACTIVE" && !auto && !adminManaged && !met && (mode !== "oneshot" || myPending === 0);
+      (anytime || palierStatus === "ACTIVE") &&
+      !auto &&
+      !adminManaged &&
+      !met &&
+      (mode !== "oneshot" || myPending === 0);
     return {
       id: c.id,
       label: c.label,
@@ -207,10 +213,13 @@ export default async function ProgressionPage() {
       met,
       auto,
       adminManaged,
+      optional: anytime,
       myPending,
       submittable,
       lockReason:
-        palierStatus === "LOCKED"
+        anytime
+          ? undefined
+          : palierStatus === "LOCKED"
           ? "LOCKED"
           : palierStatus === "LOCKED_COMMUNITY"
           ? "LOCKED_COMMUNITY"
@@ -263,10 +272,9 @@ export default async function ProgressionPage() {
               alternatives: p.individual.alternatives.map((c) =>
                 condIndividual(c, individualStatus ?? "LOCKED")
               ),
-              extras: (p.individual.extras ?? []).map((ex) => ({
+              extras: (p.individual.requiredExtras ?? []).map((ex) => ({
                 id: ex.id,
                 label: ex.label,
-                required: !!ex.required,
                 choices: ex.choices.map((c) => condIndividual(c, individualStatus ?? "LOCKED")),
               })),
               met: individualConditionsMet(def.key, p.rank, userProg),
@@ -275,6 +283,25 @@ export default async function ProgressionPage() {
         rewards: p.rewards,
       };
     });
+
+    base.paliers = base.paliers.map((p) => ({
+      ...p,
+      optionalProgressions: def.paliers
+        .filter((src) => src.rank === p.rank)
+        .flatMap<OptionalView>((src) =>
+          (src.individual?.optionalExtras ?? []).map((ex) => ({
+            id: ex.id,
+            label: ex.label,
+            sourceRank: src.rank,
+            target: ex.choices.reduce((sum, c) => sum + (c.count ?? 1), 0),
+            detail:
+              ex.choices.length === 2 && ex.choices.every((c) => c.count != null)
+                ? `Détail : ${ex.choices[0].count} + ${ex.choices[1].count}.`
+                : undefined,
+            choices: ex.choices.map((c) => condIndividual(c, "ACTIVE", true)),
+          }))
+        ),
+    }));
     return base;
   });
 

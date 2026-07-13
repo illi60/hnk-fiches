@@ -11,15 +11,25 @@ interface PickItem {
   trackKey: "VILLAGE" | "CLAN" | "HISTOIRE";
   trackLabel: string;
   rank: string;
-  tier: "Communautaire" | "Individuelle";
+  tier: "Communautaire" | "Individuelle" | "Optionnelle";
   submissionMode: "SOLO" | "GROUP" | "MANUAL";
+  section: "Rang" | "Optionnelles";
+  routeLabel?: "Voie Ermite" | "Voie Jinchuuriki" | "Voie Otsutsuki";
 }
 
 // Aplati la liste des conditions actuellement soumettables (sur toutes les voies).
 function collectSubmittable(tracks: TrackView[]): PickItem[] {
   const out: PickItem[] = [];
-  const push = (c: CondView, t: TrackView, rank: string, tier: PickItem["tier"]) => {
+  const push = (c: CondView, t: TrackView, rank: string, tier: PickItem["tier"], section: PickItem["section"]) => {
     if (!c.submittable) return;
+    const routeLabel =
+      section === "Optionnelles"
+        ? /\bvoie\s*E\b/i.test(c.label)
+          ? "Voie Ermite"
+          : /\bvoie\s*J\b/i.test(c.label)
+          ? "Voie Jinchuuriki"
+          : "Voie Otsutsuki"
+        : undefined;
     out.push({
       condId: c.id,
       label: c.label,
@@ -28,15 +38,20 @@ function collectSubmittable(tracks: TrackView[]): PickItem[] {
       rank,
       tier,
       submissionMode: c.submissionMode,
+      section,
+      routeLabel,
     });
   };
   for (const t of tracks) {
     if (!t.available) continue;
     for (const p of t.paliers) {
-      for (const c of p.community ?? []) push(c, t, p.rank, "Communautaire");
+      for (const c of p.community ?? []) push(c, t, p.rank, "Communautaire", "Rang");
       if (p.individual) {
-        for (const c of p.individual.alternatives) push(c, t, p.rank, "Individuelle");
-        for (const ex of p.individual.extras) for (const c of ex.choices) push(c, t, p.rank, "Individuelle");
+        for (const c of p.individual.alternatives) push(c, t, p.rank, "Individuelle", "Rang");
+        for (const ex of p.individual.extras) for (const c of ex.choices) push(c, t, p.rank, "Individuelle", "Rang");
+      }
+      for (const group of p.optionalProgressions ?? []) {
+        for (const c of group.choices) push(c, t, p.rank, "Optionnelle", "Optionnelles");
       }
     }
   }
@@ -90,9 +105,14 @@ export default function SubmitRpModal({ tracks, onClose }: { tracks: TrackView[]
   const groups = useMemo(() => {
     const m = new Map<string, { label: string; items: PickItem[] }>();
     for (const it of items) {
-      const g = m.get(it.trackKey) ?? { label: it.trackLabel, items: [] };
+      const key = `${it.trackKey}:${it.section}:${it.routeLabel ?? "Rang"}`;
+      const label =
+        it.section === "Optionnelles"
+          ? `${it.trackLabel} · ${it.routeLabel}`
+          : it.trackLabel;
+      const g = m.get(key) ?? { label, items: [] };
       g.items.push(it);
-      m.set(it.trackKey, g);
+      m.set(key, g);
     }
     return Array.from(m.entries());
   }, [items]);

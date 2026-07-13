@@ -31,6 +31,7 @@ export interface CondView {
   met: boolean;
   auto: boolean; // xp_* : pas de soumission, jauge automatique
   adminManaged: boolean; // validée en direct par le staff (pas de soumission membre)
+  optional: boolean; // progression séparée : disponible à tout moment
   myPending: number;
   submittable: boolean;
   lockReason?: "LOCKED" | "LOCKED_COMMUNITY";
@@ -39,7 +40,14 @@ export interface CondView {
 export interface ExtraView {
   id: string;
   label: string;
-  required: boolean;
+  choices: CondView[];
+}
+export interface OptionalView {
+  id: string;
+  label: string;
+  sourceRank: string;
+  target?: number;
+  detail?: string;
   choices: CondView[];
 }
 export interface IndividualView {
@@ -58,6 +66,7 @@ export interface PalierView {
   community?: CondView[];
   communityComplete?: boolean;
   individual?: IndividualView;
+  optionalProgressions?: OptionalView[];
   rewards: string[];
 }
 export interface TrackView {
@@ -194,6 +203,7 @@ function TrackPanel({ track }: { track: TrackView }) {
         .map((p) => (
           <PalierCard key={p.rank} track={track} palier={p} />
         ))}
+
     </div>
   );
 }
@@ -300,8 +310,7 @@ function PalierCard({ track, palier }: { track: TrackView; palier: PalierView })
           {palier.individual.extras.map((ex) => (
             <div key={ex.id} className="mt-3 border-l-2 border-white/10 pl-3">
               <p className="text-[11px] text-smoke mb-1.5">
-                {ex.label}{" "}
-                <span className="text-bone/60">· {ex.required ? "obligatoire" : "un choix au choix"}</span>
+                {ex.label} <span className="text-bone/60">· obligatoire</span>
               </p>
               <ul className="space-y-2.5">
                 {ex.choices.map((c) => (
@@ -310,6 +319,29 @@ function PalierCard({ track, palier }: { track: TrackView; palier: PalierView })
               </ul>
             </div>
           ))}
+        </section>
+      )}
+
+      {palier.optionalProgressions && palier.optionalProgressions.length > 0 && (
+        <section className="mt-5">
+          <div className="flex items-center gap-2 mb-2">
+            <p className="hnk-eyebrow">Progressions optionnelles</p>
+            <span className="hnk-chip !text-smoke !border-white/10">À tout moment</span>
+          </div>
+          <p className="text-[11px] italic text-smoke mb-3 leading-relaxed">
+            Ces conditions restent accessibles même après le passage du rang où elles ont été
+            introduites.
+          </p>
+          <div className="space-y-3">
+            {palier.optionalProgressions.map((group) => (
+              <div key={group.id} className="border border-white/10 bg-black/10 p-3">
+                <p className="text-[11px] uppercase tracking-[0.2em] text-bone/70 mb-2">
+                  Rang {group.sourceRank} · {group.label}
+                </p>
+                <OptionalRoutes group={group} />
+              </div>
+            ))}
+          </div>
         </section>
       )}
 
@@ -385,6 +417,62 @@ function LevelUpButton({
       </button>
       <span className="text-[10px] text-smoke tabular-nums">({xpAvailable} XP dispo)</span>
       {err && <span className="text-[10px] text-ember-hot">{err}</span>}
+    </div>
+  );
+}
+
+function OptionalRoutes({ group }: { group: OptionalView }) {
+  const buckets = new Map<
+    "Voie Ermite" | "Voie Jinchuuriki" | "Voie Otsutsuki",
+    { choices: CondView[]; total: number }
+  >();
+  for (const choice of group.choices) {
+    const route = /\bvoie\s*E\b/i.test(choice.label)
+      ? "Voie Ermite"
+      : /\bvoie\s*J\b/i.test(choice.label)
+      ? "Voie Jinchuuriki"
+      : "Voie Otsutsuki";
+    const bucket = buckets.get(route) ?? { choices: [], total: 0 };
+    bucket.choices.push(choice);
+    bucket.total += choice.target ?? 1;
+    buckets.set(route, bucket);
+  }
+  const routes: Array<"Voie Ermite" | "Voie Jinchuuriki" | "Voie Otsutsuki"> = [
+    "Voie Ermite",
+    "Voie Jinchuuriki",
+    "Voie Otsutsuki",
+  ];
+
+  return (
+    <div className="space-y-3">
+      {routes
+        .filter((route) => buckets.has(route))
+        .map((route, idx) => {
+          const bucket = buckets.get(route)!;
+          const detail =
+            route === "Voie Otsutsuki" && bucket.choices.length === 2
+              ? `Détail : ${bucket.choices[0].target ?? 1} purifications + ${
+                  bucket.choices[1].target ?? 1
+                } aggravations.`
+              : undefined;
+          return (
+            <div
+              key={`${group.id}:${route}`}
+              className={idx === 0 ? "" : "border-t border-white/10 pt-3"}
+            >
+              <div className="flex items-center justify-between gap-3 mb-1.5">
+                <p className="text-[10px] uppercase tracking-[0.22em] text-bone/60">{route}</p>
+                <span className="text-[10px] text-amber-300/80 tabular-nums">0/{bucket.total}</span>
+              </div>
+              {detail && <p className="text-[11px] text-smoke mb-2 leading-relaxed">{detail}</p>}
+              <ul className="space-y-2.5">
+                {bucket.choices.map((c) => (
+                  <CondRow key={c.id} cond={c} />
+                ))}
+              </ul>
+            </div>
+          );
+        })}
     </div>
   );
 }
@@ -512,7 +600,14 @@ function CondRow({ cond, community = false }: { cond: CondView; community?: bool
     <li className="text-xs">
       <div className="flex items-start gap-2">
         <span className={`flex-none mt-[2px] ${iconColor}`}>{icon}</span>
-        <span className="flex-1 text-bone/85 leading-relaxed">{cond.label}</span>
+        <span className="flex-1 text-bone/85 leading-relaxed">
+          {cond.label}
+          {cond.optional && (
+            <span className="ml-2 text-[9px] uppercase tracking-wider text-amber-300/80">
+              optionnelle
+            </span>
+          )}
+        </span>
 
         <ProgressMeter cond={cond} />
 

@@ -23,8 +23,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (!user) return NextResponse.json({ ok: false, error: "NOT_FOUND" }, { status: 404 });
 
     const state = ((user.progressionState ?? {}) as unknown) as ProgressionState;
+    const currentPath = state.mode?.path;
     if (!PATHS.includes(path) || !Number.isFinite(stage) || stage <= 0) {
       delete state.mode; // reset (voie abandonnée)
+    } else if (currentPath && currentPath !== path) {
+      return NextResponse.json({ ok: false, error: "MODE_DEJA_CHOISI" }, { status: 409 });
     } else {
       state.mode = { path: path as ModePath, stage: Math.min(3, Math.max(1, Math.round(stage))) };
     }

@@ -224,10 +224,13 @@ export function applyQuintessence(
 // ---------- Emprunter une voie (gaté Rang Histoire) ----------
 export function canEngageMode(
   path: ModePath,
-  histoireRank: string | null
+  histoireRank: string | null,
+  state?: ProgressionState | null
 ): { ok: boolean; error?: string } {
   const def = modeDef(path);
   if (!def) return { ok: false, error: "MODE_INVALIDE" };
+  const currentPath = state?.mode?.path;
+  if (currentPath && currentPath !== path) return { ok: false, error: "MODE_DEJA_CHOISI" };
   if (rankIndex(histoireRank) < RANKS.indexOf(def.histoireMin as (typeof RANKS)[number]))
     return { ok: false, error: "HISTOIRE_REQUIS" };
   return { ok: true };
@@ -235,6 +238,9 @@ export function canEngageMode(
 
 export function engageMode(path: ModePath, state: ProgressionState | null | undefined): ProgressionState {
   const next: ProgressionState = JSON.parse(JSON.stringify(getProgression(state)));
+  if (next.mode && next.mode.path !== path) {
+    return next;
+  }
   next.mode = { path, stage: 1 };
   return next;
 }
