@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { ART_OPTIONS, ELEMENTS } from "@/lib/techniques";
 import FicheForm from "@/components/FicheForm";
-import { type ArtsState } from "@/lib/arts";
+import { invocationRankOptions, type ArtsState, type Rank } from "@/lib/arts";
 
 export interface InvTech {
   nom: string;
@@ -53,6 +53,8 @@ export default function InvocationsManager({
   pactMaxSlots,
   pactSpecies,
   ermitePerfect,
+  userRank,
+  hasQuintessence,
   ownedKgs,
   kgNames,
   kgColors,
@@ -63,6 +65,8 @@ export default function InvocationsManager({
   pactMaxSlots: number;
   pactSpecies: string | null;
   ermitePerfect: boolean;
+  userRank: string | null;
+  hasQuintessence: boolean;
   ownedKgs: string[];
   kgNames: string[];
   kgColors?: Record<string, string>;
@@ -83,6 +87,8 @@ export default function InvocationsManager({
         <InvocationForm
           value={editing === "new" ? null : editing}
           ermitePerfect={ermitePerfect}
+          userRank={userRank}
+          hasQuintessence={hasQuintessence}
           ownedKgs={ownedKgs}
           pactAffinities={pactAffinities}
           pactSpecies={pactSpecies}
@@ -388,6 +394,8 @@ function Meta({ k, v }: { k: string; v: string | null }) {
 function InvocationForm({
   value,
   ermitePerfect,
+  userRank,
+  hasQuintessence,
   ownedKgs,
   pactAffinities,
   pactSpecies,
@@ -396,6 +404,8 @@ function InvocationForm({
 }: {
   value: Invocation | null;
   ermitePerfect: boolean;
+  userRank: string | null;
+  hasQuintessence: boolean;
   ownedKgs: string[];
   pactAffinities: string[];
   pactSpecies: string | null;
@@ -418,6 +428,12 @@ function InvocationForm({
   const [err, setErr] = useState<string | null>(null);
   // Espèce verrouillée une fois définie (comme l'affinité de pacte).
   const especeLocked = !!value?.espece;
+  const rankOptions = Array.from(
+    new Set([
+      ...invocationRankOptions(userRank, hasQuintessence),
+      ...(value?.invocationRank ? [value.invocationRank as Rank] : []),
+    ])
+  ) as Rank[];
 
   function save() {
     if (!f.nom.trim()) {
@@ -426,6 +442,10 @@ function InvocationForm({
     }
     if (!f.invocationRank.trim()) {
       setErr("Le rang de l'invocation est requis.");
+      return;
+    }
+    if (!rankOptions.includes(f.invocationRank as Rank)) {
+      setErr("Le rang de l'invocation dépasse le maximum autorisé.");
       return;
     }
     if (!pactSpecies && !especeLocked && !f.espece.trim()) {
@@ -489,7 +509,7 @@ function InvocationForm({
             disabled={pending}
           >
             <option value="">—</option>
-            {["E", "D", "C", "B", "A", "S"].map((r) => (
+            {rankOptions.map((r) => (
               <option key={r} value={r}>
                 Rang {r}
               </option>

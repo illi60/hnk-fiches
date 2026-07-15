@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, jsonError } from "@/lib/permissions";
 import { invocationSchema } from "@/lib/validators";
 import { getProgression, ownedKgsFull, type ProgressionState } from "@/lib/quintessence";
+import { invocationMaxRank, rankIndex } from "@/lib/arts";
 import { hasInvocationRankColumn } from "@/lib/invocation-schema";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -40,17 +41,22 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     });
     const prog = getProgression((user?.progressionState ?? {}) as unknown as ProgressionState);
     const ermitePerfect = prog.mode?.path === "ERMITE" && (prog.mode?.stage ?? 0) >= 3;
+    const maxRank = invocationMaxRank(user?.rang ?? null, prog.mode?.path === "ERMITE");
     const ownedKg = ownedKgsFull(user?.primaryKg, prog, user?.kekkeiGenkai).map((k) => k.toLowerCase());
     const kgEff =
       ermitePerfect && d.kekkeiGenkai && ownedKg.includes(d.kekkeiGenkai.toLowerCase())
         ? d.kekkeiGenkai
         : null;
+    const rank = d.invocationRank ?? owned.invocationRank ?? maxRank;
+    if (rankIndex(rank) > rankIndex(maxRank)) {
+      return NextResponse.json({ ok: false, error: "INVALID" }, { status: 400 });
+    }
 
     const invocation = await prisma.invocation.update({
       where: { id },
       data: {
         nom: d.nom,
-        ...(hasInvRank ? { invocationRank: d.invocationRank ?? owned.invocationRank ?? null } : {}),
+        ...(hasInvRank ? { invocationRank: rank } : {}),
         // Espèce : pacte (prioritaire) sinon valeur existante (verrouillée).
         espece: user?.pactSpecies ?? owned.espece ?? (d.espece || null),
         artShinobi: d.artShinobi || null,

@@ -110,6 +110,8 @@ export default async function InvocationsPage() {
         pactMaxSlots={ermiteStage >= 1 ? 2 : 1}
         pactSpecies={dbUser?.pactSpecies ?? null}
         ermitePerfect={ermiteStage >= 3}
+        userRank={dbUser?.rang ?? null}
+        hasQuintessence={ermiteStage >= 1}
         ownedKgs={ownedKgsFull(dbUser?.primaryKg, prog, dbUser?.kekkeiGenkai)}
         kgNames={kgNames}
         kgColors={kgColors}

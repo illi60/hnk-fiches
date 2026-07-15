@@ -58,6 +58,21 @@ export function autoArtRank(characterRank?: string | null): Rank {
   return RANKS[i];
 }
 
+/**
+ * Rang max autorisé pour un Kuchiyose.
+ *
+ * Sans Mode Ermite, l'invocation est plafonnée au rang B.
+ * Avec Mode Ermite, elle suit le rang global du personnage.
+ */
+export function invocationMaxRank(characterRank?: string | null, hasQuintessence?: boolean): Rank {
+  return hasQuintessence ? autoArtRank(characterRank) : autoArtRank(rankIndex(characterRank) >= rankIndex("B") ? "B" : characterRank);
+}
+
+export function invocationRankOptions(characterRank?: string | null, hasQuintessence?: boolean): Rank[] {
+  const max = invocationMaxRank(characterRank, hasQuintessence);
+  return RANKS.slice(0, rankIndex(max) + 1);
+}
+
 export function rankClass(r?: string | null): string {
   const g = (r ?? "").trim().toUpperCase();
   return /^[EDCBAS]$/.test(g) ? `rk-${g.toLowerCase()}` : "";
