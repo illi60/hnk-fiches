@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, jsonError } from "@/lib/permissions";
 import { invocationSchema } from "@/lib/validators";
 import { getProgression, ownedKgsFull, type ProgressionState } from "@/lib/quintessence";
-import { invocationMaxRank, rankIndex } from "@/lib/arts";
+import { invocationMaxRank } from "@/lib/arts";
 import { hasInvocationRankColumn } from "@/lib/invocation-schema";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -47,10 +47,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       ermitePerfect && d.kekkeiGenkai && ownedKg.includes(d.kekkeiGenkai.toLowerCase())
         ? d.kekkeiGenkai
         : null;
-    const rank = d.invocationRank ?? owned.invocationRank ?? maxRank;
-    if (rankIndex(rank) > rankIndex(maxRank)) {
-      return NextResponse.json({ ok: false, error: "INVALID" }, { status: 400 });
-    }
+    const rank = maxRank;
 
     const invocation = await prisma.invocation.update({
       where: { id },

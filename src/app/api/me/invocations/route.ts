@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, jsonError } from "@/lib/permissions";
 import { rateLimit } from "@/lib/rate-limit";
 import { invocationSchema } from "@/lib/validators";
-import { getArtState, invocationMaxRank, rankIndex, type ArtsState } from "@/lib/arts";
+import { getArtState, invocationMaxRank, type ArtsState } from "@/lib/arts";
 import { getProgression, ownedKgsFull, type ProgressionState } from "@/lib/quintessence";
 import { hasInvocationRankColumn } from "@/lib/invocation-schema";
 
@@ -80,10 +80,7 @@ export async function POST(req: Request) {
       ermitePerfect && d.kekkeiGenkai && ownedKg.includes(d.kekkeiGenkai.toLowerCase())
         ? d.kekkeiGenkai
         : null;
-    const rank = d.invocationRank ?? maxRank;
-    if (rankIndex(rank) > rankIndex(maxRank)) {
-      return NextResponse.json({ ok: false, error: "INVALID" }, { status: 400 });
-    }
+    const rank = maxRank;
 
     const invocation = await prisma.invocation.create({
       data: {

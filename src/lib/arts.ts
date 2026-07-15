@@ -65,7 +65,8 @@ export function autoArtRank(characterRank?: string | null): Rank {
  * Avec Mode Ermite, elle suit le rang global du personnage.
  */
 export function invocationMaxRank(characterRank?: string | null, hasQuintessence?: boolean): Rank {
-  return hasQuintessence ? autoArtRank(characterRank) : autoArtRank(rankIndex(characterRank) >= rankIndex("B") ? "B" : characterRank);
+  if (hasQuintessence) return RANKS[Math.max(0, rankIndex(characterRank))];
+  return RANKS[Math.min(rankIndex(characterRank), rankIndex("B"))];
 }
 
 export function invocationRankOptions(characterRank?: string | null, hasQuintessence?: boolean): Rank[] {

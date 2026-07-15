@@ -1,11 +1,11 @@
-"use client";
+﻿"use client";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { ART_OPTIONS, ELEMENTS } from "@/lib/techniques";
 import FicheForm from "@/components/FicheForm";
-import { invocationRankOptions, type ArtsState, type Rank } from "@/lib/arts";
+import { invocationMaxRank, type ArtsState } from "@/lib/arts";
 
 export interface InvTech {
   nom: string;
@@ -109,11 +109,13 @@ export default function InvocationsManager({
           ) : (
             <div className="grid sm:grid-cols-2 gap-5">
               {initial.map((inv) => (
-                <InvocationCard
+              <InvocationCard
                   key={inv.id}
                   inv={inv}
                   pactAffinities={pactAffinities}
                   ermitePerfect={ermitePerfect}
+                  userRank={userRank}
+                  hasQuintessence={hasQuintessence}
                   ficheCtx={ficheCtx}
                   kgNames={kgNames}
                   kgColors={kgColors}
@@ -248,6 +250,8 @@ function InvocationCard({
   inv,
   pactAffinities,
   ermitePerfect,
+  userRank,
+  hasQuintessence,
   ficheCtx,
   kgNames,
   kgColors,
@@ -257,6 +261,8 @@ function InvocationCard({
   inv: Invocation;
   pactAffinities: string[];
   ermitePerfect: boolean;
+  userRank: string | null;
+  hasQuintessence: boolean;
   ficheCtx: FicheFormCtx;
   kgNames: string[];
   kgColors?: Record<string, string>;
@@ -265,6 +271,7 @@ function InvocationCard({
 }) {
   const [pending, start] = useTransition();
   const [proposing, setProposing] = useState(false);
+  const computedRank = invocationMaxRank(userRank, hasQuintessence);
 
   function del() {
     if (!confirm(`Supprimer l'invocation « ${inv.nom} » ?`)) return;
@@ -286,7 +293,7 @@ function InvocationCard({
           <h3 className="font-display uppercase tracking-wider text-lg text-white">{inv.nom}</h3>
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2">
             <Meta k="Espèce" v={inv.espece} />
-            <Meta k="Rang" v={inv.invocationRank} />
+            <Meta k="Rang" v={computedRank} />
             <Meta k="Affinité (pacte)" v={pactAffinities.join(", ") || null} />
             <Meta k="Art Shinobi" v={inv.artShinobi} />
             {inv.kekkeiGenkai && <Meta k="Kekkei Genkai" v={inv.kekkeiGenkai} />}
@@ -336,18 +343,18 @@ function InvocationCard({
             <FicheForm
               invocationId={inv.id}
               invocationArt={inv.artShinobi}
-            invocationRank={inv.invocationRank}
+              invocationRank={computedRank}
               kuchyAllArts={ermitePerfect}
-            allowedKg={ficheCtx.allowedKg}
-            allowedElements={pactAffinities}
-            userClan={ficheCtx.userClan}
-            rangClan={ficheCtx.rangClan}
-            artsState={ficheCtx.artsState}
-            villageRank={ficheCtx.villageRank}
-            kgNames={kgNames}
-            kgColors={kgColors}
-            clanLibraryAccess={ficheCtx.clanLibraryAccess}
-          />
+              allowedKg={ficheCtx.allowedKg}
+              allowedElements={pactAffinities}
+              userClan={ficheCtx.userClan}
+              rangClan={ficheCtx.rangClan}
+              artsState={ficheCtx.artsState}
+              villageRank={ficheCtx.villageRank}
+              kgNames={kgNames}
+              kgColors={kgColors}
+              clanLibraryAccess={ficheCtx.clanLibraryAccess}
+            />
           <button
             type="button"
             className="hnk-btn-ghost !py-1.5 !px-3 !text-[10px] mt-3"
@@ -428,24 +435,11 @@ function InvocationForm({
   const [err, setErr] = useState<string | null>(null);
   // Espèce verrouillée une fois définie (comme l'affinité de pacte).
   const especeLocked = !!value?.espece;
-  const rankOptions = Array.from(
-    new Set([
-      ...invocationRankOptions(userRank, hasQuintessence),
-      ...(value?.invocationRank ? [value.invocationRank as Rank] : []),
-    ])
-  ) as Rank[];
+  const computedRank = invocationMaxRank(userRank, hasQuintessence);
 
   function save() {
     if (!f.nom.trim()) {
       setErr("Le nom est requis.");
-      return;
-    }
-    if (!f.invocationRank.trim()) {
-      setErr("Le rang de l'invocation est requis.");
-      return;
-    }
-    if (!rankOptions.includes(f.invocationRank as Rank)) {
-      setErr("Le rang de l'invocation dépasse le maximum autorisé.");
       return;
     }
     if (!pactSpecies && !especeLocked && !f.espece.trim()) {
@@ -455,7 +449,6 @@ function InvocationForm({
     setErr(null);
     const payload = {
       nom: f.nom.trim(),
-      invocationRank: f.invocationRank || null,
       espece: f.espece.trim() || null,
       artShinobi: f.artShinobi.trim() || null,
       kekkeiGenkai: ermitePerfect ? f.kekkeiGenkai.trim() || null : null,
@@ -500,21 +493,13 @@ function InvocationForm({
       <div className="grid sm:grid-cols-2 gap-4">
         <FieldInput label="Nom *" v={f.nom} on={(x) => setF((s) => ({ ...s, nom: x }))} />
         <label className="block">
-          <span className="hnk-label">Rang de l'invocation *</span>
-          <select
-            className="hnk-input"
-            value={f.invocationRank}
-            onChange={(e) => setF((s) => ({ ...s, invocationRank: e.target.value }))}
-            required
-            disabled={pending}
-          >
-            <option value="">—</option>
-            {rankOptions.map((r) => (
-              <option key={r} value={r}>
-                Rang {r}
-              </option>
-            ))}
-          </select>
+          <span className="hnk-label">Rang de l'invocation</span>
+          <div className="hnk-input flex items-center justify-between gap-3">
+            <span className="text-bone">Rang {computedRank}</span>
+            <span className="text-[10px] uppercase tracking-[0.2em] text-smoke">
+              calculé automatiquement
+            </span>
+          </div>
         </label>
         <FieldInput
           label={
