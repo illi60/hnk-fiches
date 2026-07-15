@@ -29,7 +29,7 @@ export function resolveTechniqueSpecRanks({
   const state = useViewer ? viewerArtsState : authorArtsState;
   const rank = useViewer ? viewerRank : authorRank;
   const isKuchy = !!invocationId;
-  const kuchyRank = invocationRank ?? rank ?? null;
+  const kuchyRank = invocationRank ?? null;
 
   return {
     specRank: resolveOne(artKey, specIdx, state, rank, isKuchy, kuchyRank),

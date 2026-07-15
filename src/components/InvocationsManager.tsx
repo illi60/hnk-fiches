@@ -424,6 +424,10 @@ function InvocationForm({
       setErr("Le nom est requis.");
       return;
     }
+    if (!f.invocationRank.trim()) {
+      setErr("Le rang de l'invocation est requis.");
+      return;
+    }
     if (!pactSpecies && !especeLocked && !f.espece.trim()) {
       setErr("L'espèce est requise (elle sera verrouillée).");
       return;
@@ -476,11 +480,13 @@ function InvocationForm({
       <div className="grid sm:grid-cols-2 gap-4">
         <FieldInput label="Nom *" v={f.nom} on={(x) => setF((s) => ({ ...s, nom: x }))} />
         <label className="block">
-          <span className="hnk-label">Rang de l'invocation</span>
+          <span className="hnk-label">Rang de l'invocation *</span>
           <select
             className="hnk-input"
             value={f.invocationRank}
             onChange={(e) => setF((s) => ({ ...s, invocationRank: e.target.value }))}
+            required
+            disabled={pending}
           >
             <option value="">—</option>
             {["E", "D", "C", "B", "A", "S"].map((r) => (

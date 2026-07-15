@@ -84,7 +84,7 @@ export async function POST(req: Request) {
       data: {
         ownerId: me.id,
         nom: d.nom,
-        ...(hasInvRank ? { invocationRank: d.invocationRank ?? user?.rang ?? null } : {}),
+        ...(hasInvRank ? { invocationRank: d.invocationRank ?? null } : {}),
         // Espèce héritée du pacte (verrouillée) si définie.
         espece: user?.pactSpecies ?? (d.espece || null),
         artShinobi: d.artShinobi || null,

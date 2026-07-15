@@ -127,7 +127,7 @@ export default function FicheForm({
     ? v.secondaryArt.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
     : null;
   const secondaryArtDef = secondaryArtKey ? ARTS_ALL.find((a) => a.key === secondaryArtKey) : null;
-  const kuchyRank = invocationRank ?? villageRank;
+  const kuchyRank = invocationRank ?? null;
   const showSpecRanks = artsState != null && villageRank != null;
 
   // Konoha : pas de technique collective, pas de surcharge personnelle.
@@ -377,8 +377,7 @@ export default function FicheForm({
             >
               <option value="">—</option>
               {artDef.specs.map((specName, i) => {
-                // Kuchy : la spé suit le rang global du joueur (auto, plafond B),
-                // sans dépendre de l'artsState — l'invocation est une entité propre.
+                // Kuchy : la spé suit le rang propre de l'invocation, pas celui du joueur.
                 const rank = isKuchy
                   ? kuchyRank != null
                     ? invocationSpecRank(kuchyRank)

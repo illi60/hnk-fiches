@@ -50,9 +50,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       where: { id },
       data: {
         nom: d.nom,
-        ...(hasInvRank
-          ? { invocationRank: d.invocationRank ?? owned.invocationRank ?? user?.rang ?? null }
-          : {}),
+        ...(hasInvRank ? { invocationRank: d.invocationRank ?? owned.invocationRank ?? null } : {}),
         // Espèce : pacte (prioritaire) sinon valeur existante (verrouillée).
         espece: user?.pactSpecies ?? owned.espece ?? (d.espece || null),
         artShinobi: d.artShinobi || null,

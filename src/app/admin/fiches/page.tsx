@@ -78,7 +78,7 @@ export default async function AdminFichesPage({
     const ficheSpecRank =
       artDef && specIdx >= 0 && f.author.rang != null
         ? isKuchy
-          ? invocationSpecRank(hasInvRank ? (f.invocation as any)?.invocationRank ?? f.author.rang : f.author.rang)
+          ? invocationSpecRank(hasInvRank ? (f.invocation as any)?.invocationRank ?? null : null)
           : f.author.artsState != null
           ? specRank(artDef.key, specIdx, f.author.artsState as ArtsState, f.author.rang)
           : null
@@ -91,7 +91,7 @@ export default async function AdminFichesPage({
     const ficheSecondarySpecRank =
       secArtDef && secSpecIdx >= 0 && f.author.rang != null
         ? isKuchy
-          ? invocationSpecRank(hasInvRank ? (f.invocation as any)?.invocationRank ?? f.author.rang : f.author.rang)
+          ? invocationSpecRank(hasInvRank ? (f.invocation as any)?.invocationRank ?? null : null)
           : f.author.artsState != null
           ? specRank(secArtDef.key, secSpecIdx, f.author.artsState as ArtsState, f.author.rang)
           : null
