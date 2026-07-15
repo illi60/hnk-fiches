@@ -47,6 +47,7 @@ export default function FicheForm({
   rangClan,
   invocationId,
   invocationArt,
+  invocationRank,
   kuchyAllArts = false,
   artsState = null,
   villageRank = null,
@@ -64,6 +65,7 @@ export default function FicheForm({
   rangClan?: string | null; // Rang Clan (B+ → technique collective en duo)
   invocationId?: string; // si défini : technique de Kuchiyose rattachée à cette invocation
   invocationArt?: string | null; // Art Shinobi de l'invocation (verrouille l'Art de la technique)
+  invocationRank?: string | null; // Rang propre à l'invocation (sert au calcul des spé)
   kuchyAllArts?: boolean; // Mode Ermite parfait : le kuchy accède à TOUS tes arts
   artsState?: ArtsState | null; // état des Arts du joueur (pour afficher les rangs de spés)
   villageRank?: string | null; // rang de village du joueur
@@ -125,6 +127,7 @@ export default function FicheForm({
     ? v.secondaryArt.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
     : null;
   const secondaryArtDef = secondaryArtKey ? ARTS_ALL.find((a) => a.key === secondaryArtKey) : null;
+  const kuchyRank = invocationRank ?? villageRank;
   const showSpecRanks = artsState != null && villageRank != null;
 
   // Konoha : pas de technique collective, pas de surcharge personnelle.
@@ -377,8 +380,8 @@ export default function FicheForm({
                 // Kuchy : la spé suit le rang global du joueur (auto, plafond B),
                 // sans dépendre de l'artsState — l'invocation est une entité propre.
                 const rank = isKuchy
-                  ? villageRank != null
-                    ? invocationSpecRank(villageRank)
+                  ? kuchyRank != null
+                    ? invocationSpecRank(kuchyRank)
                     : null
                   : showSpecRanks
                   ? specRank(artDef.key, i, artsState!, villageRank!)
@@ -440,8 +443,8 @@ export default function FicheForm({
                 <option value="">—</option>
                 {secondaryArtDef.specs.map((specName, i) => {
                   const rank = isKuchy
-                    ? villageRank != null
-                      ? invocationSpecRank(villageRank)
+                    ? kuchyRank != null
+                      ? invocationSpecRank(kuchyRank)
                       : null
                     : showSpecRanks
                     ? specRank(secondaryArtDef.key, i, artsState!, villageRank!)

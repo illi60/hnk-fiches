@@ -20,6 +20,7 @@ export interface InvFiche {
 export interface Invocation {
   id: string;
   nom: string;
+  invocationRank: string | null;
   espece: string | null;
   artShinobi: string | null;
   kekkeiGenkai: string | null;
@@ -279,6 +280,7 @@ function InvocationCard({
           <h3 className="font-display uppercase tracking-wider text-lg text-white">{inv.nom}</h3>
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2">
             <Meta k="Espèce" v={inv.espece} />
+            <Meta k="Rang" v={inv.invocationRank} />
             <Meta k="Affinité (pacte)" v={pactAffinities.join(", ") || null} />
             <Meta k="Art Shinobi" v={inv.artShinobi} />
             {inv.kekkeiGenkai && <Meta k="Kekkei Genkai" v={inv.kekkeiGenkai} />}
@@ -325,10 +327,11 @@ function InvocationCard({
               technique de kuchy ne peut être que de son Art.
             </p>
           )}
-          <FicheForm
-            invocationId={inv.id}
-            invocationArt={inv.artShinobi}
-            kuchyAllArts={ermitePerfect}
+            <FicheForm
+              invocationId={inv.id}
+              invocationArt={inv.artShinobi}
+            invocationRank={inv.invocationRank}
+              kuchyAllArts={ermitePerfect}
             allowedKg={ficheCtx.allowedKg}
             allowedElements={pactAffinities}
             userClan={ficheCtx.userClan}
@@ -401,6 +404,7 @@ function InvocationForm({
 }) {
   const [f, setF] = useState({
     nom: value?.nom ?? "",
+    invocationRank: value?.invocationRank ?? "",
     espece: value?.espece ?? "",
     artShinobi: value?.artShinobi ?? "",
     kekkeiGenkai: value?.kekkeiGenkai ?? "",
@@ -427,6 +431,7 @@ function InvocationForm({
     setErr(null);
     const payload = {
       nom: f.nom.trim(),
+      invocationRank: f.invocationRank || null,
       espece: f.espece.trim() || null,
       artShinobi: f.artShinobi.trim() || null,
       kekkeiGenkai: ermitePerfect ? f.kekkeiGenkai.trim() || null : null,
@@ -470,6 +475,21 @@ function InvocationForm({
 
       <div className="grid sm:grid-cols-2 gap-4">
         <FieldInput label="Nom *" v={f.nom} on={(x) => setF((s) => ({ ...s, nom: x }))} />
+        <label className="block">
+          <span className="hnk-label">Rang de l'invocation</span>
+          <select
+            className="hnk-input"
+            value={f.invocationRank}
+            onChange={(e) => setF((s) => ({ ...s, invocationRank: e.target.value }))}
+          >
+            <option value="">—</option>
+            {["E", "D", "C", "B", "A", "S"].map((r) => (
+              <option key={r} value={r}>
+                Rang {r}
+              </option>
+            ))}
+          </select>
+        </label>
         <FieldInput
           label={
             pactSpecies ? "Espèce (du pacte)" : especeLocked ? "Espèce (verrouillée)" : "Espèce *"

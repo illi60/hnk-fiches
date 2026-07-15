@@ -7,6 +7,7 @@ import TechniquesView, { type MyTech } from "@/components/TechniquesView";
 import { ARTS_ALL, type ArtsState } from "@/lib/arts";
 import { resolveTechniqueSpecRanks } from "@/lib/technique-display";
 import { loadKgCatalogRows } from "@/lib/kekkei-server";
+import { hasInvocationRankColumn } from "@/lib/invocation-schema";
 
 export default async function MyFichesPage() {
   const session = await auth();
@@ -21,6 +22,7 @@ export default async function MyFichesPage() {
   const meVillageRank = me?.rang ?? null;
   const kgCatalog = await loadKgCatalogRows();
   const kgColors = Object.fromEntries(kgCatalog.map((kg) => [kg.name, kg.color]));
+  const hasInvRank = await hasInvocationRankColumn();
 
   // Mes fiches + celles où je suis participant (type d'action COLLECTIVE).
   const fiches = await prisma.ficheTechnique.findMany({
@@ -45,7 +47,17 @@ export default async function MyFichesPage() {
       coutXp: true,
       status: true,
       authorId: true,
-      invocation: { select: { nom: true, espece: true } },
+      ...(hasInvRank
+        ? {
+            invocation: {
+              select: {
+                nom: true,
+                espece: true,
+                invocationRank: true,
+              },
+            },
+          }
+        : {}),
     },
   });
 
@@ -71,6 +83,7 @@ export default async function MyFichesPage() {
         secondarySpecIdx: secSpecIdx,
         nature: f.nature,
         invocationId: f.invocation ? "present" : null,
+        invocationRank: hasInvRank ? (f.invocation as any)?.invocationRank ?? null : null,
         viewerArtsState: meArts,
         viewerRank: meVillageRank,
         authorArtsState: meArts,
@@ -99,6 +112,7 @@ export default async function MyFichesPage() {
     mine: f.authorId === meId,
     invocationNom: f.invocation?.nom ?? null,
     invocationEspece: f.invocation?.espece ?? null,
+    invocationRank: hasInvRank ? (f.invocation as any)?.invocationRank ?? null : null,
     };
   });
 

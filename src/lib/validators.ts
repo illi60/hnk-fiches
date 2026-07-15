@@ -170,6 +170,7 @@ const invocationTechnique = z.object({
 });
 export const invocationSchema = z.object({
   nom: z.string().min(1).max(80),
+  invocationRank: z.enum(["E", "D", "C", "B", "A", "S"]).optional().nullable(),
   espece: z.string().max(60).optional().nullable(),
   // Art Shinobi de l'animal (remplace le KG côté invocation).
   artShinobi: z.string().max(40).optional().nullable(),

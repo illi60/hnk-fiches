@@ -189,13 +189,12 @@ export function specRank(
  * pour l'une de ses techniques — monte AUTOMATIQUEMENT avec le rang global du
  * joueur, plafonné à AUTO_RANK_CAP (B), exactement comme la spé de base d'un Art.
  *
- * Contrairement à specRank(), ce calcul NE dépend PAS de l'artsState du joueur :
- * l'invocation ne « possède » ni n'« expertise » d'Art au nom du joueur, donc
- * pas de montée A/S et pas de blocage à E faute d'investissement personnel.
- * C'est ce qui fait scaler les spés d'invocation sur le rang global, à l'identique
- * des règles appliquées aux spés du joueur. */
-export function invocationSpecRank(globalRank: string | null): Rank {
-  return autoArtRank(globalRank);
+ * La spé d'une invocation suit son rang propre, pas l'artsState du joueur.
+ * Le calcul reste plafonné à B comme un Art normal, mais l'entrée de rang
+ * vient de l'invocation elle-même.
+ */
+export function invocationSpecRank(invocationRank: string | null): Rank {
+  return autoArtRank(invocationRank);
 }
 
 export type ArtAction =

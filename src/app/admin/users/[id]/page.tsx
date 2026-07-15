@@ -7,6 +7,7 @@ import AdminUserPanel from "@/components/AdminUserPanel";
 import { AdminDeleteFicheButton, AdminDeleteInvocationButton } from "@/components/AdminDeleteButtons";
 import { levelProgress } from "@/lib/xp";
 import { loadKgNames } from "@/lib/kekkei-server";
+import { hasInvocationRankColumn } from "@/lib/invocation-schema";
 
 export default async function AdminUserDetail({
   params,
@@ -16,6 +17,7 @@ export default async function AdminUserDetail({
   const me = await requireAdmin();
   const { id } = await params;
   const kgNames = await loadKgNames();
+  const hasInvRank = await hasInvocationRankColumn();
 
   const [user, history, fiches, invocations] = await Promise.all([
     prisma.user.findUnique({
@@ -75,7 +77,13 @@ export default async function AdminUserDetail({
     prisma.invocation.findMany({
       where: { ownerId: id },
       orderBy: { createdAt: "asc" },
-      select: { id: true, nom: true, espece: true, artShinobi: true },
+      select: {
+        id: true,
+        nom: true,
+        espece: true,
+        artShinobi: true,
+        ...(hasInvRank ? { invocationRank: true } : {}),
+      },
     }),
   ]);
 
@@ -133,7 +141,7 @@ export default async function AdminUserDetail({
             <li key={inv.id} className="px-4 py-2 flex items-center justify-between text-sm gap-2">
               <span className="text-bone flex-1 min-w-0 truncate">{inv.nom}</span>
               <span className="text-xs text-smoke shrink-0">
-                {inv.espece ?? "—"}{inv.artShinobi ? ` · ${inv.artShinobi}` : ""}
+                {inv.espece ?? "—"}{inv.artShinobi ? ` · ${inv.artShinobi}` : ""}{hasInvRank && (inv as any).invocationRank ? ` · Rang ${(inv as any).invocationRank}` : ""}
               </span>
               <AdminDeleteInvocationButton invocationId={inv.id} invocationName={inv.nom} />
             </li>

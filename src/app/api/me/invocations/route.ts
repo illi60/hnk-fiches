@@ -7,15 +7,28 @@ import { rateLimit } from "@/lib/rate-limit";
 import { invocationSchema } from "@/lib/validators";
 import { getArtState, type ArtsState } from "@/lib/arts";
 import { getProgression, ownedKgsFull, type ProgressionState } from "@/lib/quintessence";
+import { hasInvocationRankColumn } from "@/lib/invocation-schema";
 
 const MAX_INVOCATIONS = 12;
 
 export async function GET() {
   try {
     const me = await requireUser();
+    const hasInvRank = await hasInvocationRankColumn();
     const invocations = await prisma.invocation.findMany({
       where: { ownerId: me.id },
       orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        nom: true,
+        espece: true,
+        artShinobi: true,
+        kekkeiGenkai: true,
+        image: true,
+        description: true,
+        techniques: true,
+        ...(hasInvRank ? { invocationRank: true } : {}),
+      },
     });
     return NextResponse.json({ invocations });
   } catch (e) {
@@ -38,6 +51,7 @@ export async function POST(req: Request) {
         primaryKg: true,
         kekkeiGenkai: true,
         pactSpecies: true,
+        rang: true,
       },
     });
     const state = ((user?.artsState ?? {}) as unknown) as ArtsState;
@@ -54,6 +68,7 @@ export async function POST(req: Request) {
     const parsed = invocationSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ ok: false, error: "INVALID" }, { status: 400 });
     const d = parsed.data;
+    const hasInvRank = await hasInvocationRankColumn();
 
     // KG d'invocation : seulement au Mode Ermite PARFAIT (stade 3), et uniquement
     // parmi les KG du joueur lui-même.
@@ -69,6 +84,7 @@ export async function POST(req: Request) {
       data: {
         ownerId: me.id,
         nom: d.nom,
+        ...(hasInvRank ? { invocationRank: d.invocationRank ?? user?.rang ?? null } : {}),
         // Espèce héritée du pacte (verrouillée) si définie.
         espece: user?.pactSpecies ?? (d.espece || null),
         artShinobi: d.artShinobi || null,

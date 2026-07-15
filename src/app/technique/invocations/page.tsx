@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getArtState, type ArtsState } from "@/lib/arts";
+import { hasInvocationRankColumn } from "@/lib/invocation-schema";
 import {
   getProgression,
   ownedKgs,
@@ -43,10 +44,22 @@ export default async function InvocationsPage() {
   const kgNames = kgCatalog.map((kg) => kg.name);
   const kgColors = Object.fromEntries(kgCatalog.map((kg) => [kg.name, kg.color]));
   const clanLibraryAccess = await loadClanLibraryAccess(dbUser?.clan ?? null);
+  const hasInvRank = await hasInvocationRankColumn();
 
   const rows = await prisma.invocation.findMany({
     where: { ownerId: session.user.id },
     orderBy: { createdAt: "asc" },
+    select: {
+      id: true,
+      nom: true,
+      espece: true,
+      artShinobi: true,
+      kekkeiGenkai: true,
+      image: true,
+      description: true,
+      techniques: true,
+      ...(hasInvRank ? { invocationRank: true } : {}),
+    },
   });
 
   // Techniques (FicheTechnique) rattachées aux invocations, par invocation.
@@ -66,6 +79,7 @@ export default async function InvocationsPage() {
   const invocations: Invocation[] = rows.map((r) => ({
     id: r.id,
     nom: r.nom,
+    invocationRank: (r as { invocationRank?: string | null }).invocationRank ?? null,
     espece: r.espece,
     artShinobi: r.artShinobi,
     kekkeiGenkai: r.kekkeiGenkai,

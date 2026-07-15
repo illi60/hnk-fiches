@@ -6,6 +6,7 @@ import AdminFicheDecision from "@/components/AdminFicheDecision";
 import { actionLabel, natureLabel, ART_KANJI } from "@/lib/techniques";
 import { ARTS_ALL, specRank, invocationSpecRank, type ArtsState } from "@/lib/arts";
 import { loadKgCatalogRows } from "@/lib/kekkei-server";
+import { hasInvocationRankColumn } from "@/lib/invocation-schema";
 
 export default async function AdminFichesPage({
   searchParams,
@@ -28,6 +29,7 @@ export default async function AdminFichesPage({
   };
   const kgCatalog = await loadKgCatalogRows();
   const kgColors = Object.fromEntries(kgCatalog.map((kg) => [kg.name, kg.color]));
+  const hasInvRank = await hasInvocationRankColumn();
 
   const fiches = await prisma.ficheTechnique.findMany({
     where: { status, isActive: true },
@@ -56,6 +58,9 @@ export default async function AdminFichesPage({
       comment: true,
       createdAt: true,
       invocationId: true,
+      ...(hasInvRank
+        ? { invocation: { select: { invocationRank: true } } }
+        : {}),
       author: {
         select: { id: true, username: true, xpAvailable: true, clan: true, rang: true, artsState: true },
       },
@@ -73,7 +78,7 @@ export default async function AdminFichesPage({
     const ficheSpecRank =
       artDef && specIdx >= 0 && f.author.rang != null
         ? isKuchy
-          ? invocationSpecRank(f.author.rang)
+          ? invocationSpecRank(hasInvRank ? (f.invocation as any)?.invocationRank ?? f.author.rang : f.author.rang)
           : f.author.artsState != null
           ? specRank(artDef.key, specIdx, f.author.artsState as ArtsState, f.author.rang)
           : null
@@ -86,7 +91,7 @@ export default async function AdminFichesPage({
     const ficheSecondarySpecRank =
       secArtDef && secSpecIdx >= 0 && f.author.rang != null
         ? isKuchy
-          ? invocationSpecRank(f.author.rang)
+          ? invocationSpecRank(hasInvRank ? (f.invocation as any)?.invocationRank ?? f.author.rang : f.author.rang)
           : f.author.artsState != null
           ? specRank(secArtDef.key, secSpecIdx, f.author.artsState as ArtsState, f.author.rang)
           : null

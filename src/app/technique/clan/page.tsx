@@ -89,6 +89,7 @@ export default async function ClanLibraryPage() {
         secondarySpecIdx,
         nature: t.nature,
         invocationId: null,
+        invocationRank: null,
         viewerArtsState: viewerArts,
         viewerRank: user.rang ?? null,
         authorArtsState: viewerArts,

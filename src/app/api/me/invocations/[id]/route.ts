@@ -5,15 +5,21 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, jsonError } from "@/lib/permissions";
 import { invocationSchema } from "@/lib/validators";
 import { getProgression, ownedKgsFull, type ProgressionState } from "@/lib/quintessence";
+import { hasInvocationRankColumn } from "@/lib/invocation-schema";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const me = await requireUser();
     const { id } = await params;
+    const hasInvRank = await hasInvocationRankColumn();
 
     const owned = await prisma.invocation.findFirst({
       where: { id, ownerId: me.id },
-      select: { id: true, espece: true },
+      select: {
+        id: true,
+        espece: true,
+        ...(hasInvRank ? { invocationRank: true } : {}),
+      },
     });
     if (!owned) return NextResponse.json({ ok: false, error: "NOT_FOUND" }, { status: 404 });
 
@@ -24,7 +30,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     const user = await prisma.user.findUnique({
       where: { id: me.id },
-      select: { progressionState: true, primaryKg: true, kekkeiGenkai: true, pactSpecies: true },
+      select: {
+        progressionState: true,
+        primaryKg: true,
+        kekkeiGenkai: true,
+        pactSpecies: true,
+        rang: true,
+      },
     });
     const prog = getProgression((user?.progressionState ?? {}) as unknown as ProgressionState);
     const ermitePerfect = prog.mode?.path === "ERMITE" && (prog.mode?.stage ?? 0) >= 3;
@@ -38,6 +50,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       where: { id },
       data: {
         nom: d.nom,
+        ...(hasInvRank
+          ? { invocationRank: d.invocationRank ?? owned.invocationRank ?? user?.rang ?? null }
+          : {}),
         // Espèce : pacte (prioritaire) sinon valeur existante (verrouillée).
         espece: user?.pactSpecies ?? owned.espece ?? (d.espece || null),
         artShinobi: d.artShinobi || null,

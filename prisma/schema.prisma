@@ -160,6 +160,7 @@ model Invocation {
   owner        User     @relation("UserInvocations", fields: [ownerId], references: [id], onDelete: Cascade)
 
   nom          String
+  invocationRank Rang?    // Rang propre à l'invocation (figé au pacte / indépendant des évolutions du joueur)
   espece       String?
   affinite     String?  // legacy : affinité libre (remplacée par l'affinité de pacte héritée du joueur)
   artShinobi   String?  // Art Shinobi de l'animal (remplace le KG côté invocation)

@@ -7,6 +7,7 @@ export function resolveTechniqueSpecRanks({
   secondarySpecIdx,
   nature,
   invocationId,
+  invocationRank,
   viewerArtsState,
   viewerRank,
   authorArtsState,
@@ -18,6 +19,7 @@ export function resolveTechniqueSpecRanks({
   secondarySpecIdx: number;
   nature: string | null;
   invocationId: string | null;
+  invocationRank?: string | null;
   viewerArtsState: ArtsState | null | undefined;
   viewerRank: string | null | undefined;
   authorArtsState: ArtsState | null | undefined;
@@ -27,10 +29,18 @@ export function resolveTechniqueSpecRanks({
   const state = useViewer ? viewerArtsState : authorArtsState;
   const rank = useViewer ? viewerRank : authorRank;
   const isKuchy = !!invocationId;
+  const kuchyRank = invocationRank ?? rank ?? null;
 
   return {
-    specRank: resolveOne(artKey, specIdx, state, rank, isKuchy),
-    secondarySpecRank: resolveOne(secondaryArtKey, secondarySpecIdx, state, rank, isKuchy),
+    specRank: resolveOne(artKey, specIdx, state, rank, isKuchy, kuchyRank),
+    secondarySpecRank: resolveOne(
+      secondaryArtKey,
+      secondarySpecIdx,
+      state,
+      rank,
+      isKuchy,
+      kuchyRank
+    ),
   };
 }
 
@@ -39,9 +49,11 @@ function resolveOne(
   specIdx: number,
   state: ArtsState | null | undefined,
   rank: string | null | undefined,
-  isKuchy: boolean
+  isKuchy: boolean,
+  kuchyRank: string | null
 ) {
-  if (!artKey || specIdx < 0 || rank == null) return null;
-  if (isKuchy) return invocationSpecRank(rank);
+  if (!artKey || specIdx < 0) return null;
+  if (isKuchy) return kuchyRank == null ? null : invocationSpecRank(kuchyRank);
+  if (rank == null) return null;
   return specRank(artKey, specIdx, state ?? null, rank);
 }

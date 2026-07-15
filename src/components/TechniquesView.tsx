@@ -30,6 +30,7 @@ export interface MyTech {
   mine: boolean;
   invocationNom?: string | null;
   invocationEspece?: string | null;
+  invocationRank?: string | null;
 }
 
 type GroupBy = "status" | "actionType" | "art" | "kekkeiGenkai" | "nom";
@@ -181,6 +182,7 @@ export default function TechniquesView({
                     <span className="hnk-tech-chip">
                       口 {t.invocationEspece ? `${t.invocationEspece} · ` : ""}
                       {t.invocationNom}
+                      {t.invocationRank ? ` · Rang ${t.invocationRank}` : ""}
                     </span>
                   )}
                   {!t.mine && <span className="hnk-tech-chip">Tag Team (partenaire)</span>}

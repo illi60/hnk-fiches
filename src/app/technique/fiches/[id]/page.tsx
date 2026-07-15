@@ -13,6 +13,7 @@ import { kgColor } from "@/lib/kekkei";
 import { ownedKgsFull, ownedAffinities, type ProgressionState } from "@/lib/quintessence";
 import { ARTS_ALL, type ArtsState } from "@/lib/arts";
 import { loadClanLibraryAccess, loadKgCatalogRows } from "@/lib/kekkei-server";
+import { hasInvocationRankColumn } from "@/lib/invocation-schema";
 
 export default async function FicheDetailPage({
   params,
@@ -22,6 +23,7 @@ export default async function FicheDetailPage({
   const { id } = await params;
   const session = await auth();
   if (!session?.user) redirect("/login");
+  const hasInvRank = await hasInvocationRankColumn();
 
   const fiche = await prisma.ficheTechnique.findUnique({
     where: { id },
@@ -48,7 +50,17 @@ export default async function FicheDetailPage({
       rejectionReason: true,
       authorId: true,
       isActive: true,
-      invocation: { select: { nom: true, espece: true } },
+      ...(hasInvRank
+        ? {
+            invocation: {
+              select: {
+                nom: true,
+                espece: true,
+                invocationRank: true,
+              },
+            },
+          }
+        : {}),
     },
   });
 
@@ -118,6 +130,7 @@ export default async function FicheDetailPage({
       secondarySpecIdx,
       nature: fiche.nature,
       invocationId: fiche.invocation ? "present" : null,
+      invocationRank: hasInvRank ? (fiche.invocation as any)?.invocationRank ?? null : null,
       viewerArtsState: viewerArts,
       viewerRank: viewer?.rang ?? null,
       authorArtsState: authorArts,
@@ -189,6 +202,9 @@ export default async function FicheDetailPage({
               )}
               {fiche.invocation?.espece && (
                 <span className="hnk-tech-chip">口 {fiche.invocation.espece}</span>
+              )}
+              {hasInvRank && (fiche.invocation as any)?.invocationRank && (
+                <span className="hnk-tech-chip">Rang invoc. {(fiche.invocation as any).invocationRank}</span>
               )}
               {fiche.actionType && (
                 <span className="hnk-tech-chip">{actionLabel(fiche.actionType)}</span>
