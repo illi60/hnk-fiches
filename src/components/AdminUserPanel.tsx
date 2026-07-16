@@ -7,6 +7,7 @@ import { KG_NAMES } from "@/lib/kekkei";
 import { ELEMENTS, ART_OPTIONS, ACTION_TYPES } from "@/lib/techniques";
 import { ARTS_ALL, specRank, type ArtsState } from "@/lib/arts";
 import { AdminArtsForm, AdminQuintForm } from "@/components/AdminArtsQuint";
+import { isNoClan } from "@/lib/clans";
 
 type Rang = "E" | "D" | "C" | "B" | "A" | "S";
 type Grade = "GENIN" | "CHUNIN" | "JONIN";
@@ -757,13 +758,15 @@ function AddTechniqueForm({
     ? v.art.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
     : null;
   const artDef = artKey ? ARTS_ALL.find((a) => a.key === artKey) : null;
+  const noPlayableClan = isNoClan(userClan);
+  const natureOptions = noPlayableClan ? ["PERSONNELLE"] : ["PERSONNELLE", "COLLECTIVE"];
 
   function submit() {
     if (v.nom.trim().length < 2 || v.description.trim().length < 1) {
       setMsg("Nom et description requis.");
       return;
     }
-    if (v.nature === "COLLECTIVE" && !v.clan.trim()) {
+    if (v.nature === "COLLECTIVE" && (noPlayableClan || !v.clan.trim())) {
       setMsg("Indique le clan pour une technique collective.");
       return;
     }
@@ -855,7 +858,7 @@ function AddTechniqueForm({
           label="Nature"
           v={v.nature}
           on={(x) => up("nature", x)}
-          options={["PERSONNELLE", "COLLECTIVE"]}
+          options={natureOptions}
         />
         {v.nature === "COLLECTIVE" && <Inp label="Clan" v={v.clan} on={(x) => up("clan", x)} />}
         <Inp label="Coût XP (info)" v={v.coutXp} on={(x) => up("coutXp", x)} />

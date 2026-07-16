@@ -6,6 +6,7 @@ import { ficheUpdateSchema } from "@/lib/validators";
 import { ficheTotalCost } from "@/lib/techniques";
 import { canUseCollectiveManifestation, loadClanLibraryAccess } from "@/lib/kekkei-server";
 import { ownedAffinities, ownedKgsFull, type ProgressionState } from "@/lib/quintessence";
+import { isNoClan } from "@/lib/clans";
 
 // PATCH /api/fiches/[id] — éditer SA propre fiche tant qu'elle n'est pas validée.
 // Le joueur peut corriger un DRAFT, un REJECTED ou une fiche PENDING.
@@ -40,7 +41,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const newActionType =
       parsed.data.actionType !== undefined ? parsed.data.actionType : fiche.actionType;
     const newNature = parsed.data.nature !== undefined ? parsed.data.nature : fiche.nature;
-    const coutXp = ficheTotalCost(newActionType ?? null, newNature ?? null);
+    const costUser =
+      newNature === "PERSONNELLE"
+        ? await prisma.user.findUnique({ where: { id: me.id }, select: { clan: true } })
+        : null;
+    const coutXp = ficheTotalCost(
+      newActionType ?? null,
+      costUser && isNoClan(costUser.clan) ? null : newNature ?? null
+    );
 
     // Nature COLLECTIVE -> être du clan + utiliser une option autorisée et possédée.
     let clanUpdate: { clan?: string | null } = {};
@@ -61,9 +69,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
             affinites: true,
           },
         });
-        if (!u?.clan) return NextResponse.json({ error: "CLAN_REQUIS" }, { status: 400 });
-        if (u.clan.toLowerCase().trim() === "konoha")
-          return NextResponse.json({ error: "CLAN_SANS_KG" }, { status: 400 });
+        if (!u?.clan || isNoClan(u.clan)) return NextResponse.json({ error: "CLAN_REQUIS" }, { status: 400 });
         const prog = (u.progressionState ?? {}) as unknown as ProgressionState;
         const access = await loadClanLibraryAccess(u.clan);
         const owned = {

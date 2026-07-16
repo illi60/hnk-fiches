@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, jsonError } from "@/lib/permissions";
 import { rateLimit } from "@/lib/rate-limit";
 import { RANKS, rankIndex } from "@/lib/arts";
+import { isNoClan } from "@/lib/clans";
 
 // POST /api/fiches/[id]/submit — soumet un DRAFT à modération (→ PENDING).
 //
@@ -94,6 +95,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
         const sameClan =
           !!author?.clan &&
           !!partner.clan &&
+          !isNoClan(author.clan) &&
           author.clan.toLowerCase() === partner.clan.toLowerCase();
         if (!rangOk || !sameClan) {
           return NextResponse.json(

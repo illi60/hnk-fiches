@@ -5,6 +5,7 @@ import {
   kgColor,
   clanKg,
 } from "@/lib/kekkei";
+import { playableClanKey } from "@/lib/clans";
 
 type CatalogRow = {
   id: string;
@@ -78,11 +79,7 @@ export async function isKnownKg(name: string): Promise<boolean> {
 }
 
 export function clanScopeKey(clan?: string | null): string {
-  return (clan ?? "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim()
-    .toLowerCase();
+  return playableClanKey(clan) ?? "";
 }
 
 export type ClanLibraryAccess = {

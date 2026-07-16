@@ -7,6 +7,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { progressionLevelupSchema } from "@/lib/validators";
 import { RANKS, rankIndex, palierAt, type ProgTrack, type Rank } from "@/lib/progression";
 import { effectiveCommRankForUserTrack } from "@/lib/progression-server";
+import { isNoClan } from "@/lib/clans";
 
 // POST /api/me/progression/levelup
 // « Dépenser X XP pour monter en Rang » : raccourci individuel. Prélève l'XP du
@@ -40,7 +41,7 @@ export async function POST(req: Request) {
     });
     if (!user) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
 
-    if (track === "CLAN" && !user.clan?.trim()) {
+    if (track === "CLAN" && (!user.clan?.trim() || isNoClan(user.clan))) {
       return NextResponse.json({ error: "CLAN_REQUIS" }, { status: 400 });
     }
 

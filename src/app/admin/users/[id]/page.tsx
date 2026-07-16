@@ -8,6 +8,7 @@ import { AdminDeleteFicheButton, AdminDeleteInvocationButton } from "@/component
 import { levelProgress } from "@/lib/xp";
 import { loadKgNames } from "@/lib/kekkei-server";
 import { hasInvocationRankColumn } from "@/lib/invocation-schema";
+import { XP_AUDIT_REASONS, xpAudit, type XpAudit, type XpReasonSums } from "@/lib/xp-audit";
 
 export default async function AdminUserDetail({
   params,
@@ -19,7 +20,7 @@ export default async function AdminUserDetail({
   const kgNames = await loadKgNames();
   const hasInvRank = await hasInvocationRankColumn();
 
-  const [user, history, fiches, invocations] = await Promise.all([
+  const [user, history, fiches, invocations, auditRows] = await Promise.all([
     prisma.user.findUnique({
       where: { id },
       select: {
@@ -58,7 +59,7 @@ export default async function AdminUserDetail({
     prisma.xPTransaction.findMany({
       where: { userId: id },
       orderBy: { createdAt: "desc" },
-      take: 20,
+      take: 100,
       select: {
         id: true,
         amount: true,
@@ -93,9 +94,22 @@ export default async function AdminUserDetail({
         ...(hasInvRank ? { invocationRank: true } : {}),
       },
     }),
+    prisma.xPTransaction.groupBy({
+      by: ["reason"],
+      where: { userId: id, reason: { in: XP_AUDIT_REASONS } },
+      _sum: { amount: true },
+    }),
   ]);
 
   if (!user) notFound();
+  const reasonSums: XpReasonSums = {};
+  for (const row of auditRows) reasonSums[row.reason] = row._sum.amount ?? 0;
+  const audit = xpAudit({
+    xpAvailable: user.xpAvailable,
+    xpTotalEarned: user.xpTotalEarned,
+    forumLastXp: user.forumLastXp,
+    reasonSums,
+  });
 
   return (
     <div className="space-y-8">
@@ -105,11 +119,23 @@ export default async function AdminUserDetail({
         </Link>
         <h1 className="font-serif text-3xl text-white2 mt-2">{user.username}</h1>
         <p className="text-xs text-smoke mt-2 tabular-nums">
-          {user.xpAvailable} XP disponibles · {user.xpTotalEarned} XP cumulés
+          {user.xpAvailable} XP disponibles · {user.xpTotalEarned} XP cumulés · {audit.xpSpentTotal} XP dépensés
         </p>
       </div>
 
-        <LiveMemberView user={user} />
+      {audit.hasAlert && (
+        <section className="border border-red-400/50 bg-red-500/10 p-4">
+          <p className="text-[10px] tracking-[0.28em] uppercase text-red-300 font-bold">
+            Alerte XP
+          </p>
+          <p className="text-sm text-bone mt-2">
+            Total contrôlé supérieur à la source : +{audit.extraXp} XP. Réserve attendue après
+            dépenses et ajustements staff : {audit.expectedAvailable} XP.
+          </p>
+        </section>
+      )}
+
+        <LiveMemberView user={user} audit={audit} />
 
         <AdminUserPanel
           user={user}
@@ -175,19 +201,26 @@ export default async function AdminUserDetail({
 
       <section>
         <h2 className="font-serif text-xl text-white2 mb-3 pb-2 border-b border-ember/20">
-          Historique XP (20 derniers)
+          Historique XP (100 derniers)
         </h2>
         <ul className="divide-y divide-white/5 border border-white/5 bg-ink-700">
           {history.map((t) => (
             <li
               key={t.id}
-              className="px-4 py-2 flex items-center justify-between text-sm"
+              className="px-4 py-2 flex items-start justify-between gap-4 text-sm"
             >
-              <div className="text-xs text-smoke">
-                {t.reason.replace(/_/g, " ").toLowerCase()}
-                {t.actor && ` · par ${t.actor.username}`}
+              <div className="text-xs text-smoke min-w-0">
+                <p>
+                  {xpReasonLabel(t.reason)}
+                  {t.actor && ` · par ${t.actor.username}`}
+                </p>
+                {t.metadata != null && (
+                  <p className="mt-1 text-[10px] text-smoke/80 break-words font-mono">
+                    {formatMetadata(t.metadata)}
+                  </p>
+                )}
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 shrink-0">
                 <span
                   className={`tabular-nums ${
                     t.amount > 0 ? "text-emerald-400" : "text-red-400"
@@ -216,6 +249,7 @@ export default async function AdminUserDetail({
 
 function LiveMemberView({
   user,
+  audit,
 }: {
   user: {
     username: string;
@@ -239,6 +273,7 @@ function LiveMemberView({
     kekkeiGenkai: string | null;
     affinites: string[];
   };
+  audit: XpAudit;
 }) {
   const totalXp = user.forumLastXp ?? user.xpTotalEarned;
   const xpPct =
@@ -291,6 +326,37 @@ function LiveMemberView({
         </div>
       </div>
 
+      <div
+        className={`mt-5 border p-4 ${
+          audit.hasAlert ? "border-red-400/50 bg-red-500/10" : "border-white/5 bg-ink-900/60"
+        }`}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-[10px] tracking-[0.28em] uppercase text-smoke">Audit XP staff</p>
+          {audit.hasAlert ? (
+            <span className="text-[10px] tracking-[0.22em] uppercase text-red-300 font-bold">
+              Alerte +{audit.extraXp} XP
+            </span>
+          ) : (
+            <span className="text-[10px] tracking-[0.22em] uppercase text-emerald-400">
+              Cohérent
+            </span>
+          )}
+        </div>
+        <div className="grid sm:grid-cols-5 gap-3 mt-3">
+          <AuditStat label={audit.sourceLabel === "forum" ? "Source forum" : "Source corrigée"} value={audit.sourceXp} />
+          <AuditStat label="Réserve" value={user.xpAvailable} />
+          <AuditStat label="Dépenses méca" value={audit.xpSpentTotal} />
+          <AuditStat label="Ajust. staff" value={audit.staffNet} signed />
+          <AuditStat label="Contrôle" value={audit.controlledTotal} />
+        </div>
+        <p className="text-[10px] text-smoke mt-3 leading-relaxed">
+          Contrôle = réserve + dépenses mécaniques - ajustements staff. Les crédits, rendus et
+          retraits staff ne comptent pas comme XP générée.
+          {audit.missingXp > 0 && ` Écart négatif observé : ${audit.missingXp} XP.`}
+        </p>
+      </div>
+
       <div className="grid sm:grid-cols-3 gap-x-8 gap-y-1 mt-5">
         <Field k="Clan" v={user.clan} />
         <Field k="Grade" v={user.grade} />
@@ -327,6 +393,43 @@ function LiveMemberView({
 function rangClass(rang: string | null | undefined): string {
   const g = (rang ?? "").trim().toLowerCase();
   return /^[edcbas]$/.test(g) ? `rk-${g}` : "";
+}
+
+function AuditStat({ label, value, signed = false }: { label: string; value: number; signed?: boolean }) {
+  return (
+    <div className="border border-white/5 bg-ink-900 px-3 py-2">
+      <p className="text-[9px] uppercase tracking-[0.2em] text-smoke">{label}</p>
+      <p className="text-sm text-bone tabular-nums mt-1">
+        {signed && value > 0 ? "+" : ""}
+        {value} XP
+      </p>
+    </div>
+  );
+}
+
+function xpReasonLabel(reason: string): string {
+  const labels: Record<string, string> = {
+    ADMIN_GRANT: "Crédit staff",
+    ADMIN_REMOVE: "Retrait staff",
+    REGISTRATION_BONUS: "Bonus inscription",
+    FORUM_SYNC: "Sync forum",
+    FICHE_VALIDATED: "Validation fiche",
+    FICHE_REJECTED_REFUND: "Rendu XP",
+    ARTS_SPEND: "Dépense arts",
+    QUINTESSENCE_SPEND: "Dépense quintessence",
+    PROGRESSION_SPEND: "Dépense progression",
+  };
+  return labels[reason] ?? reason.replace(/_/g, " ").toLowerCase();
+}
+
+function formatMetadata(metadata: unknown): string {
+  if (metadata == null) return "";
+  if (typeof metadata === "string") return metadata;
+  try {
+    return JSON.stringify(metadata);
+  } catch {
+    return String(metadata);
+  }
 }
 
 function Field({ k, v }: { k: string; v: string | null | undefined }) {

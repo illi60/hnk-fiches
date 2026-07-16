@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, jsonError } from "@/lib/permissions";
 import { adminFicheCreateSchema } from "@/lib/validators";
+import { isNoClan } from "@/lib/clans";
 
 // POST /api/admin/users/[id]/fiches
 //
@@ -19,8 +20,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (!parsed.success) return NextResponse.json({ ok: false, error: "INVALID" }, { status: 400 });
     const d = parsed.data;
 
-    const target = await prisma.user.findUnique({ where: { id: targetId }, select: { id: true } });
+    const target = await prisma.user.findUnique({ where: { id: targetId }, select: { id: true, clan: true } });
     if (!target) return NextResponse.json({ ok: false, error: "NOT_FOUND" }, { status: 404 });
+    if (d.nature === "COLLECTIVE" && (isNoClan(target.clan) || isNoClan(d.clan ?? target.clan))) {
+      return NextResponse.json({ ok: false, error: "CLAN_REQUIS" }, { status: 400 });
+    }
 
     // L'invocation (si fournie) doit appartenir au joueur cible.
     let invocationId: string | null = null;
@@ -64,8 +68,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         actionType: d.actionType ?? null,
         element: d.element ?? null,
         kekkeiGenkai: d.kekkeiGenkai ?? null,
-        nature: d.nature ?? null,
-        clan: d.nature === "COLLECTIVE" ? d.clan ?? null : null,
+        nature: invocationId ? null : d.nature ?? null,
+        clan: d.nature === "COLLECTIVE" ? d.clan ?? target.clan ?? null : null,
         invocationId,
         coutXp: d.coutXp ?? 0,
         status: "VALIDATED",

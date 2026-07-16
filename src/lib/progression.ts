@@ -22,6 +22,7 @@
 // ============================================================
 
 import { RANKS, rankIndex, type Rank } from "@/lib/arts";
+import { playableClanKey } from "@/lib/clans";
 
 export { RANKS, rankIndex, type Rank };
 
@@ -832,8 +833,7 @@ export function condMeta(id: string): CondMeta | undefined {
 export const VILLAGE_SCOPE_KEY = "konoha";
 
 export function clanScopeKey(clan: string | null | undefined): string | null {
-  const c = (clan ?? "").trim();
-  return c ? c.toLowerCase() : null;
+  return playableClanKey(clan);
 }
 
 export function scopeKeyFor(

@@ -8,6 +8,7 @@ import ClanLibraryView from "@/components/ClanLibraryView";
 import { loadKgCatalog } from "@/lib/kekkei-server";
 import { ARTS_ALL, type ArtsState } from "@/lib/arts";
 import { resolveTechniqueSpecRanks } from "@/lib/technique-display";
+import { isNoClan } from "@/lib/clans";
 
 export const metadata = { title: "Bibliothèque de clan · Hi no Kuni" };
 
@@ -28,7 +29,7 @@ export default async function ClanLibraryPage() {
       rang: true,
     },
   });
-  if (!user?.clan) redirect("/technique");
+  if (!user?.clan || isNoClan(user.clan)) redirect("/technique");
 
   const owned = ownedKgsFull(
     user.primaryKg,

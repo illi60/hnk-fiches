@@ -5,6 +5,7 @@ import { requireFicheModerator, jsonError } from "@/lib/permissions";
 import { adminFicheValidateSchema } from "@/lib/validators";
 import { defaultFicheCost } from "@/lib/xp";
 import { ficheTotalCost } from "@/lib/techniques";
+import { isNoClan } from "@/lib/clans";
 
 // POST /api/admin/fiches/[id]/decision
 //
@@ -60,6 +61,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           actionType: true,
           nature: true,
           authorId: true,
+          author: { select: { clan: true } },
           collaboratorIds: true,
           isActive: true,
         },
@@ -71,7 +73,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       // Coût final : override admin, sinon coût du type d'action (cohérent avec
       // la création), sinon repli sur l'ancien barème de rang.
       const base =
-        ficheTotalCost(fiche.actionType, fiche.nature) || defaultFicheCost(fiche.rangMin ?? null);
+        ficheTotalCost(fiche.actionType, isNoClan(fiche.author.clan) ? null : fiche.nature) ||
+        defaultFicheCost(fiche.rangMin ?? null);
       const finalCost = costOverride !== undefined ? costOverride : base;
 
       // Participants : auteur + partenaires (type d'action COLLECTIVE).

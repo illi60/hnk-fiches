@@ -16,6 +16,7 @@ import {
 import { KG_NAMES, kgColor, clanKg } from "@/lib/kekkei";
 import { ARTS_ALL, specRank, invocationSpecRank, type ArtsState } from "@/lib/arts";
 import { canSubmitFiche } from "@/lib/fiche-status";
+import { isNoClan } from "@/lib/clans";
 
 export interface FicheFormInitial {
   slug?: string;
@@ -131,7 +132,7 @@ export default function FicheForm({
   const showSpecRanks = artsState != null && villageRank != null;
 
   // Konoha : pas de technique collective, pas de surcharge personnelle.
-  const isKonoha = (userClan ?? "").toLowerCase().trim() === "konoha";
+  const isKonoha = isNoClan(userClan);
   // Natures disponibles selon le clan.
   const availableNatures = isKonoha ? NATURES.filter((n) => n.key !== "COLLECTIVE") : NATURES;
 
@@ -177,7 +178,7 @@ export default function FicheForm({
   function buildPayload() {
     // Nature COLLECTIVE : être du clan + utiliser une option autorisée et possédée.
     if (v.nature === "COLLECTIVE") {
-      if (!userClan) {
+      if (!userClan || isKonoha) {
         setError("Tu dois appartenir à un clan pour créer une technique de clan.");
         return null;
       }

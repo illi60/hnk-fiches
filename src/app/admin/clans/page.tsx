@@ -4,6 +4,7 @@ import ClanLibraryView from "@/components/ClanLibraryView";
 import KekkeiCatalogAdmin from "@/components/KekkeiCatalogAdmin";
 import ClanLibraryAccessAdmin from "@/components/ClanLibraryAccessAdmin";
 import { loadKgCatalog, loadKgCatalogRows } from "@/lib/kekkei-server";
+import { isNoClan } from "@/lib/clans";
 
 const KNOWN_CLANS = ["SENJU", "UCHIHA", "UZUMAKI", "SARUTOBI", "HYUGA"];
 
@@ -26,7 +27,7 @@ export default async function AdminClansPage() {
   const clanSet = new Map<string, string>(); // clé lower → libellé affiché
   for (const c of KNOWN_CLANS) clanSet.set(c.toLowerCase(), c);
   for (const u of usersWithClan) {
-    if (u.clan && !clanSet.has(u.clan.toLowerCase())) clanSet.set(u.clan.toLowerCase(), u.clan);
+    if (u.clan && !isNoClan(u.clan) && !clanSet.has(u.clan.toLowerCase())) clanSet.set(u.clan.toLowerCase(), u.clan);
   }
   const clans = Array.from(clanSet.values()).sort();
 

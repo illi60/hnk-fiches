@@ -7,6 +7,7 @@
 // ============================================================
 
 import type { CSSProperties } from "react";
+import { normalizeClanKey } from "@/lib/clans";
 
 export interface KGEvolutions {
   quintessence?: string;
@@ -131,11 +132,7 @@ export const CLAN_KG: Record<string, string> = {
 };
 
 function normClan(clan?: string | null): string {
-  return (clan ?? "")
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .trim()
-    .toLowerCase();
+  return normalizeClanKey(clan);
 }
 
 /** KG associé à un clan (ou null si le clan n'a pas de KG répertorié). */

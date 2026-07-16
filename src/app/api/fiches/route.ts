@@ -7,6 +7,7 @@ import { ficheCreateSchema } from "@/lib/validators";
 import { ficheTotalCost } from "@/lib/techniques";
 import { canUseCollectiveManifestation, loadClanLibraryAccess } from "@/lib/kekkei-server";
 import { ownedAffinities, ownedKgsFull, type ProgressionState } from "@/lib/quintessence";
+import { isNoClan } from "@/lib/clans";
 
 /**
  * GET /api/fiches?scope=mine|public
@@ -127,7 +128,7 @@ export async function POST(req: Request) {
         },
       });
       meUserClan = u?.clan ?? null;
-      isKonoha = meUserClan?.toLowerCase().trim() === "konoha";
+      isKonoha = isNoClan(meUserClan);
 
       if (!meUserClan) return NextResponse.json({ error: "CLAN_REQUIS" }, { status: 400 });
       // Konoha : pas de technique collective.
@@ -150,7 +151,7 @@ export async function POST(req: Request) {
     } else if (natureEff === "PERSONNELLE") {
       const u = await prisma.user.findUnique({ where: { id: me.id }, select: { clan: true } });
       meUserClan = u?.clan ?? null;
-      isKonoha = meUserClan?.toLowerCase().trim() === "konoha";
+      isKonoha = isNoClan(meUserClan);
     }
 
     // Konoha : pas de surcharge +10 XP sur les techniques personnelles.

@@ -13,6 +13,7 @@ import IdentityChooser from "@/components/IdentityChooser";
 import ChangePassword from "@/components/ChangePassword";
 import { type ProgressionState } from "@/lib/quintessence";
 import { loadKgCatalog } from "@/lib/kekkei-server";
+import { isNoClan } from "@/lib/clans";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -66,6 +67,7 @@ export default async function DashboardPage() {
     },
   });
   if (!user) redirect("/login");
+  const hasClan = !!user.clan && !isNoClan(user.clan);
 
   const totalXp = user.forumLastXp ?? user.xpTotalEarned;
   const xpPct =
@@ -74,7 +76,7 @@ export default async function DashboardPage() {
   // Rangs communautaires effectifs (collectifs) — partagés par tous les membres.
   const [villageCommRank, clanCommRank] = await Promise.all([
     effectiveCommRankForUserTrack("VILLAGE", user.clan),
-    user.clan ? effectiveCommRankForUserTrack("CLAN", user.clan) : Promise.resolve(null),
+    hasClan ? effectiveCommRankForUserTrack("CLAN", user.clan) : Promise.resolve(null),
   ]);
   const artsState = ((user.artsState ?? {}) as unknown) as ArtsState;
   const progression = ((user.progressionState ?? {}) as unknown) as ProgressionState;
@@ -126,7 +128,7 @@ export default async function DashboardPage() {
       <section>
         <h2 className="hnk-section-title">Fiche du personnage</h2>
         <div className="grid sm:grid-cols-2 gap-x-8 gap-y-1">
-          <Field k="Clan" v={user.clan} />
+          <Field k="Clan" v={hasClan ? user.clan : null} />
           <Field k="Grade" v={user.grade} />
           <Field k="Unité spéciale" v={user.uniteSpeciale} />
           <Field k="Trame" v={user.trame} />
@@ -137,7 +139,7 @@ export default async function DashboardPage() {
       <div className="grid sm:grid-cols-3 gap-5">
         <RankCard label="Rang du village" value={user.rangVillage} kanji="里" community={villageCommRank} />
         <RankCard label="Rang histoire" value={user.rangHistoire} kanji="史" />
-        <RankCard label="Rang clan" value={user.rangClan} kanji="氏" community={clanCommRank} />
+        <RankCard label="Rang clan" value={hasClan ? user.rangClan : null} kanji="氏" community={hasClan ? clanCommRank : undefined} />
       </div>
 
       {/* Arts Shinobi */}
@@ -173,7 +175,7 @@ export default async function DashboardPage() {
         progression={progression}
         xpAvailable={user.xpAvailable}
         villageRank={user.rangVillage}
-        clanRank={user.rangClan}
+        clanRank={hasClan ? user.rangClan : null}
         histoireRank={user.rangHistoire}
         kgNames={kgNames}
         kgColors={kgColors}
@@ -214,7 +216,7 @@ export default async function DashboardPage() {
         <Link href="/technique/fiches" className="hnk-btn-ghost">
           Mes techniques <span aria-hidden>→</span>
         </Link>
-        {user.clan && (
+        {hasClan && (
           <Link href="/technique/clan" className="hnk-btn-ghost">
             Bibliothèque de clan · {user.clan} <span aria-hidden>→</span>
           </Link>
