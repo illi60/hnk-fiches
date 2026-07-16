@@ -113,14 +113,28 @@ function splitBodySegments(html: string): Array<{ kind: "body" | "tech"; html: s
     buffer.innerHTML = "";
   };
 
-  root.childNodes.forEach((node) => {
-    if (node.nodeType === Node.ELEMENT_NODE && (node as Element).classList.contains("hnk-tech")) {
-      flushBody();
-      pieces.push({ kind: "tech", html: (node as Element).outerHTML });
+  const collectNode = (node: Node) => {
+    if (node.nodeType !== Node.ELEMENT_NODE) {
+      buffer.appendChild(node.cloneNode(true));
       return;
     }
+
+    const el = node as Element;
+    if (el.classList.contains("hnk-tech")) {
+      flushBody();
+      pieces.push({ kind: "tech", html: el.outerHTML });
+      return;
+    }
+
+    if (el.querySelector(".hnk-tech")) {
+      el.childNodes.forEach(collectNode);
+      return;
+    }
+
     buffer.appendChild(node.cloneNode(true));
-  });
+  };
+
+  root.childNodes.forEach(collectNode);
 
   flushBody();
   return pieces.length ? pieces : [{ kind: "body", html }];
