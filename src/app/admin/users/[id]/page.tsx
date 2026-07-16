@@ -72,7 +72,15 @@ export default async function AdminUserDetail({
       where: { authorId: id, isActive: true },
       orderBy: { createdAt: "desc" },
       take: 50,
-      select: { id: true, nom: true, status: true, coutXp: true, createdAt: true },
+      select: {
+        id: true,
+        nom: true,
+        status: true,
+        coutXp: true,
+        createdAt: true,
+        invocationId: true,
+        invocation: { select: { espece: true, ...(hasInvRank ? { invocationRank: true } : {}) } },
+      },
     }),
     prisma.invocation.findMany({
       where: { ownerId: id },
@@ -116,15 +124,28 @@ export default async function AdminUserDetail({
         </h2>
         <ul className="divide-y divide-white/5 border border-white/5 bg-ink-700">
           {fiches.map((f) => (
-            <li key={f.id} className="px-4 py-2 flex items-center justify-between text-sm gap-2">
-              <Link href={`/technique/fiches/${f.id}`} className="text-bone hover:text-ember flex-1 min-w-0 truncate">
-                {f.nom}
-              </Link>
-              <span className="text-xs text-smoke shrink-0">
-                {f.status} · {f.coutXp} XP
-              </span>
+          <li key={f.id} className="px-4 py-2 flex items-center justify-between text-sm gap-2">
+              <div className="min-w-0 flex-1">
+                <Link href={`/technique/fiches/${f.id}`} className="text-bone hover:text-ember flex-1 min-w-0 truncate">
+                  {f.nom}
+                </Link>
+                <div className="mt-1 flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.2em]">
+                  {f.invocationId && (
+                    <span className="hnk-chip">
+                      Kuchiyose
+                      {hasInvRank && (f as any).invocation?.invocationRank ? ` · Rang ${(f as any).invocation.invocationRank}` : ""}
+                    </span>
+                  )}
+                  {f.invocationId && (f as any).invocation?.espece && (
+                    <span className="hnk-chip">Espèce · {(f as any).invocation.espece}</span>
+                  )}
+                  <span className="text-smoke shrink-0">
+                    {f.status} · {f.coutXp} XP
+                  </span>
+                </div>
+              </div>
               <AdminDeleteFicheButton ficheId={f.id} ficheName={f.nom} />
-            </li>
+          </li>
           ))}
           {fiches.length === 0 && (
             <li className="px-4 py-4 text-sm text-smoke italic">Aucune fiche.</li>

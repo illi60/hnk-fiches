@@ -173,6 +173,7 @@ export default async function FicheDetailPage({
             </div>
             <div className="hnk-tech-name">{fiche.nom}</div>
             <div className="hnk-tech-chips">
+              {isKuchy && <span className="hnk-tech-chip">Kuchiyose</span>}
               {techniqueArtChipLabel({
                 art: fiche.art,
                 spec: resolvedSpec,
@@ -204,7 +205,7 @@ export default async function FicheDetailPage({
                 </span>
               )}
               {fiche.invocation?.espece && (
-                <span className="hnk-tech-chip">口 {fiche.invocation.espece}</span>
+                <span className="hnk-tech-chip">Espèce · {fiche.invocation.espece}</span>
               )}
               {hasInvRank && (fiche.invocation as any)?.invocationRank && (
                 <span className="hnk-tech-chip">Rang invoc. {(fiche.invocation as any).invocationRank}</span>

@@ -58,9 +58,7 @@ export default async function AdminFichesPage({
       comment: true,
       createdAt: true,
       invocationId: true,
-      ...(hasInvRank
-        ? { invocation: { select: { invocationRank: true } } }
-        : {}),
+      invocation: { select: { espece: true, ...(hasInvRank ? { invocationRank: true } : {}) } },
       author: {
         select: { id: true, username: true, xpAvailable: true, clan: true, rang: true, artsState: true },
       },
@@ -149,6 +147,15 @@ export default async function AdminFichesPage({
                       {f.spec ? ` · ${f.spec}` : ""}
                       {f.ficheSpecRank ? ` · ${f.ficheSpecRank}` : ""}
                     </span>
+                  )}
+                  {f.invocationId && (
+                    <span className="hnk-chip">
+                      Kuchiyose
+                      {hasInvRank && (f.invocation as any)?.invocationRank ? ` · Rang ${(f.invocation as any).invocationRank}` : ""}
+                    </span>
+                  )}
+                  {f.invocationId && (f.invocation as any)?.espece && (
+                    <span className="hnk-chip">Espèce · {(f.invocation as any).espece}</span>
                   )}
                   {f.secondaryArt && (
                     <span className="hnk-chip">
