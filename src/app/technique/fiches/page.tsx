@@ -118,17 +118,38 @@ export default async function MyFichesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="hnk-eyebrow">Registre</p>
-          <h1 className="hnk-serif text-3xl mt-1">Mes techniques</h1>
+      <section className="hnk-kuchy-hero">
+        <div className="hnk-kuchy-title">
+          <div>
+            <p className="label">Registre · 口寄せ</p>
+            <h1 className="value">
+              Mes <small>techniques</small>
+            </h1>
+          </div>
+          <div className="hidden md:flex flex-col items-end gap-2 text-right">
+            <span className="hnk-chip">Fiches actives</span>
+            <span className="hnk-chip">Technique propre</span>
+            <span className="hnk-chip">Export forum prêt</span>
+          </div>
         </div>
-        <Link href="/technique/fiches/new" className="hnk-btn">
-          Nouvelle technique
-        </Link>
-      </div>
+        <p className="text-sm text-bone/80 mt-4 max-w-3xl leading-relaxed relative z-[1]">
+          Tes techniques gardent leur identité propre, avec la même hiérarchie visuelle que la
+          section Kuchiyose: titres forts, accent orange et cartes plus lisibles au premier coup
+          d&apos;oeil.
+        </p>
+        <div className="hnk-kuchy-badges">
+          <span className="hnk-chip">Mes techniques</span>
+          <span className="hnk-chip">Validation staff</span>
+          <span className="hnk-chip">Style forum</span>
+        </div>
+        <div className="mt-4 flex justify-end">
+          <Link href="/technique/fiches/new" className="hnk-btn">
+            Nouvelle technique
+          </Link>
+        </div>
+      </section>
 
-      <TechniquesView techniques={techniques} kgColors={kgColors} />
+      <TechniquesView techniques={techniques} kgColors={kgColors} variant="kuchy" />
     </div>
   );
 }

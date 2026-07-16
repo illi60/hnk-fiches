@@ -47,11 +47,13 @@ export default function ClanLibraryView({
   clan,
   showUsable = true,
   kgColors,
+  variant = "default",
 }: {
   techniques: LibTech[];
   clan: string;
   showUsable?: boolean;
   kgColors?: Record<string, string>;
+  variant?: "default" | "kuchy";
 }) {
   const [by, setBy] = useState<GroupBy>("actionType");
 
@@ -100,7 +102,16 @@ export default function ClanLibraryView({
           </h2>
           <div className="grid sm:grid-cols-2 gap-4">
             {list.map((t) => (
-              <div key={t.id} className="hnk-panel" data-kanji="蔵" style={buildCardStyle(t.kekkeiGenkai, kgColors)}>
+              <div
+                key={t.id}
+                className={
+                  variant === "kuchy"
+                    ? "hnk-kuchy-panel hnk-kuchy-panel--frame hnk-kuchy-panel--kuchy"
+                    : "hnk-panel"
+                }
+                data-kanji="蔵"
+                style={buildCardStyle(t.kekkeiGenkai, kgColors)}
+              >
                 <div className="flex items-start justify-between gap-2">
                   <h3 className="font-display uppercase tracking-wider text-lg text-white min-w-0 break-words">
                     {t.nom}

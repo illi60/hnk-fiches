@@ -109,20 +109,38 @@ export default async function ClanLibraryPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <p className="hnk-eyebrow">Bibliothèque commune · 蔵</p>
-        <h1 className="hnk-serif text-4xl mt-2">Clan {user.clan}</h1>
-        <p className="text-sm text-smoke mt-2 max-w-2xl">
-          Techniques collectives du clan, partagées par tous les membres. Le marqueur{" "}
-          <span className="text-ember">●</span> indique que tu possèdes le Kekkei Genkai associé et
-          peux donc l&apos;utiliser. Les autres restent visibles mais verrouillées.
+      <section className="hnk-kuchy-hero">
+        <div className="hnk-kuchy-title">
+          <div>
+            <p className="label">Bibliothèque commune · 蔵</p>
+            <h1 className="value">
+              Clan <small>{user.clan}</small>
+            </h1>
+          </div>
+          <div className="hidden md:flex flex-col items-end gap-2 text-right">
+            <span className="hnk-chip">Techniques collectives</span>
+            <span className="hnk-chip">Accès clan</span>
+            <span className="hnk-chip">Lecture unifiée</span>
+          </div>
+        </div>
+        <p className="text-sm text-bone/80 mt-4 max-w-3xl leading-relaxed relative z-[1]">
+          Les techniques du clan gardent la même DA que le reste de la section: un cadre plus
+          marquant, des couleurs plus chaudes et des cartes plus nettes pour distinguer la
+          bibliothèque commune du reste des techniques.
         </p>
-        <Link href="/technique" className="text-xs text-smoke hover:text-ember">
-          ← Retour au profil
-        </Link>
-      </div>
+        <div className="hnk-kuchy-badges">
+          <span className="hnk-chip">Partage clan</span>
+          <span className="hnk-chip">KG autorisés</span>
+          <span className="hnk-chip">Copie forum</span>
+        </div>
+        <div className="mt-4 flex justify-end">
+          <Link href="/technique" className="hnk-btn-ghost !py-2 !px-4">
+            Retour au profil
+          </Link>
+        </div>
+      </section>
 
-      <ClanLibraryView techniques={techniques} clan={user.clan} kgColors={kgColors} />
+      <ClanLibraryView techniques={techniques} clan={user.clan} kgColors={kgColors} variant="kuchy" />
     </div>
   );
 }

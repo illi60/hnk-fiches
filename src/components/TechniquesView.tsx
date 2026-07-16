@@ -67,9 +67,11 @@ function groupKey(t: MyTech, by: GroupBy): string {
 export default function TechniquesView({
   techniques,
   kgColors,
+  variant = "default",
 }: {
   techniques: MyTech[];
   kgColors?: Record<string, string>;
+  variant?: "default" | "kuchy";
 }) {
   const [by, setBy] = useState<GroupBy>("status");
 
@@ -114,7 +116,16 @@ export default function TechniquesView({
           </h2>
           <div className="grid sm:grid-cols-2 gap-4">
             {list.map((t) => (
-              <div key={t.id} className="hnk-panel" data-kanji="技" style={buildCardStyle(t.kekkeiGenkai, kgColors)}>
+              <div
+                key={t.id}
+                className={
+                  variant === "kuchy"
+                    ? "hnk-kuchy-panel hnk-kuchy-panel--frame hnk-kuchy-panel--kuchy"
+                    : "hnk-panel"
+                }
+                data-kanji="技"
+                style={buildCardStyle(t.kekkeiGenkai, kgColors)}
+              >
                 <div className="flex items-start justify-between gap-2">
                   <Link
                     href={`/technique/fiches/${t.id}`}
