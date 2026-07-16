@@ -90,6 +90,48 @@ function rawNotEmpty(html: string): boolean {
   return html.replace(/<[^>]*>/g, "").trim().length > 0 || /<\w/.test(html);
 }
 
+function splitBodySegments(html: string): Array<{ kind: "body" | "tech"; html: string }> {
+  const trimmed = (html ?? "").trim();
+  if (!trimmed) return [];
+  if (typeof DOMParser === "undefined") return [{ kind: "body", html }];
+
+  let doc: Document;
+  try {
+    doc = new DOMParser().parseFromString(`<div id="hnk-body-root">${html}</div>`, "text/html");
+  } catch {
+    return [{ kind: "body", html }];
+  }
+  const root = doc.getElementById("hnk-body-root");
+  if (!root) return [{ kind: "body", html }];
+
+  const pieces: Array<{ kind: "body" | "tech"; html: string }> = [];
+  const buffer = doc.createElement("div");
+
+  const flushBody = () => {
+    const out = buffer.innerHTML.trim();
+    if (out) pieces.push({ kind: "body", html: buffer.innerHTML });
+    buffer.innerHTML = "";
+  };
+
+  root.childNodes.forEach((node) => {
+    if (node.nodeType === Node.ELEMENT_NODE && (node as Element).classList.contains("hnk-tech")) {
+      flushBody();
+      pieces.push({ kind: "tech", html: (node as Element).outerHTML });
+      return;
+    }
+    buffer.appendChild(node.cloneNode(true));
+  });
+
+  flushBody();
+  return pieces.length ? pieces : [{ kind: "body", html }];
+}
+
+function renderRpContent(html: string, foot: string, padded: boolean): string {
+  const padAttr = padded ? "" : ' style="padding:0px!important;"';
+  const body = richNotEmpty(html) ? `<div class="hnk-rp-body">${html}</div>` : "";
+  return `<div class="hnk-rp-content"${padAttr}><div class="hnk-rp-rule"></div>${body}${foot}</div>`;
+}
+
 export function rpForumHtml(d: RpPostData): string {
   const clan = FOUNDING_CLANS[d.clan] ?? FOUNDING_CLANS.uchiha;
   const titre = d.titre.trim() || "Titre du RP";
@@ -121,7 +163,7 @@ export function rpForumHtml(d: RpPostData): string {
     `</div>`;
 
   // ---- Corps : texte enrichi (police « story », justifié).
-  const body = richNotEmpty(d.corps) ? `<div class="hnk-rp-body">${d.corps}</div>` : "";
+  const bodyPieces = splitBodySegments(d.corps);
 
   // ---- Pied : distribution (avatars + pseudos) à gauche, type à droite.
   // Un participant est identifié par son PSEUDO (l'avatar est optionnel). On
@@ -149,10 +191,16 @@ export function rpForumHtml(d: RpPostData): string {
       ? `<div class="hnk-rp-foot">${castBlock || "<span></span>"}${typeBlock}</div>`
       : "";
 
+  const lastBodyIndex = bodyPieces.reduce((acc, piece, idx) => (piece.kind === "body" ? idx : acc), -1);
+  const lastPieceIndex = bodyPieces.length - 1;
   const content =
-    body || foot
-      ? `<div class="hnk-rp-content"><div class="hnk-rp-rule"></div>${body}${foot}</div>`
-      : "";
+    bodyPieces
+      .map((piece, idx) => {
+        if (piece.kind === "tech") return piece.html;
+        const footHere = idx === lastPieceIndex && idx === lastBodyIndex ? foot : "";
+        return renderRpContent(piece.html, footHere, idx === 0);
+      })
+      .join("") + (foot && lastBodyIndex !== lastPieceIndex ? renderRpContent("", foot, false) : "");
 
   const postBox =
     `<div class="hnk-pres hnk-pres--${d.clan} hnk-rp" style="--clan:${clan.color}">` +
@@ -254,6 +302,19 @@ export function parseRpForumHtml(html: string): RpPostData | null {
     }
   }
 
+  const corps = Array.from(root.children)
+    .flatMap((child) => {
+      if (child.classList.contains("hnk-rp-content")) {
+        return [nodeInnerHtml(child.querySelector(".hnk-rp-body"))];
+      }
+      if (child.classList.contains("hnk-tech")) {
+        return [child.outerHTML];
+      }
+      return [];
+    })
+    .filter((chunk) => chunk.trim() !== "")
+    .join("");
+
   return {
     clan: clanFromRoot(root),
     banniereUrl: root.querySelector(".hnk-rp-banner-img")?.getAttribute("src") ?? "",
@@ -261,7 +322,7 @@ export function parseRpForumHtml(html: string): RpPostData | null {
     tag: nodeText(root.querySelector(".hnk-rp-eyebrow .tag")),
     titre: nodeText(root.querySelector(".hnk-rp-title")),
     citation: nodeText(root.querySelector(".hnk-rp-cite")),
-    corps: nodeInnerHtml(root.querySelector(".hnk-rp-body")),
+    corps,
     participants: participants.length ? participants : base.participants,
     type: nodeText(root.querySelector(".hnk-rp-type")),
     sante,
