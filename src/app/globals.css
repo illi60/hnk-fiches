@@ -719,6 +719,13 @@ textarea.hnk-input {
   padding: 7px 10px;
   min-height: unset;
 }
+.hnk-rich-tech-dialog {
+  flex-direction: column;
+  align-items: stretch;
+}
+.hnk-rich-tech-dialog .hnk-input {
+  width: 100%;
+}
 
 /* Palette de couleurs de texte */
 .hnk-rich-colors { flex-wrap: wrap; gap: 6px; }

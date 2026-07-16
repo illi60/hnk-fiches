@@ -13,6 +13,7 @@ interface Props {
   withColor?: boolean;
   /** Active les blocs spéciaux : bulle de dialogue + player YouTube. */
   withBlocks?: boolean;
+  withTechniques?: boolean;
 }
 
 // Classes autorisées à survivre au nettoyage (blocs spéciaux de l'éditeur).
@@ -26,6 +27,17 @@ const ALLOWED_CLASSES = new Set([
   "hnk-rp-player-btn",
   "hnk-rp-player-lab",
   "hnk-rp-player-eq",
+  "hnk-tech",
+  "hnk-tech--kuchy",
+  "hnk-tech-badges",
+  "hnk-tech-badge",
+  "hnk-tech-badge--alt",
+  "hnk-tech-meta",
+  "hnk-tech-name",
+  "hnk-tech-chips",
+  "hnk-tech-chip",
+  "hnk-tech-chip--kg",
+  "hnk-tech-desc",
 ]);
 
 // Seul href autorisé sur un lien-player : l'URL watch reconstruite par NOUS
@@ -60,6 +72,7 @@ function sanitizeHtml(raw: string): string {
   box.innerHTML = raw;
   box.querySelectorAll("*").forEach((el) => {
     const tag = el.tagName.toLowerCase();
+    const styleAttr = el.getAttribute("style") ?? "";
     const align = (el as HTMLElement).style.textAlign;
     const color = (el as HTMLElement).style.color;
     const cls = (el.getAttribute("class") ?? "")
@@ -72,6 +85,12 @@ function sanitizeHtml(raw: string): string {
     [...el.attributes].forEach((a) => el.removeAttribute(a.name));
     if (align) (el as HTMLElement).style.textAlign = align;
     if (color) (el as HTMLElement).style.color = color;
+    if (cls.includes("hnk-tech")) {
+      const kgMatch = styleAttr.match(/--kg\s*:\s*([^;]+)\s*;?/i);
+      if (kgMatch?.[1]) {
+        (el as HTMLElement).style.setProperty("--kg", kgMatch[1].trim());
+      }
+    }
     if (tag === "figure") el.setAttribute("class", "hnk-img-banner");
     else if (cls.length) el.setAttribute("class", cls.join(" "));
     if (tag === "img") {
@@ -115,7 +134,7 @@ const TEXT_COLORS = [
   "#6c7079",
 ];
 
-type Dialog = null | "img" | "bubble" | "yt";
+type Dialog = null | "img" | "bubble" | "yt" | "tech";
 
 function ToolBtn({
   active,
@@ -151,6 +170,7 @@ export function RichEditor({
   maxHeight,
   withColor = false,
   withBlocks = false,
+  withTechniques = false,
 }: Props) {
   const editorRef = useRef<HTMLDivElement>(null);
   const lastHtml = useRef(value);
@@ -399,6 +419,16 @@ export function RichEditor({
     setDlgLabel("");
   }
 
+  function insertTech() {
+    const html = dlgUrl.trim();
+    if (!html) return;
+    restoreRange();
+    document.execCommand("insertHTML", false, sanitizeHtml(html) + "<div><br></div>");
+    emit();
+    setDialog(null);
+    setDlgUrl("");
+  }
+
   const btn = (cmd: string, title: string, children: React.ReactNode) => (
     <ToolBtn key={cmd} active={!!fmt[cmd]} onExec={() => exec(cmd)} title={title}>
       {children}
@@ -409,6 +439,11 @@ export function RichEditor({
     img: { placeholder: "https://i.imgur.com/…", onInsert: insertImg, canInsert: !!dlgUrl.trim() },
     bubble: { placeholder: "URL de l'avatar (optionnel)…", onInsert: insertBubble, canInsert: true },
     yt: { placeholder: "Lien YouTube (https://youtu.be/…)", onInsert: insertYt, canInsert: !!ytVideoId(dlgUrl) },
+    tech: {
+      placeholder: "Colle ici le code HTML de la technique exportee...",
+      onInsert: insertTech,
+      canInsert: !!dlgUrl.trim(),
+    },
   };
 
   return (
@@ -463,6 +498,16 @@ export function RichEditor({
             </button>
           </>
         )}
+        {withTechniques && (
+          <button
+            type="button"
+            title="Inserer une carte de technique FT"
+            onMouseDown={(e) => { e.preventDefault(); openDialog("tech"); }}
+            className={`hnk-rich-btn${dialog === "tech" ? " hnk-rich-btn--on" : ""}`}
+          >
+            FT
+          </button>
+        )}
       </div>
 
       {/* ---- Palette de couleurs ---- */}
@@ -509,8 +554,41 @@ export function RichEditor({
         style={{ minHeight, maxHeight, overflowY: maxHeight ? "auto" : undefined }}
       />
 
+      {dialog === "tech" && (
+        <div className="hnk-rich-img-dialog hnk-rich-tech-dialog">
+          <textarea
+            autoFocus
+            rows={8}
+            value={dlgUrl}
+            onChange={(e) => setDlgUrl(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") setDialog(null);
+            }}
+            placeholder={dialogMeta.tech.placeholder}
+            className="hnk-input font-mono text-[11px] leading-relaxed"
+          />
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="hnk-btn !py-1 !px-3 !text-[11px] whitespace-nowrap"
+              onClick={dialogMeta.tech.onInsert}
+              disabled={!dialogMeta.tech.canInsert}
+            >
+              Inserer
+            </button>
+            <button
+              type="button"
+              className="hnk-btn-ghost !py-1 !px-3 !text-[11px]"
+              onClick={() => setDialog(null)}
+            >
+              x
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ---- Dialog d'insertion (image / bulle / YouTube) ---- */}
-      {dialog && (
+      {dialog && dialog !== "tech" && (
         <div className="hnk-rich-img-dialog">
           <input
             autoFocus

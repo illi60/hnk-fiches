@@ -263,6 +263,7 @@ export default function RpGenerator() {
             placeholder="Lorem ipsum dolor sit amet…"
             withColor
             withBlocks
+            withTechniques
           />
         </section>
 
