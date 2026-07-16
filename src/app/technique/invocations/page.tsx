@@ -96,14 +96,32 @@ export default async function InvocationsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <p className="hnk-eyebrow">Kuchiyose · 口寄せ</p>
-        <h1 className="hnk-serif text-4xl mt-2">Invocations</h1>
-        <p className="text-sm text-smoke mt-2">
-          Tes pactes animaux : affinité de pacte, Art Shinobi propre à chaque animal et fiches
-          techniques soumises à validation.
+      <section className="hnk-kuchy-hero">
+        <div className="hnk-kuchy-title">
+          <div>
+            <p className="label">Kuchiyose · 口寄せ</p>
+            <h1 className="value">
+              Pactes, invocation et
+              <small> art propre</small>
+            </h1>
+          </div>
+          <div className="hidden md:flex flex-col items-end gap-2 text-right">
+            <span className="hnk-chip">Sceau vivant</span>
+            <span className="hnk-chip">Rang auto</span>
+            <span className="hnk-chip">Aucun décalage joueur</span>
+          </div>
+        </div>
+        <p className="text-sm text-bone/80 mt-4 max-w-3xl leading-relaxed relative z-[1]">
+          Tes invocations gardent une identité propre: l&apos;espèce du pacte, l&apos;Art Shinobi et
+          le rang calculé automatiquement depuis le personnage, avec plafond B tant que le Mode
+          Ermite n&apos;est pas disponible.
         </p>
-      </div>
+        <div className="hnk-kuchy-badges">
+          <span className="hnk-chip">Affinité du pacte</span>
+          <span className="hnk-chip">Spécialisation indépendante</span>
+          <span className="hnk-chip">Export forum prêt</span>
+        </div>
+      </section>
       <InvocationsManager
         initial={invocations}
         pactAffinities={(dbUser?.pactAffinities ?? []).filter(Boolean)}

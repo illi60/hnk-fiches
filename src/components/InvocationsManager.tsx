@@ -182,8 +182,12 @@ function PactAffinityPanel({
   }
 
   return (
-    <div className="hnk-panel" data-kanji="盟">
-      <p className="hnk-eyebrow">Pacte · affinité &amp; espèce verrouillées</p>
+    <div className="hnk-kuchy-panel hnk-kuchy-panel--frame hnk-kuchy-panel--kuchy" data-kanji="盟">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="hnk-kuchy-badge">Kuchiyose</span>
+        <span className="hnk-kuchy-badge hnk-kuchy-badge--alt">Invocation</span>
+      </div>
+      <p className="hnk-eyebrow mt-3">Pacte · affinité &amp; espèce verrouillées</p>
       <p className="text-[11px] text-smoke mt-2 leading-relaxed">
         L&apos;affinité et l&apos;espèce s&apos;appliquent à toute la race de ton pacte. Choix
         <span className="text-bone"> définitif</span> (l&apos;espèce se fixe au 1er choix d&apos;affinité).
@@ -283,48 +287,62 @@ function InvocationCard({
   }
 
   return (
-    <div className="hnk-panel" data-kanji="獣">
-      <div className="flex gap-4">
+    <div className="hnk-kuchy-panel hnk-kuchy-panel--frame hnk-kuchy-panel--kuchy" data-kanji="獣">
+      <div className="flex items-start gap-4 relative z-[1]">
         {inv.image && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={inv.image} alt={inv.nom} className="hnk-avatar w-20 h-20 flex-none" />
         )}
         <div className="flex-1 min-w-0">
-          <h3 className="font-display uppercase tracking-wider text-lg text-white">{inv.nom}</h3>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <span className="hnk-kuchy-badge">Kuchiyose</span>
+            <span className="hnk-kuchy-badge hnk-kuchy-badge--alt">Invocation</span>
+          </div>
+          <p className="hnk-eyebrow">Invocation liée au pacte</p>
+          <h3 className="font-display uppercase tracking-wider text-xl text-white mt-1">{inv.nom}</h3>
+          <div className="flex flex-wrap gap-2 mt-3">
+            <span className="hnk-chip">Rang {computedRank}</span>
+            <span className="hnk-chip">{inv.espece ?? "Espèce inconnue"}</span>
+            {inv.artShinobi && <span className="hnk-chip">Art · {inv.artShinobi}</span>}
+            {inv.kekkeiGenkai && <span className="hnk-chip">KG · {inv.kekkeiGenkai}</span>}
+          </div>
+          <div className="grid sm:grid-cols-2 gap-x-4 gap-y-1 mt-4">
             <Meta k="Espèce" v={inv.espece} />
-            <Meta k="Rang" v={computedRank} />
             <Meta k="Affinité (pacte)" v={pactAffinities.join(", ") || null} />
             <Meta k="Art Shinobi" v={inv.artShinobi} />
-            {inv.kekkeiGenkai && <Meta k="Kekkei Genkai" v={inv.kekkeiGenkai} />}
+            <Meta k="Rang calculé" v={computedRank} />
           </div>
         </div>
       </div>
 
       {inv.description && (
-        <p className="text-sm text-bone/80 mt-3 whitespace-pre-line text-justify">{inv.description}</p>
+        <p className="text-sm text-bone/80 mt-4 whitespace-pre-line text-justify relative z-[1]">
+          {inv.description}
+        </p>
       )}
 
-      <div className="mt-4">
+      <div className="mt-4 relative z-[1]">
         <p className="hnk-eyebrow mb-2">Fiche technique</p>
         {inv.fiches.length === 0 && inv.techniques.length === 0 ? (
           <p className="text-xs text-smoke italic">Aucune technique.</p>
         ) : (
           <ul className="space-y-1.5">
             {inv.fiches.map((t) => (
-              <li key={t.id} className="border-l border-ember/40 pl-3 py-0.5 flex justify-between gap-2">
-                <span className="text-sm text-bone">{t.nom}</span>
-                <span className="text-[10px] text-smoke uppercase tracking-wider">
-                  {STATUS_LABEL[t.status] ?? t.status}
-                  {t.coutXp ? ` · ${t.coutXp} XP` : ""}
-                </span>
+              <li key={t.id} className="hnk-kuchy-tech">
+                <div className="flex justify-between gap-2 items-start">
+                  <span className="title">{t.nom}</span>
+                  <span className="text-[10px] text-smoke uppercase tracking-wider flex-none">
+                    {STATUS_LABEL[t.status] ?? t.status}
+                    {t.coutXp ? ` · ${t.coutXp} XP` : ""}
+                  </span>
+                </div>
               </li>
             ))}
             {/* Anciennes techniques libres (legacy JSON) */}
             {inv.techniques.map((t, i) => (
-              <li key={`legacy-${i}`} className="border-l border-white/10 pl-3 py-0.5">
-                <p className="text-sm text-bone">{t.nom}</p>
-                {t.description && <p className="text-xs text-smoke">{t.description}</p>}
+              <li key={`legacy-${i}`} className="hnk-kuchy-tech">
+                <p className="title">{t.nom}</p>
+                {t.description && <p className="desc">{t.description}</p>}
               </li>
             ))}
           </ul>
@@ -332,7 +350,7 @@ function InvocationCard({
       </div>
 
       {proposing ? (
-        <div className="mt-4 border-t border-white/10 pt-4">
+        <div className="mt-4 border-t border-white/10 pt-4 relative z-[1]">
           <p className="hnk-eyebrow mb-3">Proposer une technique de {inv.nom}</p>
           {!inv.artShinobi && !ermitePerfect && (
             <p className="text-sm text-ember-hot mb-3">
@@ -482,7 +500,11 @@ function InvocationForm({
   }
 
   return (
-    <div className="hnk-panel" data-kanji="契">
+    <div className="hnk-kuchy-panel hnk-kuchy-panel--frame hnk-kuchy-panel--kuchy" data-kanji="契">
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <span className="hnk-kuchy-badge">Kuchiyose</span>
+        <span className="hnk-kuchy-badge hnk-kuchy-badge--alt">Invocation</span>
+      </div>
       <h3 className="hnk-section-title">{value ? "Éditer l'invocation" : "Nouvelle invocation"}</h3>
 
       <p className="text-[11px] text-smoke mb-4">
