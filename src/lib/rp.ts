@@ -142,8 +142,9 @@ function splitBodySegments(html: string): Array<{ kind: "body" | "tech"; html: s
 
 function renderRpContent(html: string, foot: string, padded: boolean): string {
   const padAttr = padded ? "" : ' style="padding:0px!important;"';
+  const cls = padded ? "hnk-rp-content" : "hnk-rp-content hnk-rp-content--continued";
   const body = richNotEmpty(html) ? `<div class="hnk-rp-body">${html}</div>` : "";
-  return `<div class="hnk-rp-content"${padAttr}><div class="hnk-rp-rule"></div>${body}${foot}</div>`;
+  return `<div class="${cls}"${padAttr}><div class="hnk-rp-rule"></div>${body}${foot}</div>`;
 }
 
 export function rpForumHtml(d: RpPostData): string {

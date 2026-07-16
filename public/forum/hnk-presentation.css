@@ -974,6 +974,16 @@ a.hnk-cb-ev .lab,
 
 /* ---------- Contenu (rule + corps + pied) ---------- */
 .hnk-rp-content { padding: 26px 36px 30px; }
+.hnk-rp-content--continued .hnk-rp-rule {
+  margin-left: 36px;
+  margin-right: 36px;
+}
+.hnk-rp-content--continued .hnk-rp-body {
+  padding: 0 36px 30px;
+}
+.hnk-rp-content--continued .hnk-rp-foot {
+  padding: 0 36px 30px;
+}
 .hnk-rp-rule {
   height: 1px;
   margin: 0 0 24px;
@@ -1286,6 +1296,15 @@ a.hnk-cb-ev .lab,
   .hnk-rp-title { font-size: 42px; }
   .hnk-rp-head { padding: 22px 20px 18px; }
   .hnk-rp-content { padding: 22px 20px 24px; }
+  .hnk-rp-content--continued .hnk-rp-rule {
+    margin-left: 20px;
+    margin-right: 20px;
+  }
+  .hnk-rp-content--continued .hnk-rp-body,
+  .hnk-rp-content--continued .hnk-rp-foot {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
   .hnk-rp-foot { flex-direction: column; align-items: flex-start; }
   .hnk-rp-turn-head { padding: 18px 20px; }
   .hnk-rp-turn-body { padding: 20px 20px 22px; }
