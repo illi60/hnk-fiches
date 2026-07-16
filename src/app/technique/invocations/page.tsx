@@ -105,22 +105,11 @@ export default async function InvocationsPage() {
               <small> art propre</small>
             </h1>
           </div>
-          <div className="hidden md:flex flex-col items-end gap-2 text-right">
-            <span className="hnk-chip">Sceau vivant</span>
-            <span className="hnk-chip">Rang auto</span>
-            <span className="hnk-chip">Aucun décalage joueur</span>
-          </div>
         </div>
         <p className="text-sm text-bone/80 mt-4 max-w-3xl leading-relaxed relative z-[1]">
-          Tes invocations gardent une identité propre: l&apos;espèce du pacte, l&apos;Art Shinobi et
-          le rang calculé automatiquement depuis le personnage, avec plafond B tant que le Mode
-          Ermite n&apos;est pas disponible.
+          Cette page sert à gérer tes invocations: tu y retrouves leur espèce, leur Art Shinobi,
+          leur rang calculé automatiquement et les techniques qui leur sont rattachées.
         </p>
-        <div className="hnk-kuchy-badges">
-          <span className="hnk-chip">Affinité du pacte</span>
-          <span className="hnk-chip">Spécialisation indépendante</span>
-          <span className="hnk-chip">Export forum prêt</span>
-        </div>
       </section>
       <InvocationsManager
         initial={invocations}

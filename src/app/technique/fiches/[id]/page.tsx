@@ -168,12 +168,6 @@ export default async function FicheDetailPage({
             className={`hnk-tech${isKuchy ? " hnk-tech--kuchy" : ""}`}
             style={isKuchy ? undefined : buildCardStyle(fiche.kekkeiGenkai, kgColors)}
           >
-            {isKuchy && (
-              <div className="hnk-tech-badges">
-                <span className="hnk-tech-badge">Kuchiyose</span>
-                <span className="hnk-tech-badge hnk-tech-badge--alt">Invocation</span>
-              </div>
-            )}
             <div className="hnk-tech-meta">
               Technique{fiche.coutXp ? ` · ${fiche.coutXp} XP` : ""}
             </div>

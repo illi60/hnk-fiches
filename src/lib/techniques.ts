@@ -195,13 +195,9 @@ export function techniqueForumHtml(t: TechniqueExportData): string {
 
   const meta = `Technique${t.coutXp ? ` &middot; ${t.coutXp} XP` : ""}`;
   const desc = escapeHtml(t.description).replace(/\n/g, "<br>");
-  const badges = isKuchyTechnique
-    ? `<div class="hnk-tech-badges"><span class="hnk-tech-badge">Kuchiyose</span><span class="hnk-tech-badge hnk-tech-badge--alt">Invocation</span></div>`
-    : "";
 
   return (
     `<div class="hnk-tech${isKuchyTechnique ? " hnk-tech--kuchy" : ""}" style="--kg:${accent}">` +
-    badges +
     `<div class="hnk-tech-meta">${meta}</div>` +
     `<div class="hnk-tech-name">${escapeHtml(t.nom)}</div>` +
     `<div class="hnk-tech-chips">${chips.join("")}</div>` +

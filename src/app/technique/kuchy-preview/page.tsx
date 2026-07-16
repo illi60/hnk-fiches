@@ -44,31 +44,18 @@ export default function KuchyPreviewPage() {
               <small> · test visuel</small>
             </h1>
           </div>
-          <div className="hidden md:flex flex-col items-end gap-2 text-right">
-            <span className="hnk-chip">Carte demonstration</span>
-            <span className="hnk-chip">Export forum</span>
-          </div>
         </div>
         <p className="text-sm text-bone/80 mt-4 max-w-3xl leading-relaxed relative z-[1]">
-          Cette page sert a tester le skin des techniques de Kuchiyose dans une version statique,
-          sans dependre de la base de donnees. Elle reprend les memes motifs que le reste du site
-          pour eviter la rupture visuelle.
+          Cette page sert à prévisualiser une technique de Kuchiyose et son export forum dans une
+          version statique. Elle montre le rendu de la carte, les informations d&apos;invocation et
+          le code copiable avant publication.
         </p>
-        <div className="hnk-kuchy-badges">
-          <span className="hnk-chip">Sceau vivant</span>
-          <span className="hnk-chip">Rang auto</span>
-          <span className="hnk-chip">Meme DA</span>
-        </div>
       </section>
 
       <div className="grid lg:grid-cols-2 gap-6">
         <section className="space-y-3">
           <h2 className="hnk-section-title !text-base">Carte actuelle</h2>
           <article className="hnk-tech hnk-tech--kuchy">
-            <div className="hnk-tech-badges">
-              <span className="hnk-tech-badge">Kuchiyose</span>
-              <span className="hnk-tech-badge hnk-tech-badge--alt">Invocation</span>
-            </div>
             <div className="hnk-tech-meta">Technique · 10 XP</div>
             <div className="hnk-tech-name">Ame no Bakeneko</div>
             <div className="hnk-tech-chips">

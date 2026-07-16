@@ -126,22 +126,12 @@ export default async function MyFichesPage() {
               Mes <small>techniques</small>
             </h1>
           </div>
-          <div className="hidden md:flex flex-col items-end gap-2 text-right">
-            <span className="hnk-chip">Fiches actives</span>
-            <span className="hnk-chip">Technique propre</span>
-            <span className="hnk-chip">Export forum prêt</span>
-          </div>
         </div>
         <p className="text-sm text-bone/80 mt-4 max-w-3xl leading-relaxed relative z-[1]">
-          Tes techniques gardent leur identité propre, avec la même hiérarchie visuelle que la
-          section Kuchiyose: titres forts, accent orange et cartes plus lisibles au premier coup
-          d&apos;oeil.
+          Cette page réunit toutes tes fiches techniques, qu&apos;elles soient en brouillon, en
+          attente ou déjà validées. Tu y retrouves l&apos;état de chaque technique, son coût XP et
+          son accès direct à la fiche ou à l&apos;export forum.
         </p>
-        <div className="hnk-kuchy-badges">
-          <span className="hnk-chip">Mes techniques</span>
-          <span className="hnk-chip">Validation staff</span>
-          <span className="hnk-chip">Style forum</span>
-        </div>
         <div className="mt-4 flex justify-end">
           <Link href="/technique/fiches/new" className="hnk-btn">
             Nouvelle technique
