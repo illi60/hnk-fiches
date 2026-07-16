@@ -160,6 +160,12 @@ function escapeHtml(s: string): string {
 // en variable inline `--kg` → la carte se teinte sans alourdir le message.
 export function techniqueForumHtml(t: TechniqueExportData): string {
   const accent = t.kgColorHex ?? (t.kekkeiGenkai ? kgColor(t.kekkeiGenkai) : "#ff8a4c");
+  const isKuchyTechnique =
+    !!t.espece ||
+    (t.art ?? "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase() === "kuchiyose";
 
   const chip = (txt: string, kg = false) =>
     `<span class="hnk-tech-chip${kg ? " hnk-tech-chip--kg" : ""}">${escapeHtml(txt)}</span>`;
@@ -189,9 +195,13 @@ export function techniqueForumHtml(t: TechniqueExportData): string {
 
   const meta = `Technique${t.coutXp ? ` &middot; ${t.coutXp} XP` : ""}`;
   const desc = escapeHtml(t.description).replace(/\n/g, "<br>");
+  const badges = isKuchyTechnique
+    ? `<div class="hnk-tech-badges"><span class="hnk-tech-badge">Kuchiyose</span><span class="hnk-tech-badge hnk-tech-badge--alt">Invocation</span></div>`
+    : "";
 
   return (
-    `<div class="hnk-tech" style="--kg:${accent}">` +
+    `<div class="hnk-tech${isKuchyTechnique ? " hnk-tech--kuchy" : ""}" style="--kg:${accent}">` +
+    badges +
     `<div class="hnk-tech-meta">${meta}</div>` +
     `<div class="hnk-tech-name">${escapeHtml(t.nom)}</div>` +
     `<div class="hnk-tech-chips">${chips.join("")}</div>` +

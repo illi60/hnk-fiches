@@ -838,11 +838,22 @@ textarea.hnk-input {
   color: #dbdee2;
   font-family: Inter, Arial, Helvetica, sans-serif;
 }
+.hnk-tech--kuchy {
+  background:
+    radial-gradient(circle at 84% 14%, rgba(255, 122, 60, 0.14), transparent 24%),
+    linear-gradient(160deg, rgba(23, 18, 18, 0.98), rgba(12, 11, 13, 0.98) 60%, rgba(8, 9, 11, 0.99));
+  border-color: rgba(255, 122, 60, 0.42);
+  border-left-color: #ff7a3c;
+  box-shadow: inset 0 0 0 1px rgba(255, 122, 60, 0.08), 0 0 24px rgba(255, 122, 60, 0.12);
+}
 .hnk-tech-meta {
   font: 700 10px/1 Inter, Arial, sans-serif;
   letter-spacing: 0.3em;
   text-transform: uppercase;
   color: #6c7079;
+}
+.hnk-tech--kuchy .hnk-tech-meta {
+  color: #ff8f68;
 }
 .hnk-tech-name {
   margin: 6px 0 12px;
@@ -852,8 +863,34 @@ textarea.hnk-input {
   color: #f5f1ea;
   text-shadow: 0 0 16px rgba(255, 87, 34, 0.25);
 }
+.hnk-tech--kuchy .hnk-tech-name {
+  color: #fff6ee;
+  text-shadow: 0 0 18px rgba(255, 122, 60, 0.22);
+}
 .hnk-tech-chips {
   margin-bottom: 12px;
+}
+.hnk-tech-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.hnk-tech-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid rgba(255, 122, 60, 0.36);
+  background: rgba(255, 87, 34, 0.08);
+  color: #ff8f68;
+  font: 800 9px/1 var(--ui);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+.hnk-tech-badge--alt {
+  background: rgba(255, 122, 60, 0.14);
+  color: #ffd8bd;
 }
 .hnk-tech-chip {
   display: inline-block;
@@ -866,6 +903,11 @@ textarea.hnk-input {
   border: 1px solid rgba(255, 87, 34, 0.4);
   background: rgba(255, 87, 34, 0.08);
   border-radius: 2px;
+}
+.hnk-tech--kuchy .hnk-tech-chip {
+  border-color: rgba(255, 122, 60, 0.42);
+  color: #ffd7c0;
+  background: rgba(255, 122, 60, 0.05);
 }
 .hnk-tech-desc {
   font-size: 14px;

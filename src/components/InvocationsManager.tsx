@@ -182,12 +182,8 @@ function PactAffinityPanel({
   }
 
   return (
-    <div className="hnk-kuchy-panel hnk-kuchy-panel--frame hnk-kuchy-panel--kuchy" data-kanji="盟">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="hnk-kuchy-badge">Kuchiyose</span>
-        <span className="hnk-kuchy-badge hnk-kuchy-badge--alt">Invocation</span>
-      </div>
-      <p className="hnk-eyebrow mt-3">Pacte · affinité &amp; espèce verrouillées</p>
+    <div className="hnk-kuchy-panel hnk-kuchy-panel--frame" data-kanji="盟">
+      <p className="hnk-eyebrow">Pacte · affinité &amp; espèce verrouillées</p>
       <p className="text-[11px] text-smoke mt-2 leading-relaxed">
         L&apos;affinité et l&apos;espèce s&apos;appliquent à toute la race de ton pacte. Choix
         <span className="text-bone"> définitif</span> (l&apos;espèce se fixe au 1er choix d&apos;affinité).
@@ -287,17 +283,13 @@ function InvocationCard({
   }
 
   return (
-    <div className="hnk-kuchy-panel hnk-kuchy-panel--frame hnk-kuchy-panel--kuchy" data-kanji="獣">
+    <div className="hnk-kuchy-panel hnk-kuchy-panel--frame" data-kanji="獣">
       <div className="flex items-start gap-4 relative z-[1]">
         {inv.image && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={inv.image} alt={inv.nom} className="hnk-avatar w-20 h-20 flex-none" />
         )}
         <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2 mb-2">
-            <span className="hnk-kuchy-badge">Kuchiyose</span>
-            <span className="hnk-kuchy-badge hnk-kuchy-badge--alt">Invocation</span>
-          </div>
           <p className="hnk-eyebrow">Invocation liée au pacte</p>
           <h3 className="font-display uppercase tracking-wider text-xl text-white mt-1">{inv.nom}</h3>
           <div className="flex flex-wrap gap-2 mt-3">
@@ -500,11 +492,7 @@ function InvocationForm({
   }
 
   return (
-    <div className="hnk-kuchy-panel hnk-kuchy-panel--frame hnk-kuchy-panel--kuchy" data-kanji="契">
-      <div className="flex flex-wrap items-center gap-2 mb-3">
-        <span className="hnk-kuchy-badge">Kuchiyose</span>
-        <span className="hnk-kuchy-badge hnk-kuchy-badge--alt">Invocation</span>
-      </div>
+    <div className="hnk-kuchy-panel hnk-kuchy-panel--frame" data-kanji="契">
       <h3 className="hnk-section-title">{value ? "Éditer l'invocation" : "Nouvelle invocation"}</h3>
 
       <p className="text-[11px] text-smoke mb-4">

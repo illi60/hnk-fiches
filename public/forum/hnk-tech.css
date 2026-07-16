@@ -27,12 +27,55 @@
   box-shadow: 0 0 22px color-mix(in srgb, var(--kg) 12%, transparent);
 }
 
+.hnk-tech--kuchy {
+  background-color: #140f0f;
+  background-image:
+    radial-gradient(circle at 84% 14%, color-mix(in srgb, var(--kg) 20%, transparent) 0%, transparent 26%),
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--kg) 22%, transparent) 0%,
+      color-mix(in srgb, var(--kg) 8%, transparent) 38%,
+      rgba(0, 0, 0, 0) 72%
+    );
+  border-left-color: color-mix(in srgb, var(--kg) 90%, white 10%);
+  box-shadow: 0 0 26px color-mix(in srgb, var(--kg) 18%, transparent);
+}
+
+.hnk-tech-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.hnk-tech-badge {
+  display: inline-block;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border: 1px solid color-mix(in srgb, var(--kg) 60%, white 40%);
+  border-radius: 3px;
+  color: color-mix(in srgb, var(--kg) 78%, white 22%);
+  background: color-mix(in srgb, var(--kg) 10%, transparent);
+}
+
+.hnk-tech-badge--alt {
+  color: #f5d8c5;
+  border-color: color-mix(in srgb, var(--kg) 35%, white 65%);
+  background: color-mix(in srgb, var(--kg) 16%, transparent);
+}
+
 .hnk-tech-meta {
   font-size: 11px;
   letter-spacing: 2px;
   text-transform: uppercase;
   color: #9a9088;
   margin-bottom: 6px;
+}
+
+.hnk-tech--kuchy .hnk-tech-meta {
+  color: color-mix(in srgb, var(--kg) 78%, white 22%);
 }
 
 .hnk-tech-name {
@@ -42,6 +85,11 @@
   text-transform: uppercase;
   color: #ffffff;
   margin-bottom: 12px;
+}
+
+.hnk-tech--kuchy .hnk-tech-name {
+  color: #fff6f0;
+  text-shadow: 0 0 16px color-mix(in srgb, var(--kg) 20%, transparent);
 }
 
 .hnk-tech-chips {
@@ -58,6 +106,12 @@
   border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 3px;
   color: #d8cfc6;
+}
+
+.hnk-tech--kuchy .hnk-tech-chip {
+  color: #f4ddd0;
+  border-color: color-mix(in srgb, var(--kg) 36%, white 64%);
+  background: color-mix(in srgb, var(--kg) 8%, transparent);
 }
 
 /* Chip Kekkei Genkai : prend la couleur du KG. */

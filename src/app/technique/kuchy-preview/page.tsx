@@ -50,9 +50,9 @@ export default function KuchyPreviewPage() {
           </div>
         </div>
         <p className="text-sm text-bone/80 mt-4 max-w-3xl leading-relaxed relative z-[1]">
-          Cette page sert a tester le skin des invocations dans une version statique, sans dependre
-          de la base de donnees. Elle reprend les memes motifs que le reste du site pour eviter la
-          rupture visuelle.
+          Cette page sert a tester le skin des techniques de Kuchiyose dans une version statique,
+          sans dependre de la base de donnees. Elle reprend les memes motifs que le reste du site
+          pour eviter la rupture visuelle.
         </p>
         <div className="hnk-kuchy-badges">
           <span className="hnk-chip">Sceau vivant</span>
@@ -64,37 +64,20 @@ export default function KuchyPreviewPage() {
       <div className="grid lg:grid-cols-2 gap-6">
         <section className="space-y-3">
           <h2 className="hnk-section-title !text-base">Carte actuelle</h2>
-          <article
-            className="hnk-kuchy-panel hnk-kuchy-panel--frame hnk-kuchy-panel--kuchy"
-            data-kanji="技"
-          >
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="hnk-kuchy-badge">Kuchiyose</span>
-              <span className="hnk-kuchy-badge hnk-kuchy-badge--alt">Invocation</span>
+          <article className="hnk-tech hnk-tech--kuchy">
+            <div className="hnk-tech-badges">
+              <span className="hnk-tech-badge">Kuchiyose</span>
+              <span className="hnk-tech-badge hnk-tech-badge--alt">Invocation</span>
             </div>
-            <div className="flex items-start justify-between gap-3 mt-4">
-              <div>
-                <p className="hnk-eyebrow">Techniques liees a l&apos;invocation</p>
-                <h3 className="font-display uppercase tracking-wider text-2xl text-white mt-2">
-                  Ame no Bakeneko
-                </h3>
-              </div>
-              <span className="hnk-chip">Rang C</span>
+            <div className="hnk-tech-meta">Technique · 10 XP</div>
+            <div className="hnk-tech-name">Ame no Bakeneko</div>
+            <div className="hnk-tech-chips">
+              <span className="hnk-tech-chip">口 Kuchiyose · Lignage (C)</span>
+              <span className="hnk-tech-chip">Évolutive</span>
             </div>
-
-            <div className="hnk-kuchy-rank mt-4">
-              <span className="rank">Felins du brouillard</span>
-              <span className="meta">Art cache · invocation propre</span>
-            </div>
-
-            <div className="flex flex-wrap gap-1.5 mt-4">
-              <span className="hnk-tech-chip">口 Felins du brouillard · Ame no Bakeneko · Rang C</span>
-              <span className="hnk-tech-chip">Evolutive</span>
-            </div>
-
-            <p className="mt-4 text-sm text-bone/80 whitespace-pre-line text-justify">
+            <div className="hnk-tech-desc" style={{ whiteSpace: "pre-line", textAlign: "justify" }}>
               {mockData.description}
-            </p>
+            </div>
           </article>
         </section>
 
@@ -109,14 +92,10 @@ export default function KuchyPreviewPage() {
         </section>
       </div>
 
-      <div className="hnk-kuchy-panel hnk-kuchy-panel--frame hnk-kuchy-panel--kuchy" data-kanji="口">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="hnk-kuchy-badge">Kuchiyose</span>
-          <span className="hnk-kuchy-badge hnk-kuchy-badge--alt">Invocation</span>
-        </div>
-        <div className="flex items-start justify-between gap-4 flex-wrap mt-4">
+      <div className="hnk-kuchy-panel hnk-kuchy-panel--frame" data-kanji="口">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <p className="hnk-eyebrow">Reference</p>
+            <p className="hnk-eyebrow">Référence</p>
             <h2 className="hnk-serif text-2xl mt-2">Ce que la suite visuelle testera</h2>
           </div>
           <Link href="/technique/invocations" className="hnk-btn-ghost !py-2 !px-4">
@@ -125,7 +104,7 @@ export default function KuchyPreviewPage() {
         </div>
         <ul className="mt-4 text-sm text-bone/80 space-y-2">
           <li>- Rang de l&apos;invocation visible en clair.</li>
-          <li>- Spec calculee sur le rang de l&apos;invocation, pas celui du joueur.</li>
+          <li>- Spécialisation calculée sur le rang de l&apos;invocation, pas celui du joueur.</li>
           <li>- Carte distincte des techniques joueur/KG.</li>
         </ul>
       </div>
