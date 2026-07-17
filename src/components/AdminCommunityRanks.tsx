@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { SubmissionList, fetchSubmissions, type SubItem } from "@/components/AdminProgressionSubmissions";
+import AdminConditionControls, { type AdminCondRow } from "@/components/AdminConditionControls";
 
 const RANKS = ["E", "D", "C", "B", "A", "S"] as const;
 
@@ -14,6 +15,7 @@ export interface ScopeRow {
   base: string;
   derived: string;
   effective: string;
+  conditions: AdminCondRow[];
 }
 
 function rankClass(r: string) {
@@ -254,7 +256,13 @@ function RankRow({ scope }: { scope: ScopeRow }) {
       </div>
 
       {open && (
-        <div className="mt-3 border-t border-white/5 pt-3">
+        <div className="mt-3 border-t border-white/5 pt-3 space-y-4">
+          <AdminConditionControls
+            title="Conditions du scope"
+            subtitle="Coche, decoche, ajoute ou retire une validation directement."
+            target={{ kind: "COMMUNITY", scopeType: scope.type, scopeKey: scope.key }}
+            conditions={scope.conditions}
+          />
           {loadingDetail || items === null ? (
             <p className="text-xs text-smoke italic">Chargement…</p>
           ) : (

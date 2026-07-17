@@ -296,14 +296,26 @@ export const communityRankSchema = z.object({
   baseRank: z.enum(["E", "D", "C", "B", "A", "S"]),
 });
 
-// Staff : valide/dévalide directement une condition communautaire « gérée par
-// le staff » (ex : « Atteindre N réponses RP postées »), sans soumission membre.
-export const progressionConditionSchema = z.object({
-  scopeType: z.enum(["VILLAGE", "CLAN"]),
-  scopeKey: z.string().min(1).max(80),
-  condId: z.string().min(3).max(80),
-  validated: z.boolean(),
-});
+// Admin : ajuste directement une condition de progression.
+//   - USER      : condition individuelle d'un joueur.
+//   - COMMUNITY : condition communautaire d'un scope village/clan.
+// Les compteurs x/xx utilisent ADD/REMOVE ; les conditions binaires utilisent
+// SET_VALIDATED/SET_UNVALIDATED.
+export const progressionConditionSchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("USER"),
+    userId: z.string().min(1),
+    condId: z.string().min(3).max(80),
+    operation: z.enum(["ADD", "REMOVE", "SET_VALIDATED", "SET_UNVALIDATED"]),
+  }),
+  z.object({
+    kind: z.literal("COMMUNITY"),
+    scopeType: z.enum(["VILLAGE", "CLAN"]),
+    scopeKey: z.string().min(1).max(80),
+    condId: z.string().min(3).max(80),
+    operation: z.enum(["ADD", "REMOVE", "SET_VALIDATED", "SET_UNVALIDATED"]),
+  }),
+]);
 
 // Admin : reset des progressions. Efface les soumissions (conditions validées /
 // en attente) — action distincte de la baisse de rang (gérée via le profil).

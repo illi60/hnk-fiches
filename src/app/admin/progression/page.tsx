@@ -7,12 +7,19 @@ import {
   TRACK_LABEL,
   VILLAGE_SCOPE_KEY,
   clanScopeKey,
+  communityCondMet,
+  communityCurrent,
   deriveCommunityRank,
   effectiveCommunityRank,
-  isAdminManaged,
+  individualCondMet,
+  individualCurrent,
   submissionMode,
   PROGRESSION,
+  type ProgCond,
+  type ProgTrack,
   type Rank,
+  type ScopeProgress,
+  type UserProgress,
 } from "@/lib/progression";
 import {
   loadScopeAggregates,
@@ -22,8 +29,57 @@ import {
 } from "@/lib/progression-server";
 import AdminProgressionDecision from "@/components/AdminProgressionDecision";
 import AdminCommunityRanks, { type ScopeRow } from "@/components/AdminCommunityRanks";
-import AdminManagedConditions, { type ManagedCond } from "@/components/AdminManagedConditions";
-import AdminProgressionUser, { type ProgUser } from "@/components/AdminProgressionUser";
+import AdminProgressionUser, { type ProgUser, type UserConditionMap } from "@/components/AdminProgressionUser";
+import type { AdminCondRow } from "@/components/AdminConditionControls";
+
+function communityRows(track: "VILLAGE" | "CLAN", sp: ScopeProgress): AdminCondRow[] {
+  const rows: AdminCondRow[] = [];
+  for (const p of PROGRESSION[track].paliers) {
+    for (const c of p.community ?? []) {
+      const meta = condMeta(c.id);
+      if (!meta) continue;
+      rows.push({
+        condId: c.id,
+        label: c.label,
+        rank: p.rank,
+        track,
+        mode: meta.mode,
+        target: meta.target,
+        current: communityCurrent(c, sp),
+        met: communityCondMet(c, sp),
+      });
+    }
+  }
+  return rows;
+}
+
+function individualRows(track: ProgTrack, up: UserProgress): AdminCondRow[] {
+  const rows: AdminCondRow[] = [];
+  for (const p of PROGRESSION[track].paliers) {
+    const add = (c: ProgCond) => {
+      const meta = condMeta(c.id);
+      if (!meta) return;
+      rows.push({
+        condId: c.id,
+        label: c.label,
+        rank: p.rank,
+        track,
+        mode: meta.mode,
+        target: meta.target,
+        current: individualCurrent(c, up),
+        met: individualCondMet(c, up),
+      });
+    };
+    for (const c of p.individual?.alternatives ?? []) add(c);
+    for (const ex of p.individual?.requiredExtras ?? []) {
+      for (const c of ex.choices) add(c);
+    }
+    for (const ex of p.individual?.optionalExtras ?? []) {
+      for (const c of ex.choices) add(c);
+    }
+  }
+  return rows;
+}
 
 // File de validation des conditions de progression (staff : ADMIN ou TECH_MOD).
 // Gestion des rangs communautaires de base : ADMIN uniquement.
@@ -52,10 +108,10 @@ export default async function AdminProgressionPage() {
 
   // --- Rangs communautaires (ADMIN) : base / dérivé / effectif ---
   const scopes: ScopeRow[] = [];
-  const managedVillage: ManagedCond[] = [];
   let progUsers: ProgUser[] = [];
+  let conditionsByUser: UserConditionMap = {};
   if (isAdmin) {
-    const [agg, baseRanks, villageCounts, clanCountsByScope, clanRows, allUsers] = await Promise.all([
+    const [agg, baseRanks, villageCounts, clanCountsByScope, clanRows, allUsers, userCountRows] = await Promise.all([
       loadScopeAggregates(),
       loadAllBaseRanks(),
       loadCommunityCounts("VILLAGE", VILLAGE_SCOPE_KEY),
@@ -74,11 +130,41 @@ export default async function AdminProgressionPage() {
           rangVillage: true,
           rangClan: true,
           rangHistoire: true,
+          forumLastXp: true,
+          xpTotalEarned: true,
         },
         orderBy: { username: "asc" },
       }),
+      prisma.progressionSubmission.groupBy({
+        by: ["userId", "condId"],
+        where: { tier: "INDIVIDUAL", status: "VALIDATED" },
+        _count: { _all: true },
+      }),
     ]);
     progUsers = allUsers;
+
+    const countsByUser = new Map<string, Record<string, number>>();
+    for (const r of userCountRows) {
+      const counts = countsByUser.get(r.userId) ?? {};
+      counts[r.condId] = r._count._all;
+      countsByUser.set(r.userId, counts);
+    }
+    conditionsByUser = Object.fromEntries(
+      allUsers.map((u) => {
+        const up: UserProgress = {
+          countByCond: countsByUser.get(u.id) ?? {},
+          xpSelf: u.forumLastXp ?? u.xpTotalEarned ?? 0,
+        };
+        return [
+          u.id,
+          {
+            VILLAGE: individualRows("VILLAGE", up),
+            CLAN: individualRows("CLAN", up),
+            HISTOIRE: individualRows("HISTOIRE", up),
+          },
+        ];
+      })
+    );
 
     const villageBase = baseRanks[`VILLAGE:${VILLAGE_SCOPE_KEY}`] ?? "E";
     const villageSp = {
@@ -93,6 +179,7 @@ export default async function AdminProgressionPage() {
       base: villageBase,
       derived: deriveCommunityRank("VILLAGE", villageSp),
       effective: effectiveCommunityRank("VILLAGE", villageBase as Rank, villageSp),
+      conditions: communityRows("VILLAGE", villageSp),
     });
 
     // Union des clés de clan : membres + clans avec un rang de base posé + clans
@@ -124,20 +211,8 @@ export default async function AdminProgressionPage() {
         base,
         derived: deriveCommunityRank("CLAN", sp),
         effective: effectiveCommunityRank("CLAN", base as Rank, sp),
+        conditions: communityRows("CLAN", sp),
       });
-    }
-
-    // Conditions du village « gérées par le staff » (cumuls forum à cocher).
-    for (const p of PROGRESSION.VILLAGE.paliers) {
-      for (const c of p.community ?? []) {
-        if (!isAdminManaged(c.id)) continue;
-        managedVillage.push({
-          condId: c.id,
-          label: c.label,
-          rank: p.rank,
-          validated: (villageCounts[c.id] ?? 0) >= 1,
-        });
-      }
     }
   }
 
@@ -153,15 +228,8 @@ export default async function AdminProgressionPage() {
 
       {isAdmin && scopes.length > 0 && <AdminCommunityRanks scopes={scopes} />}
 
-      {isAdmin && progUsers.length > 0 && <AdminProgressionUser users={progUsers} />}
-
-      {isAdmin && managedVillage.length > 0 && (
-        <AdminManagedConditions
-          scopeType="VILLAGE"
-          scopeKey={VILLAGE_SCOPE_KEY}
-          scopeLabel="Konoha (village)"
-          conditions={managedVillage}
-        />
+      {isAdmin && progUsers.length > 0 && (
+        <AdminProgressionUser users={progUsers} conditionsByUser={conditionsByUser} />
       )}
 
       <section>

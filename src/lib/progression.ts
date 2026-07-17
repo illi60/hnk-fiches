@@ -888,31 +888,38 @@ export function membersAtLeast(byRank: Partial<Record<Rank, number>>, rank: Rank
 
 export function communityCondMet(cond: ProgCond, sp: ScopeProgress): boolean {
   const mode = condMode(cond.id);
-  if (mode === "xp_pool") return sp.xpPool >= condTarget(cond.id, cond.count);
+  const manual = (sp.countByCond[cond.id] ?? 0) > 0;
+  if (mode === "xp_pool") return sp.xpPool >= condTarget(cond.id, cond.count) || manual;
   if (mode === "member_count") {
     const rank = COND_CATALOG.get(cond.id)?.rank ?? "E";
-    return membersAtLeast(sp.memberCountByRank, rank) >= condTarget(cond.id, cond.count);
+    return membersAtLeast(sp.memberCountByRank, rank) >= condTarget(cond.id, cond.count) || manual;
   }
   return (sp.countByCond[cond.id] ?? 0) >= condTarget(cond.id, cond.count);
 }
 
 export function individualCondMet(cond: ProgCond, up: UserProgress): boolean {
-  if (condMode(cond.id) === "xp_self") return up.xpSelf >= condTarget(cond.id, cond.count);
+  const manual = (up.countByCond[cond.id] ?? 0) > 0;
+  if (condMode(cond.id) === "xp_self") return up.xpSelf >= condTarget(cond.id, cond.count) || manual;
   return (up.countByCond[cond.id] ?? 0) >= condTarget(cond.id, cond.count);
 }
 
 // Valeur courante affichée pour une condition (compteur, XP, ou nb de personnages).
 export function communityCurrent(cond: ProgCond, sp: ScopeProgress): number {
   const mode = condMode(cond.id);
-  if (mode === "xp_pool") return sp.xpPool;
+  const manual = (sp.countByCond[cond.id] ?? 0) > 0;
+  if (mode === "xp_pool") return manual ? Math.max(sp.xpPool, condTarget(cond.id, cond.count)) : sp.xpPool;
   if (mode === "member_count") {
     const rank = COND_CATALOG.get(cond.id)?.rank ?? "E";
-    return membersAtLeast(sp.memberCountByRank, rank);
+    const current = membersAtLeast(sp.memberCountByRank, rank);
+    return manual ? Math.max(current, condTarget(cond.id, cond.count)) : current;
   }
   return sp.countByCond[cond.id] ?? 0;
 }
 export function individualCurrent(cond: ProgCond, up: UserProgress): number {
-  if (condMode(cond.id) === "xp_self") return up.xpSelf;
+  if (condMode(cond.id) === "xp_self") {
+    const manual = (up.countByCond[cond.id] ?? 0) > 0;
+    return manual ? Math.max(up.xpSelf, condTarget(cond.id, cond.count)) : up.xpSelf;
+  }
   return up.countByCond[cond.id] ?? 0;
 }
 

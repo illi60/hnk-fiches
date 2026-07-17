@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { SubmissionList, fetchSubmissions, type SubItem } from "@/components/AdminProgressionSubmissions";
+import AdminConditionControls, { type AdminCondRow } from "@/components/AdminConditionControls";
 
 const RANKS = ["E", "D", "C", "B", "A", "S"] as const;
 
@@ -24,6 +25,8 @@ export interface ProgUser {
   rangHistoire: string | null;
 }
 
+export type UserConditionMap = Record<string, Partial<Record<Track, AdminCondRow[]>>>;
+
 function rankClass(r: string) {
   return /^[EDCBAS]$/.test(r) ? `rk-${r.toLowerCase()}` : "";
 }
@@ -31,7 +34,13 @@ function rankClass(r: string) {
 // Gestion centralisée de la progression d'un joueur : choisir un membre, puis
 // pour chacune des 3 voies, poser/baisser son rang, voir le DÉTAIL de ses
 // conditions (RP soumis) et en supprimer une par une — ou tout effacer.
-export default function AdminProgressionUser({ users }: { users: ProgUser[] }) {
+export default function AdminProgressionUser({
+  users,
+  conditionsByUser,
+}: {
+  users: ProgUser[];
+  conditionsByUser: UserConditionMap;
+}) {
   const [userId, setUserId] = useState("");
   const [items, setItems] = useState<SubItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -87,6 +96,7 @@ export default function AdminProgressionUser({ users }: { users: ProgUser[] }) {
               user={selected}
               track={t}
               items={items.filter((i) => i.track === t.key)}
+              conditions={conditionsByUser[selected.id]?.[t.key] ?? []}
               loading={loading}
               onChanged={() => load(selected.id)}
             />
@@ -101,12 +111,14 @@ function TrackRow({
   user,
   track,
   items,
+  conditions,
   loading,
   onChanged,
 }: {
   user: ProgUser;
   track: { key: Track; label: string; kanji: string; field: "rangVillage" | "rangClan" | "rangHistoire" };
   items: SubItem[];
+  conditions: AdminCondRow[];
   loading: boolean;
   onChanged: () => void;
 }) {
@@ -219,6 +231,13 @@ function TrackRow({
 
       {open && !noClan && (
         <div className="mt-3 border-t border-white/5 pt-3 space-y-3">
+          <AdminConditionControls
+            title={`Conditions ${track.label}`}
+            subtitle="Coche, decoche, ajoute ou retire une validation individuelle."
+            target={{ kind: "USER", userId: user.id }}
+            conditions={conditions}
+          />
+
           {loading ? (
             <p className="text-xs text-smoke italic">Chargement…</p>
           ) : (
