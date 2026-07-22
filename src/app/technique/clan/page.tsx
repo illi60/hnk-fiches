@@ -26,7 +26,7 @@ export default async function ClanLibraryPage() {
       primaryAffinity: true,
       affinites: true,
       artsState: true,
-      rang: true,
+      rangHistoire: true,
     },
   });
   if (!user?.clan || isNoClan(user.clan)) redirect("/technique");
@@ -92,9 +92,9 @@ export default async function ClanLibraryPage() {
         invocationId: null,
         invocationRank: null,
         viewerArtsState: viewerArts,
-        viewerRank: user.rang ?? null,
+        viewerRank: user.rangHistoire ?? null,
         authorArtsState: viewerArts,
-        authorRank: user.rang ?? null,
+        authorRank: user.rangHistoire ?? null,
       });
       return {
         spec: resolvedSpec,

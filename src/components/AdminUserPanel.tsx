@@ -70,7 +70,7 @@ export default function AdminUserPanel({
         userId={user.id}
         userClan={user.clan}
         artsState={(user.artsState ?? {}) as ArtsState}
-        villageRank={user.rang}
+        artsRank={user.rangHistoire}
         kgNames={kgNames}
       />
       <AdminArtsForm userId={user.id} artsState={(user.artsState ?? {}) as ArtsState} />
@@ -723,13 +723,13 @@ function AddTechniqueForm({
   userId,
   userClan,
   artsState,
-  villageRank,
+  artsRank,
   kgNames,
 }: {
   userId: string;
   userClan: string | null;
   artsState: ArtsState;
-  villageRank: string | null;
+  artsRank: string | null;
   kgNames: string[];
 }) {
   const router = useRouter();
@@ -829,8 +829,8 @@ function AddTechniqueForm({
             >
               <option value="">—</option>
               {artDef.specs.map((specName, i) => {
-                const rank = artsState != null && villageRank != null
-                  ? specRank(artDef.key, i, artsState, villageRank)
+                const rank = artsState != null && artsRank != null
+                  ? specRank(artDef.key, i, artsState, artsRank)
                   : null;
                 return (
                   <option key={specName} value={specName}>

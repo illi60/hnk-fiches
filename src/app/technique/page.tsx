@@ -151,21 +151,21 @@ export default async function DashboardPage() {
               axes={ARTS_ALL.map((a) => ({
                 kanji: a.kanji,
                 label: a.name,
-                rank: isArtOwned(artsState, a.key, user.rang)
-                  ? artRank(a.key, artsState, user.rang)
+                rank: isArtOwned(artsState, a.key, user.rangHistoire)
+                  ? artRank(a.key, artsState, user.rangHistoire)
                   : "E",
               }))}
             />
           </div>
           <ArtsManager
             artsState={artsState}
-            villageRank={user.rang}
+            artsRank={user.rangHistoire}
             histoireRank={user.rangHistoire}
             xpAvailable={user.xpAvailable}
           />
         </div>
         <p className="text-[10px] text-smoke mt-3 tracking-wide">
-          Arts débloqués selon le rang global (E:1 · D:2 · C:3 · B+:tous). Montée automatique
+          Arts débloqués selon le Rang Histoire (E:1 · D:2 · C:3 · B+:tous). Montée automatique
           E → B (suit le rang). Au-delà (B → A → S) : expertise (3 arts max parmi les 6) — coût en
           XP. Kuchiyose : Rang C Histoire + 20 XP.
         </p>

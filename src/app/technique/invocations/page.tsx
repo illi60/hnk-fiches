@@ -27,6 +27,7 @@ export default async function InvocationsPage() {
       clan: true,
       rangClan: true,
       rang: true,
+      rangHistoire: true,
       primaryKg: true,
       primaryAffinity: true,
       affinites: true,
@@ -128,7 +129,7 @@ export default async function InvocationsPage() {
           userClan: dbUser?.clan ?? null,
           rangClan: dbUser?.rangClan ?? null,
           artsState: (dbUser?.artsState ?? null) as import("@/lib/arts").ArtsState | null,
-          villageRank: dbUser?.rang ?? null,
+          artsRank: dbUser?.rangHistoire ?? null,
           clanLibraryAccess,
         }}
       />

@@ -60,7 +60,7 @@ export default async function AdminFichesPage({
       invocationId: true,
       invocation: { select: { espece: true, ...(hasInvRank ? { invocationRank: true } : {}) } },
       author: {
-        select: { id: true, username: true, xpAvailable: true, clan: true, rang: true, artsState: true },
+        select: { id: true, username: true, xpAvailable: true, clan: true, rangHistoire: true, artsState: true },
       },
     },
   });
@@ -74,11 +74,11 @@ export default async function AdminFichesPage({
     // Kuchy : la spé suit le rang global de l'auteur (auto, plafond B), pas l'artsState.
     const isKuchy = f.invocationId != null;
     const ficheSpecRank =
-      artDef && specIdx >= 0 && f.author.rang != null
+      artDef && specIdx >= 0 && (isKuchy || f.author.rangHistoire != null)
         ? isKuchy
           ? invocationSpecRank(hasInvRank ? (f.invocation as any)?.invocationRank ?? null : null)
           : f.author.artsState != null
-          ? specRank(artDef.key, specIdx, f.author.artsState as ArtsState, f.author.rang)
+          ? specRank(artDef.key, specIdx, f.author.artsState as ArtsState, f.author.rangHistoire)
           : null
         : null;
     const secArtKey = f.secondaryArt
@@ -87,11 +87,11 @@ export default async function AdminFichesPage({
     const secArtDef = secArtKey ? ARTS_ALL.find((a) => a.key === secArtKey) : null;
     const secSpecIdx = secArtDef && f.secondarySpec ? (secArtDef.specs as string[]).indexOf(f.secondarySpec) : -1;
     const ficheSecondarySpecRank =
-      secArtDef && secSpecIdx >= 0 && f.author.rang != null
+      secArtDef && secSpecIdx >= 0 && (isKuchy || f.author.rangHistoire != null)
         ? isKuchy
           ? invocationSpecRank(hasInvRank ? (f.invocation as any)?.invocationRank ?? null : null)
           : f.author.artsState != null
-          ? specRank(secArtDef.key, secSpecIdx, f.author.artsState as ArtsState, f.author.rang)
+          ? specRank(secArtDef.key, secSpecIdx, f.author.artsState as ArtsState, f.author.rangHistoire)
           : null
         : null;
     return { ...f, ficheSpecRank, ficheSecondarySpecRank };

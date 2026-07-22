@@ -16,10 +16,10 @@ export default async function MyFichesPage() {
 
   const me = await prisma.user.findUnique({
     where: { id: meId },
-    select: { artsState: true, rang: true },
+    select: { artsState: true, rangHistoire: true },
   });
   const meArts = (me?.artsState ?? null) as ArtsState | null;
-  const meVillageRank = me?.rang ?? null;
+  const meArtsRank = me?.rangHistoire ?? null;
   const kgCatalog = await loadKgCatalogRows();
   const kgColors = Object.fromEntries(kgCatalog.map((kg) => [kg.name, kg.color]));
   const hasInvRank = await hasInvocationRankColumn();
@@ -85,9 +85,9 @@ export default async function MyFichesPage() {
         invocationId: f.invocation ? "present" : null,
         invocationRank: hasInvRank ? (f.invocation as any)?.invocationRank ?? null : null,
         viewerArtsState: meArts,
-        viewerRank: meVillageRank,
+        viewerRank: meArtsRank,
         authorArtsState: meArts,
-        authorRank: meVillageRank,
+        authorRank: meArtsRank,
       });
     return {
     id: f.id,

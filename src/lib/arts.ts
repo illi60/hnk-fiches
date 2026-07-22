@@ -126,38 +126,38 @@ export function getArtState(state: ArtsState | null | undefined, key: string): A
 }
 
 // ============================================================
-// DÉBLOCAGE DES ARTS PAR RANG GLOBAL
+// DÉBLOCAGE DES ARTS PAR RANG HISTOIRE
 //   Rang E : 1 Art · Rang D : 2 Arts · Rang C : 3 Arts (+ Kuchiyose 20 XP)
 //   Rang B et + : accès à TOUS les Arts (déblocage automatique).
 // Le joueur choisit librement quels Arts occupent ses slots (selectArt).
-// Le décompte suit le RANG GLOBAL du personnage (cf. demande staff).
+// Le décompte suit le RANG HISTOIRE du personnage.
 // Le Kuchiyose est hors de ce décompte (logique propre : Mode Ermite / Histoire C).
 // ============================================================
 
-/** Nombre de slots d'Arts principaux ouverts selon le rang global. */
-export function artSlots(globalRank?: string | null): number {
-  const i = rankIndex(globalRank); // E=0 D=1 C=2 B=3 A=4 S=5
+/** Nombre de slots d'Arts principaux ouverts selon le Rang Histoire. */
+export function artSlots(artsRank?: string | null): number {
+  const i = rankIndex(artsRank); // E=0 D=1 C=2 B=3 A=4 S=5
   if (i >= RANKS.indexOf("B")) return ARTS.length; // B+ → tous
   return i + 1; // E→1, D→2, C→3
 }
 
-/** Un Art principal est-il débloqué ? (À rang global B+, tous le sont.) */
+/** Un Art principal est-il débloqué ? (À Rang Histoire B+, tous le sont.) */
 export function isArtOwned(
   state: ArtsState | null | undefined,
   key: string,
-  globalRank?: string | null
+  artsRank?: string | null
 ): boolean {
   if (key === "kuchiyose") return !!getArtState(state, "kuchiyose").unlocked;
-  if (rankIndex(globalRank) >= RANKS.indexOf("B")) return true;
+  if (rankIndex(artsRank) >= RANKS.indexOf("B")) return true;
   return !!getArtState(state, key).owned;
 }
 
 /** Nombre d'Arts principaux actuellement débloqués (occupent un slot). */
 export function ownedArtCount(
   state: ArtsState | null | undefined,
-  globalRank?: string | null
+  artsRank?: string | null
 ): number {
-  return ARTS.filter((a) => isArtOwned(state, a.key, globalRank)).length;
+  return ARTS.filter((a) => isArtOwned(state, a.key, artsRank)).length;
 }
 
 export function isExpertised(state: ArtsState | null | undefined, key: string): boolean {
@@ -172,9 +172,9 @@ export function expertiseCount(state: ArtsState | null | undefined): number {
 export function artRank(
   artKey: string,
   state: ArtsState | null | undefined,
-  villageRank: string | null
+  artsRank: string | null
 ): Rank {
-  const v = rankIndex(villageRank);
+  const v = rankIndex(artsRank);
   const st = getArtState(state, artKey);
   if (artKey === "kuchiyose") {
     return st.unlocked ? RANKS[Math.min(v, RANKS.indexOf("B"))] : "E";
@@ -189,9 +189,9 @@ export function specRank(
   artKey: string,
   idx: number,
   state: ArtsState | null | undefined,
-  villageRank: string | null
+  artsRank: string | null
 ): Rank {
-  const ar = artRank(artKey, state, villageRank);
+  const ar = artRank(artKey, state, artsRank);
   const st = getArtState(state, artKey);
   if (st.primarySpec === idx) return ar;
   const stored = (st.specs && (st.specs[idx] as Rank)) || "E";
@@ -228,7 +228,7 @@ export interface ActionQuote {
 }
 
 export interface ActionCtx {
-  villageRank: string | null;
+  artsRank: string | null;
   histoireRank: string | null;
   xpAvailable: number;
 }
@@ -243,20 +243,20 @@ export function quoteAction(
   state: ArtsState | null | undefined,
   ctx: ActionCtx
 ): ActionQuote {
-  // Débloquer / libérer un Art principal (gratuit, gaté par le rang global = ctx.villageRank).
+  // Débloquer / libérer un Art principal (gratuit, gaté par le Rang Histoire).
   if (action.type === "selectArt") {
     const art = ARTS.find((a) => a.key === action.art);
     if (!art) return { ok: false, cost: 0, error: "ART_INCONNU" };
-    if (isArtOwned(state, art.key, ctx.villageRank))
+    if (isArtOwned(state, art.key, ctx.artsRank))
       return { ok: false, cost: 0, error: "DEJA_DEBLOQUE" };
-    if (ownedArtCount(state, ctx.villageRank) >= artSlots(ctx.villageRank))
+    if (ownedArtCount(state, ctx.artsRank) >= artSlots(ctx.artsRank))
       return { ok: false, cost: 0, error: "SLOTS_PLEINS" };
     return { ok: true, cost: 0 };
   }
   if (action.type === "deselectArt") {
     const art = ARTS.find((a) => a.key === action.art);
     if (!art) return { ok: false, cost: 0, error: "ART_INCONNU" };
-    if (rankIndex(ctx.villageRank) >= RANKS.indexOf("B"))
+    if (rankIndex(ctx.artsRank) >= RANKS.indexOf("B"))
       return { ok: false, cost: 0, error: "DEBLOCAGE_AUTO" }; // B+ : tous débloqués, rien à libérer
     if (!getArtState(state, art.key).owned)
       return { ok: false, cost: 0, error: "NON_DEBLOQUE" };
@@ -266,11 +266,11 @@ export function quoteAction(
   if (action.type === "expertise") {
     const art = ARTS.find((a) => a.key === action.art);
     if (!art) return { ok: false, cost: 0, error: "ART_INCONNU" };
-    if (!isArtOwned(state, art.key, ctx.villageRank))
+    if (!isArtOwned(state, art.key, ctx.artsRank))
       return { ok: false, cost: 0, error: "ART_NON_DEBLOQUE" };
     // L'expertise ne sert qu'au-delà de B (B→A→S) : inutile avant le Rang B,
     // on bloque pour éviter de gâcher de l'XP.
-    if (rankIndex(ctx.villageRank) < RANKS.indexOf("B"))
+    if (rankIndex(ctx.artsRank) < RANKS.indexOf("B"))
       return { ok: false, cost: 0, error: "RANG_B_REQUIS" };
     if (isExpertised(state, art.key)) return { ok: false, cost: 0, error: "DEJA_EXPERTISE" };
     const count = expertiseCount(state);
@@ -297,13 +297,13 @@ export function quoteAction(
     return { ok: false, cost: 0, error: "SPE_PRINCIPALE_AUTO" };
   if (action.art === "kuchiyose" && !stSpec.unlocked)
     return { ok: false, cost: 0, error: "KUCHIYOSE_VERROUILLE" };
-  if (action.art !== "kuchiyose" && !isArtOwned(state, action.art, ctx.villageRank))
+  if (action.art !== "kuchiyose" && !isArtOwned(state, action.art, ctx.artsRank))
     return { ok: false, cost: 0, error: "ART_NON_DEBLOQUE" };
 
-  const cur = specRank(action.art, action.spec, state, ctx.villageRank);
+  const cur = specRank(action.art, action.spec, state, ctx.artsRank);
   const nxt = nextRank(cur);
   if (!nxt) return { ok: false, cost: 0, error: "RANG_MAX" };
-  const ar = artRank(action.art, state, ctx.villageRank);
+  const ar = artRank(action.art, state, ctx.artsRank);
   if (rankIndex(nxt) > rankIndex(ar)) return { ok: false, cost: 0, error: "PLAFOND_ART" };
   return afford(SPEC_RANK_COST, ctx.xpAvailable);
 }
@@ -312,7 +312,7 @@ export function quoteAction(
 export function applyAction(
   action: ArtAction,
   state: ArtsState | null | undefined,
-  villageRank: string | null
+  artsRank: string | null
 ): ArtsState {
   const next: ArtsState = JSON.parse(JSON.stringify(state || {}));
   const ensure = (k: string): ArtState => (next[k] = next[k] || {});
@@ -329,7 +329,7 @@ export function applyAction(
   } else {
     const st = ensure(action.art);
     st.specs = st.specs && st.specs.length === 3 ? st.specs : ["E", "E", "E"];
-    const cur = specRank(action.art, action.spec, state, villageRank);
+    const cur = specRank(action.art, action.spec, state, artsRank);
     st.specs[action.spec] = nextRank(cur)!;
   }
   return next;

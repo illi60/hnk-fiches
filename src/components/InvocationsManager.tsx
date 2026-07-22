@@ -36,7 +36,7 @@ export interface FicheFormCtx {
   userClan: string | null;
   rangClan: string | null;
   artsState?: ArtsState | null;
-  villageRank?: string | null;
+  artsRank?: string | null;
   clanLibraryAccess?: { kg: string[]; affinities: string[] };
 }
 
@@ -360,7 +360,7 @@ function InvocationCard({
               userClan={ficheCtx.userClan}
               rangClan={ficheCtx.rangClan}
               artsState={ficheCtx.artsState}
-              villageRank={ficheCtx.villageRank}
+              artsRank={ficheCtx.artsRank}
               kgNames={kgNames}
               kgColors={kgColors}
               clanLibraryAccess={ficheCtx.clanLibraryAccess}

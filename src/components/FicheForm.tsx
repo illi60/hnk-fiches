@@ -51,7 +51,7 @@ export default function FicheForm({
   invocationRank,
   kuchyAllArts = false,
   artsState = null,
-  villageRank = null,
+  artsRank = null,
   kgNames = KG_NAMES,
   kgColors,
   clanLibraryAccess = { kg: [], affinities: [] },
@@ -69,7 +69,7 @@ export default function FicheForm({
   invocationRank?: string | null; // Rang propre à l'invocation (sert au calcul des spé)
   kuchyAllArts?: boolean; // Mode Ermite parfait : le kuchy accède à TOUS tes arts
   artsState?: ArtsState | null; // état des Arts du joueur (pour afficher les rangs de spés)
-  villageRank?: string | null; // rang de village du joueur
+  artsRank?: string | null; // rang Histoire du joueur, utilisé pour les Arts Shinobi
   kgNames?: string[];
   kgColors?: Record<string, string>;
   clanLibraryAccess?: { kg: string[]; affinities: string[] };
@@ -129,7 +129,7 @@ export default function FicheForm({
     : null;
   const secondaryArtDef = secondaryArtKey ? ARTS_ALL.find((a) => a.key === secondaryArtKey) : null;
   const kuchyRank = invocationRank ?? null;
-  const showSpecRanks = artsState != null && villageRank != null;
+  const showSpecRanks = artsState != null && artsRank != null;
 
   // Konoha : pas de technique collective, pas de surcharge personnelle.
   const isKonoha = isNoClan(userClan);
@@ -384,7 +384,7 @@ export default function FicheForm({
                     ? invocationSpecRank(kuchyRank)
                     : null
                   : showSpecRanks
-                  ? specRank(artDef.key, i, artsState!, villageRank!)
+                  ? specRank(artDef.key, i, artsState!, artsRank!)
                   : null;
                 return (
                   <option key={specName} value={specName}>
@@ -447,7 +447,7 @@ export default function FicheForm({
                       ? invocationSpecRank(kuchyRank)
                       : null
                     : showSpecRanks
-                    ? specRank(secondaryArtDef.key, i, artsState!, villageRank!)
+                    ? specRank(secondaryArtDef.key, i, artsState!, artsRank!)
                     : null;
                   return (
                     <option key={specName} value={specName}>

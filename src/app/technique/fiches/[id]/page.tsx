@@ -71,7 +71,7 @@ export default async function FicheDetailPage({
   // selon celui qui les copie, pas selon l'auteur.
   const viewer = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { artsState: true, rang: true },
+    select: { artsState: true, rangHistoire: true },
   });
 
   // Seule la version validée est figée. Une fiche en attente peut encore être corrigée.
@@ -89,7 +89,7 @@ export default async function FicheDetailPage({
       rangClan: true,
       kekkeiGenkai: true,
       artsState: true,
-      rang: true,
+      rangHistoire: true,
     },
   });
   const authorState = ((author?.progressionState ?? {}) as unknown) as ProgressionState;
@@ -132,9 +132,9 @@ export default async function FicheDetailPage({
       invocationId: fiche.invocation ? "present" : null,
       invocationRank: hasInvRank ? (fiche.invocation as any)?.invocationRank ?? null : null,
       viewerArtsState: viewerArts,
-      viewerRank: viewer?.rang ?? null,
+      viewerRank: viewer?.rangHistoire ?? null,
       authorArtsState: authorArts,
-      authorRank: author?.rang ?? null,
+      authorRank: author?.rangHistoire ?? null,
     });
 
   return (
@@ -294,7 +294,7 @@ export default async function FicheDetailPage({
           userClan={author?.clan ?? null}
           rangClan={author?.rangClan ?? null}
           artsState={(author?.artsState ?? null) as import("@/lib/arts").ArtsState | null}
-          villageRank={author?.rang ?? null}
+          artsRank={author?.rangHistoire ?? null}
           kgNames={kgNames}
           kgColors={kgColors}
           clanLibraryAccess={clanLibraryAccess}

@@ -52,12 +52,12 @@ function humanError(e?: string): string {
 
 export default function ArtsManager({
   artsState,
-  villageRank,
+  artsRank,
   histoireRank,
   xpAvailable,
 }: {
   artsState: ArtsState;
-  villageRank: string | null;
+  artsRank: string | null;
   histoireRank: string | null;
   xpAvailable: number;
 }) {
@@ -65,11 +65,11 @@ export default function ArtsManager({
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
 
-  const ctx = { villageRank, histoireRank, xpAvailable };
+  const ctx = { artsRank, histoireRank, xpAvailable };
 
-  // Le déblocage des Arts suit le RANG GLOBAL (passé via villageRank).
-  const slots = artSlots(villageRank);
-  const usedSlots = ownedArtCount(artsState, villageRank);
+  // Le déblocage des Arts suit le Rang Histoire.
+  const slots = artSlots(artsRank);
+  const usedSlots = ownedArtCount(artsState, artsRank);
   const allUnlocked = usedSlots >= ARTS_ALL.filter((a) => a.key !== "kuchiyose").length;
 
   function run(action: ArtAction) {
@@ -96,7 +96,7 @@ export default function ArtsManager({
           {allUnlocked ? "Tous les Arts débloqués" : `Arts débloqués · ${usedSlots} / ${slots}`}
         </p>
         <p className="text-[10px] text-smoke tracking-wide">
-          Slots selon le rang global — E:1 · D:2 · C:3 · B+:tous
+          Slots selon le Rang Histoire — E:1 · D:2 · C:3 · B+:tous
         </p>
       </div>
 
@@ -104,9 +104,9 @@ export default function ArtsManager({
       {ARTS_ALL.map((art) => {
         const kuchi = art.key === "kuchiyose";
         const kuchiLocked = kuchi && !getArtState(artsState, "kuchiyose").unlocked;
-        const owned = isArtOwned(artsState, art.key, villageRank);
+        const owned = isArtOwned(artsState, art.key, artsRank);
         const mainLocked = !kuchi && !owned;
-        const ar = artRank(art.key, artsState, villageRank);
+        const ar = artRank(art.key, artsState, artsRank);
         const expert = isExpertised(artsState, art.key);
         const primary = getArtState(artsState, art.key).primarySpec;
 
@@ -152,7 +152,7 @@ export default function ArtsManager({
               <>
                 <div className="space-y-0.5">
                   {art.specs.map((s, i) => {
-                    const r = specRank(art.key, i, artsState, villageRank);
+                    const r = specRank(art.key, i, artsState, artsRank);
                     const isPrimary = primary === i;
                     const noPrimary = primary === undefined;
                     const q =
