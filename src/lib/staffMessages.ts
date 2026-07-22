@@ -76,10 +76,13 @@ function staffUrgencyInlineStyle(level: string): string {
   const fg = level === "critique" ? "#F5F1EA" : "#07080A";
   const glow = `box-shadow:0 0 16px ${bg}73;`;
   return [
+    `box-sizing:border-box`,
     `display:inline-block`,
-    `max-width:calc(100% - 32px)`,
+    `max-width:100%`,
     `text-align:center`,
     `white-space:normal`,
+    `overflow-wrap:anywhere`,
+    `word-break:normal`,
     `vertical-align:top`,
     `color:${fg}`,
     `background:${bg}`,

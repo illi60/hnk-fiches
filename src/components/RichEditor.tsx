@@ -103,10 +103,13 @@ function sanitizeHtml(raw: string): string {
       const level = staffLevel === "normal" || staffLevel === "critique" ? staffLevel : "urgent";
       const bg = level === "normal" ? "#FFC23C" : level === "critique" ? "#C0473B" : "#FF5722";
       const fg = level === "critique" ? "#F5F1EA" : "#07080A";
+      (el as HTMLElement).style.boxSizing = "border-box";
       (el as HTMLElement).style.display = "inline-block";
-      (el as HTMLElement).style.maxWidth = "calc(100% - 32px)";
+      (el as HTMLElement).style.maxWidth = "100%";
       (el as HTMLElement).style.textAlign = "center";
       (el as HTMLElement).style.whiteSpace = "normal";
+      (el as HTMLElement).style.overflowWrap = "anywhere";
+      (el as HTMLElement).style.wordBreak = "normal";
       (el as HTMLElement).style.verticalAlign = "top";
       (el as HTMLElement).style.color = fg;
       (el as HTMLElement).style.background = bg;
@@ -171,10 +174,13 @@ function staffPointInlineStyle(level: StaffPointLevel): string {
   const fg = level === "critique" ? "#F5F1EA" : "#07080A";
   const glow = `box-shadow:0 0 16px ${bg}73;`;
   return [
+    "box-sizing:border-box",
     "display:inline-block",
-    "max-width:calc(100% - 32px)",
+    "max-width:100%",
     "text-align:center",
     "white-space:normal",
+    "overflow-wrap:anywhere",
+    "word-break:normal",
     "vertical-align:top",
     `color:${fg}`,
     `background:${bg}`,

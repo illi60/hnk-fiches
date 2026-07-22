@@ -851,12 +851,17 @@ textarea.hnk-input {
 .hnk-rich-editor .hnkf-staff-urg {
   --urg-bg: var(--ember);
   --urg-fg: #060708;
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-height: 28px;
   padding: 8px 14px;
   background: var(--urg-bg) !important;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
   color: var(--urg-fg) !important;
   font: 900 10px/1 var(--ui);
   letter-spacing: 0.28em;
