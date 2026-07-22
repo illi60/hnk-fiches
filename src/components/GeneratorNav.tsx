@@ -12,6 +12,7 @@ const LINKS = [
   { key: "editeur", href: "/editeur", label: "Présentation" },
   { key: "carnet", href: "/carnet", label: "Carnet" },
   { key: "rp", href: "/rp", label: "Post RP" },
+  { key: "missions", href: "/missions", label: "Missions" },
 ] as const;
 
 export default function GeneratorNav({ current }: { current?: string }) {

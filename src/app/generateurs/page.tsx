@@ -1,7 +1,7 @@
 import Link from "next/link";
 import GeneratorNav from "@/components/GeneratorNav";
 
-// Atelier unique regroupant les 3 générateurs de codages forum.
+// Atelier unique regroupant les générateurs de codages forum.
 // Chaque générateur reste accessible directement par sa propre route.
 interface Generator {
   key: string;
@@ -41,6 +41,15 @@ const GENERATORS: Generator[] = [
     href: "/rp",
     image: "https://i.imgur.com/YmTenS8.png",
   },
+  {
+    key: "missions",
+    title: "Mission",
+    kanji: "任",
+    accent: "#FFC23C",
+    desc: "Rang, statut, commanditaire, objectifs et conditions : prépare une annonce de mission prête à poster.",
+    href: "/missions",
+    image: "https://i.pinimg.com/1200x/48/ea/58/48ea58670ddda675d4357a31487785d0.jpg",
+  },
 ];
 
 export default function GeneratorsPage() {
@@ -67,8 +76,8 @@ export default function GeneratorsPage() {
           <p className="hnk-eyebrow mb-4">Hi no Kuni · 火ノ国 · Générateurs</p>
           <h1 className="hnk-display text-4xl md:text-6xl mb-5">L&apos;atelier de codage</h1>
           <p className="text-bone/75 mb-12 leading-relaxed max-w-2xl">
-            Tes trois générateurs de codages forum, réunis. Choisis un atelier ci-dessous : compose
-            ta présentation, ton carnet de bord ou ton post de RP, puis récupère le code prêt à
+            Tes générateurs de codages forum, réunis. Choisis un atelier ci-dessous : compose
+            ta présentation, ton carnet de bord, ton post de RP ou une mission, puis récupère le code prêt à
             coller. Tu peux aussi passer de l&apos;un à l&apos;autre depuis la barre du haut.
           </p>
 

@@ -51,7 +51,7 @@ const TOOLS: Tool[] = [
     title: "Générateurs forum",
     kanji: "筆",
     accent: "#C0392B",
-    desc: "Présentation, Carnet de bord et Post RP — tous tes codages forum réunis dans un seul atelier.",
+    desc: "Présentation, Carnet de bord, Post RP et Missions — tous tes codages forum réunis dans un seul atelier.",
     href: "/generateurs",
     image: "https://i.imgur.com/69hQrC9.png",
   },

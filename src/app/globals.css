@@ -835,6 +835,51 @@ textarea.hnk-input {
   opacity: 0.4;
 }
 
+/* Point staff inséré directement dans l'éditeur admin. */
+.hnk-rich-editor .hnkf-staff-point {
+  display: flex !important;
+  width: 100%;
+  justify-content: center !important;
+  align-items: center;
+  margin: 18px 0;
+  padding: 0;
+  text-align: center;
+}
+.hnk-rich-editor p.hnkf-staff-point::first-letter {
+  color: var(--urg-fg, #060708) !important;
+}
+.hnk-rich-editor .hnkf-staff-urg {
+  --urg-bg: var(--ember);
+  --urg-fg: #060708;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 8px 14px;
+  background: var(--urg-bg) !important;
+  color: var(--urg-fg) !important;
+  font: 900 10px/1 var(--ui);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  box-shadow: 0 0 16px color-mix(in srgb, var(--urg-bg) 45%, transparent);
+}
+.hnk-rich-editor .hnkf-staff-urg[data-level="normal"] {
+  --urg-bg: #ffc23c;
+  --urg-fg: #060708;
+}
+.hnk-rich-editor .hnkf-staff-urg[data-level="urgent"] {
+  --urg-bg: #ff5722;
+  --urg-fg: #060708;
+}
+.hnk-rich-editor .hnkf-staff-urg[data-level="critique"] {
+  --urg-bg: #e23b2e;
+  --urg-fg: var(--white);
+}
+.hnk-rich-editor .hnkf-staff-urg::first-letter,
+.hnk-rich-editor .hnkf-staff-urg * {
+  color: var(--urg-fg) !important;
+}
+
 /* ---------- Carte Technique (export forum) ---------- */
 .hnk-tech {
   margin: 18px 0;

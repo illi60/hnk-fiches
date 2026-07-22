@@ -14,6 +14,7 @@ interface Props {
   /** Active les blocs spéciaux : bulle de dialogue + player YouTube. */
   withBlocks?: boolean;
   withTechniques?: boolean;
+  withStaffTools?: boolean;
 }
 
 // Classes autorisées à survivre au nettoyage (blocs spéciaux de l'éditeur).
@@ -38,6 +39,8 @@ const ALLOWED_CLASSES = new Set([
   "hnk-tech-chip",
   "hnk-tech-chip--kg",
   "hnk-tech-desc",
+  "hnkf-staff-point",
+  "hnkf-staff-urg",
 ]);
 
 // Seul href autorisé sur un lien-player : l'URL watch reconstruite par NOUS
@@ -81,6 +84,7 @@ function sanitizeHtml(raw: string): string {
     const src = tag === "img" ? el.getAttribute("src") : null;
     const alt = tag === "img" ? el.getAttribute("alt") : null;
     const href = tag === "a" ? el.getAttribute("href") : null;
+    const staffLevel = cls.includes("hnkf-staff-urg") ? el.getAttribute("data-level") : null;
     // Purge tous les attributs, puis on réintroduit uniquement ceux autorisés.
     [...el.attributes].forEach((a) => el.removeAttribute(a.name));
     if (align) (el as HTMLElement).style.textAlign = align;
@@ -91,8 +95,28 @@ function sanitizeHtml(raw: string): string {
         (el as HTMLElement).style.setProperty("--kg", kgMatch[1].trim());
       }
     }
+    if (cls.includes("hnkf-staff-point")) {
+      (el as HTMLElement).style.textAlign = "center";
+      (el as HTMLElement).style.margin = "1.4em 0";
+    }
+    if (cls.includes("hnkf-staff-urg")) {
+      const level = staffLevel === "normal" || staffLevel === "critique" ? staffLevel : "urgent";
+      const bg = level === "normal" ? "#FFC23C" : level === "critique" ? "#C0473B" : "#FF5722";
+      const fg = level === "critique" ? "#F5F1EA" : "#07080A";
+      (el as HTMLElement).style.display = "inline-block";
+      (el as HTMLElement).style.maxWidth = "calc(100% - 32px)";
+      (el as HTMLElement).style.textAlign = "center";
+      (el as HTMLElement).style.whiteSpace = "normal";
+      (el as HTMLElement).style.verticalAlign = "top";
+      (el as HTMLElement).style.color = fg;
+      (el as HTMLElement).style.background = bg;
+      (el as HTMLElement).style.boxShadow = `0 0 16px ${bg}73`;
+    }
     if (tag === "figure") el.setAttribute("class", "hnk-img-banner");
     else if (cls.length) el.setAttribute("class", cls.join(" "));
+    if (staffLevel && /^(normal|urgent|critique)$/.test(staffLevel)) {
+      el.setAttribute("data-level", staffLevel);
+    }
     if (tag === "img") {
       if (src) el.setAttribute("src", src);
       if (alt) el.setAttribute("alt", alt);
@@ -134,7 +158,33 @@ const TEXT_COLORS = [
   "#6c7079",
 ];
 
-type Dialog = null | "img" | "bubble" | "yt" | "tech";
+const STAFF_POINT_LEVELS = [
+  { value: "normal", label: "Signalé" },
+  { value: "urgent", label: "Urgent" },
+  { value: "critique", label: "Critique" },
+] as const;
+
+type StaffPointLevel = (typeof STAFF_POINT_LEVELS)[number]["value"];
+
+function staffPointInlineStyle(level: StaffPointLevel): string {
+  const bg = level === "normal" ? "#FFC23C" : level === "critique" ? "#C0473B" : "#FF5722";
+  const fg = level === "critique" ? "#F5F1EA" : "#07080A";
+  const glow = `box-shadow:0 0 16px ${bg}73;`;
+  return [
+    "display:inline-block",
+    "max-width:calc(100% - 32px)",
+    "text-align:center",
+    "white-space:normal",
+    "vertical-align:top",
+    `color:${fg}`,
+    `background:${bg}`,
+    glow,
+  ]
+    .filter(Boolean)
+    .join(";");
+}
+
+type Dialog = null | "img" | "bubble" | "yt" | "tech" | "staffPoint";
 
 function ToolBtn({
   active,
@@ -171,12 +221,14 @@ export function RichEditor({
   withColor = false,
   withBlocks = false,
   withTechniques = false,
+  withStaffTools = false,
 }: Props) {
   const editorRef = useRef<HTMLDivElement>(null);
   const lastHtml = useRef(value);
   const [dialog, setDialog] = useState<Dialog>(null);
   const [dlgUrl, setDlgUrl] = useState("");
   const [dlgLabel, setDlgLabel] = useState("");
+  const [dlgStaffLevel, setDlgStaffLevel] = useState<StaffPointLevel>("urgent");
   const [showColors, setShowColors] = useState(false);
   const savedRange = useRef<Range | null>(null);
   const [fmt, setFmt] = useState<Record<string, boolean>>({});
@@ -351,6 +403,7 @@ export function RichEditor({
     saveRange();
     setDlgUrl("");
     setDlgLabel("");
+    setDlgStaffLevel("urgent");
     setShowColors(false);
     setDialog(kind);
   }
@@ -429,6 +482,23 @@ export function RichEditor({
     setDlgUrl("");
   }
 
+  function insertStaffPoint() {
+    const label = (dlgLabel.trim() || "Info")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    restoreRange();
+    document.execCommand(
+      "insertHTML",
+      false,
+      `<div class="hnkf-staff-point" style="text-align:center;margin:1.4em 0;"><span class="hnkf-staff-urg" data-level="${dlgStaffLevel}" style="${staffPointInlineStyle(dlgStaffLevel)}">${label}</span></div><div><br></div>`
+    );
+    emit();
+    setDialog(null);
+    setDlgLabel("");
+    setDlgStaffLevel("urgent");
+  }
+
   const btn = (cmd: string, title: string, children: React.ReactNode) => (
     <ToolBtn key={cmd} active={!!fmt[cmd]} onExec={() => exec(cmd)} title={title}>
       {children}
@@ -443,6 +513,11 @@ export function RichEditor({
       placeholder: "Colle ici le code HTML de la technique exportee...",
       onInsert: insertTech,
       canInsert: !!dlgUrl.trim(),
+    },
+    staffPoint: {
+      placeholder: "Texte de la balise...",
+      onInsert: insertStaffPoint,
+      canInsert: true,
     },
   };
 
@@ -506,6 +581,16 @@ export function RichEditor({
             className={`hnk-rich-btn${dialog === "tech" ? " hnk-rich-btn--on" : ""}`}
           >
             FT
+          </button>
+        )}
+        {withStaffTools && (
+          <button
+            type="button"
+            title="Insérer un point mis en avant"
+            onMouseDown={(e) => { e.preventDefault(); openDialog("staffPoint"); }}
+            className={`hnk-rich-btn${dialog === "staffPoint" ? " hnk-rich-btn--on" : ""}`}
+          >
+            !
           </button>
         )}
       </div>
@@ -587,21 +672,50 @@ export function RichEditor({
         </div>
       )}
 
-      {/* ---- Dialog d'insertion (image / bulle / YouTube) ---- */}
+      {/* ---- Dialog d'insertion (image / bulle / YouTube / point staff) ---- */}
       {dialog && dialog !== "tech" && (
         <div className="hnk-rich-img-dialog">
-          <input
-            autoFocus
-            type="url"
-            value={dlgUrl}
-            onChange={(e) => setDlgUrl(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") { e.preventDefault(); dialogMeta[dialog].onInsert(); }
-              if (e.key === "Escape") setDialog(null);
-            }}
-            placeholder={dialogMeta[dialog].placeholder}
-            className="hnk-input"
-          />
+          {dialog === "staffPoint" && (
+            <>
+              <select
+                value={dlgStaffLevel}
+                onChange={(e) => setDlgStaffLevel(e.target.value as StaffPointLevel)}
+                className="hnk-input !max-w-[150px]"
+              >
+                {STAFF_POINT_LEVELS.map((level) => (
+                  <option key={level.value} value={level.value}>
+                    {level.label}
+                  </option>
+                ))}
+              </select>
+              <input
+                autoFocus
+                type="text"
+                value={dlgLabel}
+                onChange={(e) => setDlgLabel(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.preventDefault(); dialogMeta[dialog].onInsert(); }
+                  if (e.key === "Escape") setDialog(null);
+                }}
+                placeholder="Texte de la balise"
+                className="hnk-input"
+              />
+            </>
+          )}
+          {dialog !== "staffPoint" && (
+            <input
+              autoFocus
+              type="url"
+              value={dlgUrl}
+              onChange={(e) => setDlgUrl(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") { e.preventDefault(); dialogMeta[dialog].onInsert(); }
+                if (e.key === "Escape") setDialog(null);
+              }}
+              placeholder={dialogMeta[dialog].placeholder}
+              className="hnk-input"
+            />
+          )}
           {dialog === "yt" && (
             <input
               type="text"
