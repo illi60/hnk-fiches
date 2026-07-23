@@ -4,6 +4,11 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import SubmitRpModal from "./SubmitRpModal";
+import {
+  FOREIGN_COUNTRY_MISSION_COUNTRIES,
+  FOREIGN_COUNTRY_MISSION_GROUP_ID,
+  FOREIGN_COUNTRY_MISSION_RANKS,
+} from "@/lib/progression";
 
 // ---- View models (construits côté serveur dans /technique/progression) ----
 export type CondMode = "count" | "oneshot" | "xp_pool" | "xp_self" | "member_count";
@@ -41,6 +46,7 @@ export interface ExtraView {
   id: string;
   label: string;
   choices: CondView[];
+  strategy?: "ANY" | "ALL";
 }
 export interface OptionalView {
   id: string;
@@ -312,11 +318,15 @@ function PalierCard({ track, palier }: { track: TrackView; palier: PalierView })
               <p className="text-[11px] text-smoke mb-1.5">
                 {ex.label} <span className="text-bone/60">· obligatoire</span>
               </p>
-              <ul className="space-y-2.5">
-                {ex.choices.map((c) => (
-                  <CondRow key={c.id} cond={c} />
-                ))}
-              </ul>
+              {ex.id === FOREIGN_COUNTRY_MISSION_GROUP_ID ? (
+                <ForeignCountryMissionGrid choices={ex.choices} />
+              ) : (
+                <ul className="space-y-2.5">
+                  {ex.choices.map((c) => (
+                    <CondRow key={c.id} cond={c} />
+                  ))}
+                </ul>
+              )}
             </div>
           ))}
         </section>
@@ -417,6 +427,40 @@ function LevelUpButton({
       </button>
       <span className="text-[10px] text-smoke tabular-nums">({xpAvailable} XP dispo)</span>
       {err && <span className="text-[10px] text-ember-hot">{err}</span>}
+    </div>
+  );
+}
+
+function ForeignCountryMissionGrid({ choices }: { choices: CondView[] }) {
+  const byId = new Map(choices.map((choice) => [choice.id, choice]));
+
+  return (
+    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+      {FOREIGN_COUNTRY_MISSION_COUNTRIES.map((country) => {
+        const countryChoices = FOREIGN_COUNTRY_MISSION_RANKS.map((rank) =>
+          byId.get(`HISTOIRE.A.i2.${country.key}.${rank}`)
+        ).filter((choice): choice is CondView => Boolean(choice));
+        const done = countryChoices.filter((choice) => choice.met).length;
+
+        return (
+          <div key={country.key} className="border border-white/10 bg-black/10 p-3">
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <div>
+                <p className="font-jp text-ember text-lg leading-none">{country.kanji}</p>
+                <p className="mt-1 text-[10px] uppercase tracking-[0.22em] text-bone/70">
+                  {country.label}
+                </p>
+              </div>
+              <span className="text-[10px] text-amber-300/80 tabular-nums">{done}/3</span>
+            </div>
+            <ul className="space-y-2.5">
+              {countryChoices.map((choice) => (
+                <CondRow key={choice.id} cond={choice} />
+              ))}
+            </ul>
+          </div>
+        );
+      })}
     </div>
   );
 }

@@ -4,6 +4,10 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import type { TrackView, CondView } from "./ProgressionBoard";
+import {
+  FOREIGN_COUNTRY_MISSION_COUNTRIES,
+  FOREIGN_COUNTRY_MISSION_GROUP_ID,
+} from "@/lib/progression";
 
 interface PickItem {
   condId: string;
@@ -15,12 +19,21 @@ interface PickItem {
   submissionMode: "SOLO" | "GROUP" | "MANUAL";
   section: "Rang" | "Optionnelles";
   routeLabel?: "Voie Ermite" | "Voie Jinchuuriki" | "Voie Otsutsuki";
+  countryLabel?: string;
+  countryKanji?: string;
 }
 
 // Aplati la liste des conditions actuellement soumettables (sur toutes les voies).
 function collectSubmittable(tracks: TrackView[]): PickItem[] {
   const out: PickItem[] = [];
-  const push = (c: CondView, t: TrackView, rank: string, tier: PickItem["tier"], section: PickItem["section"]) => {
+  const push = (
+    c: CondView,
+    t: TrackView,
+    rank: string,
+    tier: PickItem["tier"],
+    section: PickItem["section"],
+    extraId?: string
+  ) => {
     if (!c.submittable) return;
     const routeLabel =
       section === "Optionnelles"
@@ -29,6 +42,12 @@ function collectSubmittable(tracks: TrackView[]): PickItem[] {
           : /\bvoie\s*J\b/i.test(c.label)
           ? "Voie Jinchuuriki"
           : "Voie Otsutsuki"
+        : undefined;
+    const country =
+      extraId === FOREIGN_COUNTRY_MISSION_GROUP_ID
+        ? FOREIGN_COUNTRY_MISSION_COUNTRIES.find((candidate) =>
+            c.id.startsWith(`HISTOIRE.A.i2.${candidate.key}.`)
+          )
         : undefined;
     out.push({
       condId: c.id,
@@ -40,6 +59,8 @@ function collectSubmittable(tracks: TrackView[]): PickItem[] {
       submissionMode: c.submissionMode,
       section,
       routeLabel,
+      countryLabel: country?.label,
+      countryKanji: country?.kanji,
     });
   };
   for (const t of tracks) {
@@ -48,7 +69,9 @@ function collectSubmittable(tracks: TrackView[]): PickItem[] {
       for (const c of p.community ?? []) push(c, t, p.rank, "Communautaire", "Rang");
       if (p.individual) {
         for (const c of p.individual.alternatives) push(c, t, p.rank, "Individuelle", "Rang");
-        for (const ex of p.individual.extras) for (const c of ex.choices) push(c, t, p.rank, "Individuelle", "Rang");
+        for (const ex of p.individual.extras) {
+          for (const c of ex.choices) push(c, t, p.rank, "Individuelle", "Rang", ex.id);
+        }
       }
       for (const group of p.optionalProgressions ?? []) {
         for (const c of group.choices) push(c, t, p.rank, "Optionnelle", "Optionnelles");
@@ -103,14 +126,16 @@ export default function SubmitRpModal({ tracks, onClose }: { tracks: TrackView[]
 
   // Regroupe par voie pour l'affichage.
   const groups = useMemo(() => {
-    const m = new Map<string, { label: string; items: PickItem[] }>();
+    const m = new Map<string, { label: string; kanji?: string; items: PickItem[] }>();
     for (const it of items) {
-      const key = `${it.trackKey}:${it.section}:${it.routeLabel ?? "Rang"}`;
+      const key = `${it.trackKey}:${it.section}:${it.routeLabel ?? it.countryLabel ?? "Rang"}`;
       const label =
         it.section === "Optionnelles"
           ? `${it.trackLabel} · ${it.routeLabel}`
+          : it.countryLabel
+          ? `${it.trackLabel} · Missions ${it.countryLabel}`
           : it.trackLabel;
-      const g = m.get(key) ?? { label, items: [] };
+      const g = m.get(key) ?? { label, kanji: it.countryKanji, items: [] };
       g.items.push(it);
       m.set(key, g);
     }
@@ -259,7 +284,10 @@ export default function SubmitRpModal({ tracks, onClose }: { tracks: TrackView[]
           <div className="space-y-4 max-h-[44vh] overflow-y-auto pr-1">
             {groups.map(([key, g]) => (
               <div key={key}>
-                <p className="text-[11px] uppercase tracking-[0.2em] text-bone/70 mb-1.5">{g.label}</p>
+                <p className="text-[11px] uppercase tracking-[0.2em] text-bone/70 mb-1.5">
+                  {g.kanji && <span className="font-jp text-ember mr-2">{g.kanji}</span>}
+                  {g.label}
+                </p>
                 <ul className="space-y-1">
                   {g.items.map((it) => {
                     const res = resultById.get(it.condId);

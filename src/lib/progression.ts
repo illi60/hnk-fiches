@@ -45,6 +45,8 @@ export interface ProgExtra {
   label: string;
   /** Choix mutuellement alternatifs : un seul à valider. */
   choices: ProgCond[];
+  /** Par défaut, un seul choix suffit. Certains blocs demandent toutes les lignes. */
+  strategy?: "ANY" | "ALL";
 }
 
 // Volet individuel d'un palier.
@@ -78,6 +80,25 @@ export interface ProgTrackDef {
   intro: string;
   paliers: ProgPalier[]; // E..S
 }
+
+export const FOREIGN_COUNTRY_MISSION_GROUP_ID = "HISTOIRE.A.x-missions-foreign";
+export const FOREIGN_COUNTRY_MISSION_COUNTRIES = [
+  { key: "kaze", label: "Kaze no Kuni", kanji: "風" },
+  { key: "tsuchi", label: "Tsuchi no Kuni", kanji: "土" },
+  { key: "kaminari", label: "Kaminari no Kuni", kanji: "雷" },
+  { key: "mizu", label: "Mizu no Kuni", kanji: "水" },
+  { key: "tetsu", label: "Tetsu no Kuni", kanji: "鉄" },
+] as const;
+export const FOREIGN_COUNTRY_MISSION_RANKS = ["D", "C", "B"] as const;
+
+const FOREIGN_COUNTRY_MISSION_CONDITIONS: ProgCond[] = FOREIGN_COUNTRY_MISSION_COUNTRIES.flatMap(
+  (country) =>
+    FOREIGN_COUNTRY_MISSION_RANKS.map((missionRank) => ({
+      id: `HISTOIRE.A.i2.${country.key}.${missionRank}`,
+      label: `Réaliser 1 Mission de Rang ${missionRank} à ${country.label}.`,
+      count: 1,
+    }))
+);
 
 // ------------------------------------------------------------
 // Préceptes communs aux 3 voies (affichés en tête de page).
@@ -572,13 +593,20 @@ const HISTOIRE: ProgTrackDef = {
         xp: 1000,
         alternatives: [
           { id: "HISTOIRE.A.i1", label: "Avoir terminé 50 RP.", count: 50 },
-          { id: "HISTOIRE.A.i2", label: "Réaliser 1 Mission de Rang D, C, B par pays étranger.", count: 1 },
           { id: "HISTOIRE.A.i3", label: "Acheter 10 marchandises de la boutique.", count: 10 },
           { id: "HISTOIRE.A.i4", label: "Utiliser dans 5 RP sa seconde affinité élémentaire.", count: 5 },
           { id: "HISTOIRE.A.i5", label: "Utiliser dans 15 RP un Art Shinobi.", count: 15 },
           { id: "HISTOIRE.A.i6", label: "Obtenir un Grade Spécial.", count: 1 },
           { id: "HISTOIRE.A.i7", label: "Réaliser les objectifs imposés par l'intrigue anomalie.", count: 1 },
           { id: "HISTOIRE.A.i8", label: "Participer à 1 Anomalie narrée minimum.", count: 1 },
+        ],
+        requiredExtras: [
+          {
+            id: FOREIGN_COUNTRY_MISSION_GROUP_ID,
+            label: "Réaliser 1 Mission de Rang D, C et B par pays étranger",
+            choices: FOREIGN_COUNTRY_MISSION_CONDITIONS,
+            strategy: "ALL",
+          },
         ],
         optionalExtras: [
           {
@@ -951,7 +979,11 @@ export function individualConditionsMet(track: ProgTrack, rank: Rank, up: UserPr
   if (!p || !p.individual) return true; // E (ou palier sans individuel)
   if (!p.individual.alternatives.every((c) => individualCondMet(c, up))) return false;
   for (const ex of p.individual.requiredExtras ?? []) {
-    if (!ex.choices.some((c) => individualCondMet(c, up))) return false;
+    const done =
+      ex.strategy === "ALL"
+        ? ex.choices.every((c) => individualCondMet(c, up))
+        : ex.choices.some((c) => individualCondMet(c, up));
+    if (!done) return false;
   }
   return true;
 }

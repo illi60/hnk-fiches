@@ -275,6 +275,7 @@ export default async function ProgressionPage() {
               extras: (p.individual.requiredExtras ?? []).map((ex) => ({
                 id: ex.id,
                 label: ex.label,
+                strategy: ex.strategy,
                 choices: ex.choices.map((c) => condIndividual(c, individualStatus ?? "LOCKED")),
               })),
               met: individualConditionsMet(def.key, p.rank, userProg),
