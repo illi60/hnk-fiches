@@ -69,7 +69,7 @@ export default function FicheForm({
   invocationRank?: string | null; // Rang propre à l'invocation (sert au calcul des spé)
   kuchyAllArts?: boolean; // Mode Ermite parfait : le kuchy accède à TOUS tes arts
   artsState?: ArtsState | null; // état des Arts du joueur (pour afficher les rangs de spés)
-  artsRank?: string | null; // rang Histoire du joueur, utilisé pour les Arts Shinobi
+  artsRank?: string | null; // rang global du joueur, utilisé pour le rang des Arts Shinobi
   kgNames?: string[];
   kgColors?: Record<string, string>;
   clanLibraryAccess?: { kg: string[]; affinities: string[] };

@@ -129,7 +129,7 @@ export default async function InvocationsPage() {
           userClan: dbUser?.clan ?? null,
           rangClan: dbUser?.rangClan ?? null,
           artsState: (dbUser?.artsState ?? null) as import("@/lib/arts").ArtsState | null,
-          artsRank: dbUser?.rangHistoire ?? null,
+          artsRank: dbUser?.rang ?? null,
           clanLibraryAccess,
         }}
       />

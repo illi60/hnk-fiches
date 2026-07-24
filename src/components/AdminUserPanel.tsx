@@ -70,7 +70,7 @@ export default function AdminUserPanel({
         userId={user.id}
         userClan={user.clan}
         artsState={(user.artsState ?? {}) as ArtsState}
-        artsRank={user.rangHistoire}
+        artsRank={user.rang}
         kgNames={kgNames}
       />
       <AdminArtsForm userId={user.id} artsState={(user.artsState ?? {}) as ArtsState} />

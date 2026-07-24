@@ -152,14 +152,14 @@ export default async function DashboardPage() {
                 kanji: a.kanji,
                 label: a.name,
                 rank: isArtOwned(artsState, a.key, user.rangHistoire)
-                  ? artRank(a.key, artsState, user.rangHistoire)
+                  ? artRank(a.key, artsState, user.rang)
                   : "E",
               }))}
             />
           </div>
           <ArtsManager
             artsState={artsState}
-            artsRank={user.rangHistoire}
+            artsRank={user.rang}
             histoireRank={user.rangHistoire}
             xpAvailable={user.xpAvailable}
           />

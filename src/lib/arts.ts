@@ -229,6 +229,7 @@ export interface ActionQuote {
 
 export interface ActionCtx {
   artsRank: string | null;
+  unlockRank: string | null;
   histoireRank: string | null;
   xpAvailable: number;
 }
@@ -247,16 +248,16 @@ export function quoteAction(
   if (action.type === "selectArt") {
     const art = ARTS.find((a) => a.key === action.art);
     if (!art) return { ok: false, cost: 0, error: "ART_INCONNU" };
-    if (isArtOwned(state, art.key, ctx.artsRank))
+    if (isArtOwned(state, art.key, ctx.unlockRank))
       return { ok: false, cost: 0, error: "DEJA_DEBLOQUE" };
-    if (ownedArtCount(state, ctx.artsRank) >= artSlots(ctx.artsRank))
+    if (ownedArtCount(state, ctx.unlockRank) >= artSlots(ctx.unlockRank))
       return { ok: false, cost: 0, error: "SLOTS_PLEINS" };
     return { ok: true, cost: 0 };
   }
   if (action.type === "deselectArt") {
     const art = ARTS.find((a) => a.key === action.art);
     if (!art) return { ok: false, cost: 0, error: "ART_INCONNU" };
-    if (rankIndex(ctx.artsRank) >= RANKS.indexOf("B"))
+    if (rankIndex(ctx.unlockRank) >= RANKS.indexOf("B"))
       return { ok: false, cost: 0, error: "DEBLOCAGE_AUTO" }; // B+ : tous débloqués, rien à libérer
     if (!getArtState(state, art.key).owned)
       return { ok: false, cost: 0, error: "NON_DEBLOQUE" };
@@ -266,11 +267,11 @@ export function quoteAction(
   if (action.type === "expertise") {
     const art = ARTS.find((a) => a.key === action.art);
     if (!art) return { ok: false, cost: 0, error: "ART_INCONNU" };
-    if (!isArtOwned(state, art.key, ctx.artsRank))
+    if (!isArtOwned(state, art.key, ctx.unlockRank))
       return { ok: false, cost: 0, error: "ART_NON_DEBLOQUE" };
     // L'expertise ne sert qu'au-delà de B (B→A→S) : inutile avant le Rang B,
     // on bloque pour éviter de gâcher de l'XP.
-    if (rankIndex(ctx.artsRank) < RANKS.indexOf("B"))
+    if (rankIndex(ctx.unlockRank) < RANKS.indexOf("B"))
       return { ok: false, cost: 0, error: "RANG_B_REQUIS" };
     if (isExpertised(state, art.key)) return { ok: false, cost: 0, error: "DEJA_EXPERTISE" };
     const count = expertiseCount(state);
@@ -297,7 +298,7 @@ export function quoteAction(
     return { ok: false, cost: 0, error: "SPE_PRINCIPALE_AUTO" };
   if (action.art === "kuchiyose" && !stSpec.unlocked)
     return { ok: false, cost: 0, error: "KUCHIYOSE_VERROUILLE" };
-  if (action.art !== "kuchiyose" && !isArtOwned(state, action.art, ctx.artsRank))
+  if (action.art !== "kuchiyose" && !isArtOwned(state, action.art, ctx.unlockRank))
     return { ok: false, cost: 0, error: "ART_NON_DEBLOQUE" };
 
   const cur = specRank(action.art, action.spec, state, ctx.artsRank);

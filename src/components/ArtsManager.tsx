@@ -65,11 +65,11 @@ export default function ArtsManager({
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
 
-  const ctx = { artsRank, histoireRank, xpAvailable };
+  const ctx = { artsRank, unlockRank: histoireRank, histoireRank, xpAvailable };
 
-  // Le déblocage des Arts suit le Rang Histoire.
-  const slots = artSlots(artsRank);
-  const usedSlots = ownedArtCount(artsState, artsRank);
+  // Le déblocage des Arts suit le Rang Histoire ; leur rang suit le rang global.
+  const slots = artSlots(histoireRank);
+  const usedSlots = ownedArtCount(artsState, histoireRank);
   const allUnlocked = usedSlots >= ARTS_ALL.filter((a) => a.key !== "kuchiyose").length;
 
   function run(action: ArtAction) {
@@ -104,7 +104,7 @@ export default function ArtsManager({
       {ARTS_ALL.map((art) => {
         const kuchi = art.key === "kuchiyose";
         const kuchiLocked = kuchi && !getArtState(artsState, "kuchiyose").unlocked;
-        const owned = isArtOwned(artsState, art.key, artsRank);
+        const owned = isArtOwned(artsState, art.key, histoireRank);
         const mainLocked = !kuchi && !owned;
         const ar = artRank(art.key, artsState, artsRank);
         const expert = isExpertised(artsState, art.key);

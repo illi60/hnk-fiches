@@ -29,6 +29,7 @@ export async function POST(req: Request) {
         id: true,
         xpAvailable: true,
         version: true,
+        rang: true,
         rangHistoire: true,
         artsState: true,
       },
@@ -41,7 +42,7 @@ export async function POST(req: Request) {
     if (action.type === "choosePrimary") {
       if (getArtState(state, action.art).primarySpec !== undefined)
         return NextResponse.json({ ok: false, error: "DEJA_CHOISIE" }, { status: 409 });
-      const newState = applyAction(action, state, user.rangHistoire);
+      const newState = applyAction(action, state, user.rang);
       await prisma.user.update({
         where: { id: user.id },
         data: { artsState: newState as unknown as Prisma.InputJsonValue },
@@ -52,12 +53,13 @@ export async function POST(req: Request) {
     // Débloquer / libérer un Art : gratuit (pas d'XP), validé puis appliqué.
     if (action.type === "selectArt" || action.type === "deselectArt") {
       const q = quoteAction(action, state, {
-        artsRank: user.rangHistoire,
+        artsRank: user.rang,
+        unlockRank: user.rangHistoire,
         histoireRank: user.rangHistoire,
         xpAvailable: user.xpAvailable,
       });
       if (!q.ok) return NextResponse.json({ ok: false, error: q.error }, { status: 400 });
-      const newState = applyAction(action, state, user.rangHistoire);
+      const newState = applyAction(action, state, user.rang);
       await prisma.user.update({
         where: { id: user.id },
         data: { artsState: newState as unknown as Prisma.InputJsonValue },
@@ -66,7 +68,8 @@ export async function POST(req: Request) {
     }
 
     const quote = quoteAction(action, state, {
-      artsRank: user.rangHistoire,
+      artsRank: user.rang,
+      unlockRank: user.rangHistoire,
       histoireRank: user.rangHistoire,
       xpAvailable: user.xpAvailable,
     });
@@ -74,7 +77,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: quote.error, cost: quote.cost }, { status: 400 });
     }
 
-    const newState = applyAction(action, state, user.rangHistoire);
+    const newState = applyAction(action, state, user.rang);
 
     await prisma.$transaction(async (tx) => {
       const upd = await tx.user.updateMany({
