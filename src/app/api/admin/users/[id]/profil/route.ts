@@ -18,6 +18,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const user = await prisma.user.update({
       where: { id },
       data: {
+        ...(parsed.data.characterStatus !== undefined && { characterStatus: parsed.data.characterStatus }),
         ...(parsed.data.primaryKg !== undefined && { primaryKg: parsed.data.primaryKg }),
         ...(parsed.data.primaryAffinity !== undefined && { primaryAffinity: parsed.data.primaryAffinity }),
         ...(parsed.data.clan !== undefined && { clan: parsed.data.clan }),

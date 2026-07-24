@@ -23,6 +23,7 @@ export default async function AdminUsersPage({
       username: true,
       role: true,
       canManageAdmins: true,
+      characterStatus: true,
       xpAvailable: true,
       xpTotalEarned: true,
       forumLastXp: true,
@@ -100,6 +101,11 @@ export default async function AdminUsersPage({
                     {u.role === "TECH_MOD" && (
                       <span className="ml-2 text-[10px] tracking-[0.24em] uppercase text-amber-400">
                         mod technique
+                      </span>
+                    )}
+                    {u.characterStatus === "DEAD_MISSING" && (
+                      <span className="ml-2 text-[10px] tracking-[0.24em] uppercase text-smoke">
+                        mort / disparu
                       </span>
                     )}
                   </p>

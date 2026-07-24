@@ -64,7 +64,7 @@ export default async function ClanLibraryPage() {
       secondaryKekkeiGenkai: true,
       coutXp: true,
       nature: true,
-      author: { select: { username: true } },
+      author: { select: { username: true, characterStatus: true } },
     },
   });
   const techniques = rows.map((t) => ({
@@ -106,7 +106,10 @@ export default async function ClanLibraryPage() {
     usable:
       (!!t.kekkeiGenkai && owned.includes(t.kekkeiGenkai.toLowerCase())) ||
       (!!t.element && affinities.includes(t.element.toLowerCase())),
+    forgotten: t.author.characterStatus === "DEAD_MISSING",
   }));
+  const activeTechniques = techniques.filter((t) => !t.forgotten);
+  const forgottenTechniques = techniques.filter((t) => t.forgotten);
 
   return (
     <div className="space-y-8">
@@ -131,7 +134,13 @@ export default async function ClanLibraryPage() {
         </div>
       </section>
 
-      <ClanLibraryView techniques={techniques} clan={user.clan} kgColors={kgColors} variant="kuchy" />
+      <ClanLibraryView
+        techniques={activeTechniques}
+        forgottenTechniques={forgottenTechniques}
+        clan={user.clan}
+        kgColors={kgColors}
+        variant="kuchy"
+      />
     </div>
   );
 }

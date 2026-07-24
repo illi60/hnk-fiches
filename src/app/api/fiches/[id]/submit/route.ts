@@ -5,6 +5,7 @@ import { requireUser, jsonError } from "@/lib/permissions";
 import { rateLimit } from "@/lib/rate-limit";
 import { RANKS, rankIndex } from "@/lib/arts";
 import { isNoClan } from "@/lib/clans";
+import { isFrozenCharacter } from "@/lib/character-status";
 
 // POST /api/fiches/[id]/submit — soumet un DRAFT à modération (→ PENDING).
 //
@@ -21,6 +22,13 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   try {
     const me = await requireUser();
     const { id } = await params;
+    const meState = await prisma.user.findUnique({
+      where: { id: me.id },
+      select: { characterStatus: true },
+    });
+    if (!meState || isFrozenCharacter(meState.characterStatus)) {
+      return NextResponse.json({ error: "CHARACTER_FROZEN" }, { status: 403 });
+    }
 
     const rl = rateLimit(`fiche-submit:${me.id}`, 30, 60 * 60_000);
     if (!rl.ok) return NextResponse.json({ error: "RATE_LIMITED" }, { status: 429 });
@@ -66,7 +74,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
 
       // Résolution des pseudos exacts (+ clan, pour la règle du duo).
       const found = await prisma.user.findMany({
-        where: { username: { in: pseudos } },
+        where: { username: { in: pseudos }, characterStatus: "ACTIVE" },
         select: { id: true, username: true, clan: true },
       });
       const foundByName = new Map(found.map((u) => [u.username.toLowerCase(), u]));

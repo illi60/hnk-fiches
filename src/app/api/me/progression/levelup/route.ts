@@ -8,6 +8,7 @@ import { progressionLevelupSchema } from "@/lib/validators";
 import { RANKS, rankIndex, palierAt, type ProgTrack, type Rank } from "@/lib/progression";
 import { effectiveCommRankForUserTrack } from "@/lib/progression-server";
 import { isNoClan } from "@/lib/clans";
+import { isFrozenCharacter } from "@/lib/character-status";
 
 // POST /api/me/progression/levelup
 // « Dépenser X XP pour monter en Rang » : raccourci individuel. Prélève l'XP du
@@ -37,9 +38,13 @@ export async function POST(req: Request) {
         rangVillage: true,
         rangClan: true,
         rangHistoire: true,
+        characterStatus: true,
       },
     });
     if (!user) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+    if (isFrozenCharacter(user.characterStatus)) {
+      return NextResponse.json({ error: "CHARACTER_FROZEN" }, { status: 403 });
+    }
 
     if (track === "CLAN" && (!user.clan?.trim() || isNoClan(user.clan))) {
       return NextResponse.json({ error: "CLAN_REQUIS" }, { status: 400 });

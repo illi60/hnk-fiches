@@ -8,6 +8,7 @@ import { ELEMENTS, ART_OPTIONS, ACTION_TYPES } from "@/lib/techniques";
 import { ARTS_ALL, specRank, type ArtsState } from "@/lib/arts";
 import { AdminArtsForm, AdminQuintForm } from "@/components/AdminArtsQuint";
 import { isNoClan } from "@/lib/clans";
+import { CHARACTER_STATUS_LABEL, type CharacterStatus } from "@/lib/character-status";
 
 type Rang = "E" | "D" | "C" | "B" | "A" | "S";
 type Grade = "GENIN" | "CHUNIN" | "JONIN";
@@ -38,6 +39,7 @@ export interface AdminUser {
   pactAffinities: string[];
   artsState?: unknown;
   progressionState?: unknown;
+  characterStatus: string;
   forumProfileUrl: string | null;
   forumPseudo: string | null;
   forumLastXp: number | null;
@@ -509,6 +511,7 @@ function XpForm({ userId }: { userId: string }) {
 function ProfilForm({ user, kgNames }: { user: AdminUser; kgNames: string[] }) {
   const router = useRouter();
   const [v, setV] = useState({
+    characterStatus: user.characterStatus ?? "ACTIVE",
     primaryKg: user.primaryKg ?? "",
     primaryAffinity: user.primaryAffinity ?? "",
     clan: user.clan ?? "",
@@ -535,6 +538,7 @@ function ProfilForm({ user, kgNames }: { user: AdminUser; kgNames: string[] }) {
 
   function submit() {
     const payload = {
+      characterStatus: v.characterStatus as CharacterStatus,
       primaryKg: v.primaryKg || null,
       primaryAffinity: v.primaryAffinity || null,
       clan: v.clan || null,
@@ -571,6 +575,13 @@ function ProfilForm({ user, kgNames }: { user: AdminUser; kgNames: string[] }) {
     <section className="border border-white/5 bg-ink-700 p-4">
       <h3 className="text-[10px] tracking-[0.28em] uppercase text-ember mb-3">Profil RP</h3>
       <div className="grid sm:grid-cols-3 gap-3">
+        <Sel
+          label="Etat FT"
+          v={v.characterStatus}
+          on={(x) => update("characterStatus", x)}
+          options={["ACTIVE", "DEAD_MISSING"]}
+          labels={CHARACTER_STATUS_LABEL}
+        />
         <Sel label="1er KG" v={v.primaryKg} on={(x) => update("primaryKg", x)} options={kgNames} />
         <Sel
           label="1ère affinité"
@@ -1083,11 +1094,13 @@ function Sel({
   v,
   on,
   options,
+  labels,
 }: {
   label: string;
   v: string;
   on: (x: string) => void;
   options: string[];
+  labels?: Record<string, string>;
 }) {
   return (
     <label className="block">
@@ -1100,7 +1113,7 @@ function Sel({
         <option value="">—</option>
         {options.map((o) => (
           <option key={o} value={o}>
-            {o}
+            {labels?.[o] ?? o}
           </option>
         ))}
       </select>

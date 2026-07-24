@@ -118,6 +118,7 @@ export const adminPactAffinitySchema = z.object({
 });
 
 export const adminProfilSchema = z.object({
+  characterStatus: z.enum(["ACTIVE", "DEAD_MISSING"]).optional(),
   primaryKg: z.string().max(60).optional().nullable(),
   primaryAffinity: z.string().max(40).optional().nullable(),
   clan: z.string().max(60).optional().nullable(),

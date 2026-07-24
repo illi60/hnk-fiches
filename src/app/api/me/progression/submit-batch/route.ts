@@ -11,6 +11,7 @@ import {
   makeCommRankResolver,
   type SubmitUser,
 } from "@/lib/progression-server";
+import { isFrozenCharacter } from "@/lib/character-status";
 
 // POST /api/me/progression/submit-batch
 // Coche UN même RP sur PLUSIEURS conditions d'un coup. Chaque condition est
@@ -30,9 +31,12 @@ export async function POST(req: Request) {
 
     const user = await prisma.user.findUnique({
       where: { id: me.id },
-      select: { username: true, clan: true, rangVillage: true, rangClan: true, rangHistoire: true },
+      select: { username: true, clan: true, rangVillage: true, rangClan: true, rangHistoire: true, characterStatus: true },
     });
     if (!user) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+    if (isFrozenCharacter(user.characterStatus)) {
+      return NextResponse.json({ error: "CHARACTER_FROZEN" }, { status: 403 });
+    }
 
     const rpKey = normalizeRpUrl(rpUrl);
     const reuse = await loadRpReuseState(me.id, rpKey);

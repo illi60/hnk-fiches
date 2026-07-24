@@ -39,6 +39,7 @@ export default async function AdminUserDetail({
         rangClan: true,
         artsState: true,
         progressionState: true,
+        characterStatus: true,
         grade: true,
         uniteSpeciale: true,
         trame: true,
@@ -254,6 +255,7 @@ function LiveMemberView({
   user: {
     username: string;
     role: "USER" | "ADMIN" | "TECH_MOD";
+    characterStatus: string;
     canManageAdmins: boolean;
     xpAvailable: number;
     xpTotalEarned: number;
@@ -304,6 +306,7 @@ function LiveMemberView({
                 Admin{user.canManageAdmins ? " maître" : ""}
               </span>
             )}
+            {user.characterStatus === "DEAD_MISSING" && <span className="hnk-chip">Mort / Disparu</span>}
             {user.rang && <span className={`hnk-chip ${rangClass(user.rang)}`}>Rang {user.rang}</span>}
           </div>
           <div className="mt-3 max-w-md">

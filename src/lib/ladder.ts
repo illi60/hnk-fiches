@@ -85,7 +85,7 @@ export interface LadderData {
 export async function loadLadder(): Promise<LadderData> {
   const [users, contribRows, agg, baseRanks, clanCounts] = await Promise.all([
     prisma.user.findMany({
-      where: { forumPseudo: { not: null }, forumAvatar: { not: null } },
+      where: { characterStatus: "ACTIVE", forumPseudo: { not: null }, forumAvatar: { not: null } },
       select: {
         id: true,
         username: true,

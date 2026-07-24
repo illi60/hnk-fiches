@@ -48,7 +48,7 @@ export default async function AdminClansPage() {
       secondaryKekkeiGenkai: true,
       description: true,
       coutXp: true,
-      author: { select: { username: true } },
+      author: { select: { username: true, characterStatus: true } },
     },
   });
   const byClan = new Map<string, typeof techniques>();
@@ -77,6 +77,8 @@ export default async function AdminClansPage() {
       <div className="space-y-6">
         {clans.map((clan) => {
           const list = byClan.get(clan.toLowerCase()) ?? [];
+          const activeList = list.filter((t) => t.author.characterStatus !== "DEAD_MISSING");
+          const forgottenList = list.filter((t) => t.author.characterStatus === "DEAD_MISSING");
           return (
             <section key={clan} className="border border-white/5 bg-ink-700 p-4">
               <h2 className="font-display uppercase tracking-[0.2em] text-ember mb-3">
@@ -86,7 +88,7 @@ export default async function AdminClansPage() {
                 clan={clan}
                 showUsable={false}
                 kgColors={kgColors}
-                techniques={list.map((t) => ({
+                techniques={activeList.map((t) => ({
                   id: t.id,
                   nom: t.nom,
                   description: t.description,
@@ -99,6 +101,21 @@ export default async function AdminClansPage() {
                   secondaryKekkeiGenkai: t.secondaryKekkeiGenkai,
                   coutXp: t.coutXp,
                   author: t.author,
+                }))}
+                forgottenTechniques={forgottenList.map((t) => ({
+                  id: t.id,
+                  nom: t.nom,
+                  description: t.description,
+                  art: t.art,
+                  secondaryArt: t.secondaryArt,
+                  actionType: t.actionType,
+                  element: t.element,
+                  kekkeiGenkai: t.kekkeiGenkai,
+                  secondaryElement: t.secondaryElement,
+                  secondaryKekkeiGenkai: t.secondaryKekkeiGenkai,
+                  coutXp: t.coutXp,
+                  author: t.author,
+                  forgotten: true,
                 }))}
               />
             </section>

@@ -114,6 +114,7 @@ model User {
   grade         Grade?
   artsState     Json?    // état des Arts Shinobi (rangs de spés, expertises) — cf. lib/arts.ts
   progressionState Json? // quintessences acquises + mode spécial — cf. lib/quintessence.ts
+  characterStatus String @default("ACTIVE") // ACTIVE | DEAD_MISSING (Mort / Disparu)
   uniteSpeciale String?
   trame         String?
   prime         String?

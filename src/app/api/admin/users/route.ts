@@ -27,6 +27,7 @@ export async function GET(req: Request) {
         username: true,
         role: true,
         canManageAdmins: true,
+        characterStatus: true,
         xpAvailable: true,
         xpTotalEarned: true,
         clan: true,

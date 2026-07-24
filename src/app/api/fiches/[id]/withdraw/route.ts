@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
 import { requireUser, jsonError } from "@/lib/permissions";
+import { isFrozenCharacter } from "@/lib/character-status";
 
 // POST /api/fiches/[id]/withdraw — retire une fiche PENDING de la modération
 // sans la supprimer, pour revenir à un état éditable.
@@ -9,6 +10,13 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   try {
     const me = await requireUser();
     const { id } = await params;
+    const meState = await prisma.user.findUnique({
+      where: { id: me.id },
+      select: { characterStatus: true },
+    });
+    if (!meState || isFrozenCharacter(meState.characterStatus)) {
+      return NextResponse.json({ error: "CHARACTER_FROZEN" }, { status: 403 });
+    }
 
     const fiche = await prisma.ficheTechnique.findUnique({
       where: { id },

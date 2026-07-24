@@ -7,6 +7,7 @@ import { ficheTotalCost } from "@/lib/techniques";
 import { canUseCollectiveManifestation, loadClanLibraryAccess } from "@/lib/kekkei-server";
 import { ownedAffinities, ownedKgsFull, type ProgressionState } from "@/lib/quintessence";
 import { isNoClan } from "@/lib/clans";
+import { isFrozenCharacter } from "@/lib/character-status";
 
 // PATCH /api/fiches/[id] — éditer SA propre fiche tant qu'elle n'est pas validée.
 // Le joueur peut corriger un DRAFT, un REJECTED ou une fiche PENDING.
@@ -14,6 +15,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   try {
     const me = await requireUser();
     const { id } = await params;
+    const meState = await prisma.user.findUnique({
+      where: { id: me.id },
+      select: { characterStatus: true },
+    });
+    if (!meState || isFrozenCharacter(meState.characterStatus)) {
+      return NextResponse.json({ error: "CHARACTER_FROZEN" }, { status: 403 });
+    }
 
     const body = await req.json().catch(() => null);
     const parsed = ficheUpdateSchema.safeParse(body);
@@ -164,6 +172,13 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   try {
     const me = await requireUser();
     const { id } = await params;
+    const meState = await prisma.user.findUnique({
+      where: { id: me.id },
+      select: { characterStatus: true },
+    });
+    if (!meState || isFrozenCharacter(meState.characterStatus)) {
+      return NextResponse.json({ error: "CHARACTER_FROZEN" }, { status: 403 });
+    }
 
     const fiche = await prisma.ficheTechnique.findUnique({
       where: { id },

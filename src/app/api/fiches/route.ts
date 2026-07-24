@@ -8,6 +8,7 @@ import { ficheTotalCost } from "@/lib/techniques";
 import { canUseCollectiveManifestation, loadClanLibraryAccess } from "@/lib/kekkei-server";
 import { ownedAffinities, ownedKgsFull, type ProgressionState } from "@/lib/quintessence";
 import { isNoClan } from "@/lib/clans";
+import { isFrozenCharacter } from "@/lib/character-status";
 
 /**
  * GET /api/fiches?scope=mine|public
@@ -27,7 +28,7 @@ export async function GET(req: Request) {
             // Mes fiches + celles où je suis participant (type d'action COLLECTIVE).
             OR: [{ authorId: me.id }, { collaboratorIds: { has: me.id } }],
           }
-        : { status: "VALIDATED" as const, isActive: true };
+        : { status: "VALIDATED" as const, isActive: true, author: { characterStatus: "ACTIVE" } };
 
     const fiches = await prisma.ficheTechnique.findMany({
       where,
@@ -64,6 +65,13 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const me = await requireUser();
+    const meState = await prisma.user.findUnique({
+      where: { id: me.id },
+      select: { characterStatus: true },
+    });
+    if (!meState || isFrozenCharacter(meState.characterStatus)) {
+      return NextResponse.json({ error: "CHARACTER_FROZEN" }, { status: 403 });
+    }
 
     const rl = rateLimit(`fiches-create:${me.id}`, 20, 60 * 60_000);
     if (!rl.ok) return NextResponse.json({ error: "RATE_LIMITED" }, { status: 429 });

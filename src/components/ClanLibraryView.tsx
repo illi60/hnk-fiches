@@ -24,6 +24,7 @@ export interface LibTech {
   coutXp: number;
   author: { username: string } | null;
   usable?: boolean;
+  forgotten?: boolean;
 }
 
 type GroupBy = "actionType" | "art" | "kekkeiGenkai" | "nom";
@@ -44,22 +45,26 @@ function groupKey(t: LibTech, by: GroupBy): string {
 
 export default function ClanLibraryView({
   techniques,
+  forgottenTechniques = [],
   clan,
   showUsable = true,
   kgColors,
   variant = "default",
 }: {
   techniques: LibTech[];
+  forgottenTechniques?: LibTech[];
   clan: string;
   showUsable?: boolean;
   kgColors?: Record<string, string>;
   variant?: "default" | "kuchy";
 }) {
   const [by, setBy] = useState<GroupBy>("actionType");
+  const [tab, setTab] = useState<"active" | "forgotten">("active");
+  const visibleTechniques = tab === "forgotten" ? forgottenTechniques : techniques;
 
   const groups = useMemo(() => {
     const map = new Map<string, LibTech[]>();
-    const sorted = [...techniques].sort((a, b) => a.nom.localeCompare(b.nom));
+    const sorted = [...visibleTechniques].sort((a, b) => a.nom.localeCompare(b.nom));
     for (const t of sorted) {
       const k = groupKey(t, by);
       const list = map.get(k) ?? [];
@@ -67,9 +72,9 @@ export default function ClanLibraryView({
       map.set(k, list);
     }
     return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-  }, [techniques, by]);
+  }, [visibleTechniques, by]);
 
-  if (techniques.length === 0) {
+  if (techniques.length === 0 && forgottenTechniques.length === 0) {
     return (
       <p className="text-sm text-smoke italic">
         Aucune technique dans la bibliothèque du clan pour l&apos;instant.
@@ -79,6 +84,33 @@ export default function ClanLibraryView({
 
   return (
     <div className="space-y-6">
+      {forgottenTechniques.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={() => setTab("active")}
+            className={`px-3 py-1.5 border text-[10px] tracking-[0.2em] uppercase ${
+              tab === "active" ? "border-ember text-ember" : "border-white/10 text-smoke hover:text-bone"
+            }`}
+          >
+            Techniques actives
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("forgotten")}
+            className={`px-3 py-1.5 border text-[10px] tracking-[0.2em] uppercase ${
+              tab === "forgotten" ? "border-ember text-ember" : "border-white/10 text-smoke hover:text-bone"
+            }`}
+          >
+            Techniques oubliees
+          </button>
+        </div>
+      )}
+      {visibleTechniques.length === 0 && (
+        <p className="text-sm text-smoke italic">
+          Aucune technique {tab === "forgotten" ? "oubliee" : "active"} dans cette bibliotheque.
+        </p>
+      )}
       <div className="flex items-center gap-2 flex-wrap">
         <span className="hnk-eyebrow">Trier par</span>
         {GROUP_OPTIONS.map((o) => (
@@ -127,6 +159,7 @@ export default function ClanLibraryView({
                   )}
                 </div>
                 <div className="flex flex-wrap gap-1.5 mt-2">
+                  {t.forgotten && <span className="hnk-tech-chip">Technique oubliee</span>}
                   {techniqueArtChipLabel({
                     art: t.art,
                     spec: t.spec ?? null,
@@ -191,8 +224,8 @@ export default function ClanLibraryView({
                 <div className="flex items-center justify-between gap-2 mt-3">
                   <p className="text-[10px] text-smoke">Déposée par {t.author?.username ?? "—"}</p>
                   {/* Membre : code forum copiable seulement si le KG requis est possédé.
-                      Admin (showUsable=false) : toujours copiable. */}
-                  {(!showUsable || t.usable) && (
+                      Admin (showUsable=false) : toujours copiable. Les archives restent en lecture seule. */}
+                  {!t.forgotten && (!showUsable || t.usable) && (
                     <ForumCopyButton
                       data={{
                         nom: t.nom,
