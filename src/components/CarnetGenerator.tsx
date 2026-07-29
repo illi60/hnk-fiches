@@ -724,6 +724,15 @@ function AccForm({ c, setC }: { c: CarnetData; setC: React.Dispatch<React.SetSta
   function remove(i: number) {
     setC((prev) => ({ ...prev, accomplissements: prev.accomplissements.filter((_, idx) => idx !== i) }));
   }
+  function move(i: number, dir: -1 | 1) {
+    setC((prev) => {
+      const j = i + dir;
+      if (j < 0 || j >= prev.accomplissements.length) return prev;
+      const arr = [...prev.accomplissements];
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+      return { ...prev, accomplissements: arr };
+    });
+  }
 
   return (
     <div className="space-y-4 pt-2">
@@ -735,11 +744,19 @@ function AccForm({ c, setC }: { c: CarnetData; setC: React.Dispatch<React.SetSta
         <div key={i} className="border border-white/10 p-3 space-y-3">
           <div className="flex items-center justify-between">
             <span className="hnk-label">Accomplissement #{i + 1}</span>
-            {c.accomplissements.length > 1 && (
-              <button type="button" className="text-smoke hover:text-ember text-xl leading-none px-1" onClick={() => remove(i)} title="Retirer">
-                ×
+            <div className="flex items-center gap-1">
+              <button type="button" className="text-smoke hover:text-bone px-1" onClick={() => move(i, -1)} title="Monter">
+                ↑
               </button>
-            )}
+              <button type="button" className="text-smoke hover:text-bone px-1" onClick={() => move(i, 1)} title="Descendre">
+                ↓
+              </button>
+              {c.accomplissements.length > 1 && (
+                <button type="button" className="text-smoke hover:text-ember text-xl leading-none px-1" onClick={() => remove(i)} title="Retirer">
+                  ×
+                </button>
+              )}
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Catégorie">
