@@ -914,6 +914,11 @@ export function membersAtLeast(byRank: Partial<Record<Rank, number>>, rank: Rank
   return n;
 }
 
+export function highestRank(...ranks: Array<string | null | undefined>): Rank {
+  const idx = Math.max(0, ...ranks.map((r) => rankIndex(r)));
+  return RANKS[idx];
+}
+
 export function communityCondMet(cond: ProgCond, sp: ScopeProgress): boolean {
   const mode = condMode(cond.id);
   const manual = (sp.countByCond[cond.id] ?? 0) > 0;

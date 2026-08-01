@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, jsonError } from "@/lib/permissions";
 import { adminProfilSchema } from "@/lib/validators";
+import { highestRank } from "@/lib/progression";
 
 // PATCH /api/admin/users/[id]/profil — édite les champs RP d'un user.
 // Aucun champ XP / role n'est touché ici (séparation de pouvoirs).
@@ -15,6 +16,20 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const parsed = adminProfilSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: "INVALID" }, { status: 400 });
 
+    const current = await prisma.user.findUnique({
+      where: { id },
+      select: { rangVillage: true, rangHistoire: true, rangClan: true },
+    });
+    if (!current) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+
+    const rankTrackTouched =
+      parsed.data.rangVillage !== undefined ||
+      parsed.data.rangHistoire !== undefined ||
+      parsed.data.rangClan !== undefined;
+    const rangVillage = parsed.data.rangVillage !== undefined ? parsed.data.rangVillage : current.rangVillage;
+    const rangHistoire = parsed.data.rangHistoire !== undefined ? parsed.data.rangHistoire : current.rangHistoire;
+    const rangClan = parsed.data.rangClan !== undefined ? parsed.data.rangClan : current.rangClan;
+
     const user = await prisma.user.update({
       where: { id },
       data: {
@@ -22,7 +37,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         ...(parsed.data.primaryKg !== undefined && { primaryKg: parsed.data.primaryKg }),
         ...(parsed.data.primaryAffinity !== undefined && { primaryAffinity: parsed.data.primaryAffinity }),
         ...(parsed.data.clan !== undefined && { clan: parsed.data.clan }),
-        ...(parsed.data.rang !== undefined && { rang: parsed.data.rang }),
+        ...(rankTrackTouched
+          ? { rang: highestRank(rangVillage, rangHistoire, rangClan) }
+          : parsed.data.rang !== undefined
+          ? { rang: parsed.data.rang }
+          : {}),
         ...(parsed.data.rangVillage !== undefined && { rangVillage: parsed.data.rangVillage }),
         ...(parsed.data.rangHistoire !== undefined && { rangHistoire: parsed.data.rangHistoire }),
         ...(parsed.data.rangClan !== undefined && { rangClan: parsed.data.rangClan }),

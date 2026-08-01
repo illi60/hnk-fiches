@@ -15,6 +15,7 @@ import {
   clanScopeKey,
   condMeta,
   effectiveCommunityRank,
+  highestRank,
   highestPersonalRank,
   normalizeRpUrl,
   rankIndex,
@@ -229,6 +230,7 @@ export async function recomputeRanks(userIds: string[] | "all"): Promise<number>
   // 3) Calcule les nouveaux rangs ; ne prépare que les HAUSSES.
   type Raise = { id: string; field: "rangVillage" | "rangClan" | "rangHistoire"; rank: Rang };
   const raises: Raise[] = [];
+  const nextGlobalByUser = new Map<string, Rang>();
   for (const u of users) {
     const clanKey = clanScopeKey(u.clan);
     const up: UserProgress = {
@@ -244,6 +246,7 @@ export async function recomputeRanks(userIds: string[] | "all"): Promise<number>
     if (rankIndex(newV) > rankIndex(curV)) raises.push({ id: u.id, field: "rangVillage", rank: newV as Rang });
     if (rankIndex(newC) > rankIndex(curC)) raises.push({ id: u.id, field: "rangClan", rank: newC as Rang });
     if (rankIndex(newH) > rankIndex(curH)) raises.push({ id: u.id, field: "rangHistoire", rank: newH as Rang });
+    nextGlobalByUser.set(u.id, highestRank(newV, newC, newH) as Rang);
   }
 
   // 4) Applique chaque hausse de façon MONOTONE : le `where` ne matche que si le
@@ -269,6 +272,15 @@ export async function recomputeRanks(userIds: string[] | "all"): Promise<number>
       return prisma.user.updateMany({
         where: { id: r.id, OR: [{ rangHistoire: null }, { rangHistoire: guard }] },
         data: { rangHistoire: r.rank, version: { increment: 1 } },
+      });
+    })
+  );
+  await Promise.all(
+    Array.from(nextGlobalByUser.entries()).map(([id, next]) => {
+      const guard = { in: below(next) };
+      return prisma.user.updateMany({
+        where: { id, OR: [{ rang: null }, { rang: guard }] },
+        data: { rang: next },
       });
     })
   );

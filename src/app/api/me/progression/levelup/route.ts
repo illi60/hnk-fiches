@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, jsonError } from "@/lib/permissions";
 import { rateLimit } from "@/lib/rate-limit";
 import { progressionLevelupSchema } from "@/lib/validators";
-import { RANKS, rankIndex, palierAt, type ProgTrack, type Rank } from "@/lib/progression";
+import { RANKS, highestRank, rankIndex, palierAt, type ProgTrack, type Rank } from "@/lib/progression";
 import { effectiveCommRankForUserTrack } from "@/lib/progression-server";
 import { isNoClan } from "@/lib/clans";
 import { isFrozenCharacter } from "@/lib/character-status";
@@ -35,6 +35,7 @@ export async function POST(req: Request) {
         version: true,
         xpAvailable: true,
         clan: true,
+        rang: true,
         rangVillage: true,
         rangClan: true,
         rangHistoire: true,
@@ -82,6 +83,12 @@ export async function POST(req: Request) {
     if (track === "VILLAGE") data.rangVillage = nextRank;
     else if (track === "CLAN") data.rangClan = nextRank;
     else data.rangHistoire = nextRank;
+    data.rang = highestRank(
+      user.rang,
+      track === "VILLAGE" ? nextRank : user.rangVillage,
+      track === "CLAN" ? nextRank : user.rangClan,
+      track === "HISTOIRE" ? nextRank : user.rangHistoire
+    );
 
     await prisma.$transaction(async (tx) => {
       const upd = await tx.user.updateMany({
