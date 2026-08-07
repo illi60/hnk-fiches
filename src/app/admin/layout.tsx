@@ -33,6 +33,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link href="/admin/progression">Progression</Link>
           {isAdmin && <Link href="/admin/messages">Messages</Link>}
           {isAdmin && <Link href="/admin/missions">Contrats</Link>}
+          {isAdmin && <Link href="/admin/boutique">Boutique</Link>}
           {isAdmin && <Link href="/admin/clans">Clans</Link>}
           <Link href="/technique" className="!text-smoke">
             ← Joueur

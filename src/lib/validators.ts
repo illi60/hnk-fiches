@@ -6,6 +6,7 @@
 import { z } from "zod";
 
 import { isManualReviewSubmission, requiresCollaborators } from "@/lib/progression";
+import { SHOP_CATEGORIES } from "@/lib/shop";
 
 // ----- Auth -----
 
@@ -196,6 +197,57 @@ export const progressionActionSchema = z.discriminatedUnion("type", [
   }),
 ]);
 export type ProgressionActionInput = z.infer<typeof progressionActionSchema>;
+
+// ----- Boutique / Inventaire -----
+export const shopPurchaseSchema = z.object({
+  itemKey: z.string().min(2).max(80).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+});
+export type ShopPurchaseInput = z.infer<typeof shopPurchaseSchema>;
+
+export const shopCheckoutSchema = z.object({
+  items: z
+    .array(
+      z.object({
+        itemKey: z.string().min(2).max(80).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+        quantity: z.number().int().min(1).max(99),
+      })
+    )
+    .min(1)
+    .max(20),
+});
+export type ShopCheckoutInput = z.infer<typeof shopCheckoutSchema>;
+
+export const shopConditionUnlockSchema = z.object({
+  itemKey: z.string().min(2).max(80).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  condId: z.string().min(3).max(80),
+});
+export type ShopConditionUnlockInput = z.infer<typeof shopConditionUnlockSchema>;
+
+export const shopRerollFtSchema = z.object({
+  resetTechnique: z.literal(true),
+  refundAndCharge: z.literal(true),
+});
+export type ShopRerollFtInput = z.infer<typeof shopRerollFtSchema>;
+
+export const adminShopItemSchema = z.object({
+  itemKey: z
+    .string()
+    .min(2)
+    .max(80)
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  name: z.string().min(2).max(120),
+  category: z.enum(SHOP_CATEGORIES),
+  costXp: z.number().int().min(0).max(100_000),
+  stock: z.enum(["UNLIMITED", "UNIQUE"]),
+  kanji: z.string().min(1).max(4),
+  resource: z.string().max(80).optional().nullable(),
+  rankHint: z.string().max(80).optional().nullable(),
+  description: z.string().min(1).max(2000),
+  effect: z.string().min(1).max(2000),
+  isActive: z.boolean().optional(),
+  sortOrder: z.number().int().min(-10_000).max(10_000).optional(),
+});
+export type AdminShopItemInput = z.infer<typeof adminShopItemSchema>;
 
 // ----- Progression (Village / Clan / Histoire) -----
 // Le joueur soumet UN RP pour une condition. Le serveur résout

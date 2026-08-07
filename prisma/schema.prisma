@@ -82,6 +82,7 @@ enum XPReason {
   ARTS_SPEND              // dépense XP : expertise d'art, montée de spé, Kuchiyose
   QUINTESSENCE_SPEND      // dépense XP : quintessence d'art/KG, second KG
   PROGRESSION_SPEND       // dépense XP : « Dépenser X XP pour monter en Rang » (voie de progression)
+  SHOP_SPEND              // dépense XP : achat en boutique / inventaire
 }
 
 // ============================================================
@@ -149,6 +150,8 @@ model User {
   invocations     Invocation[]     @relation("UserInvocations")
   progressionSubmissions ProgressionSubmission[] @relation("ProgSubmitter")
   progressionReviewed    ProgressionSubmission[] @relation("ProgReviewer")
+  inventoryItems  InventoryItem[] @relation("UserInventory")
+  adminAlerts     AdminAlert[] @relation("UserAdminAlerts")
 
   @@index([forumUserId])
 }
@@ -232,6 +235,73 @@ model FicheTechnique {
   @@index([status, createdAt])
   @@index([clan, status])
   @@index([invocationId])
+}
+
+model InventoryItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation("UserInventory", fields: [userId], references: [id], onDelete: Cascade)
+
+  itemKey   String
+  itemName  String
+  costXp    Int
+  quantity  Int      @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, itemKey])
+  @@index([userId])
+  @@index([itemKey])
+}
+
+model ShopCatalogItem {
+  id          String   @id @default(cuid())
+  itemKey     String   @unique
+  name        String
+  category    String
+  costXp      Int
+  stock       String   @default("UNLIMITED")
+  kanji       String
+  resource    String?
+  rankHint    String?
+  description String   @db.Text
+  effect      String   @db.Text
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@index([category])
+}
+
+model ShopState {
+  key       String   @id
+  intValue  Int      @default(0)
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AdminAlert {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation("UserAdminAlerts", fields: [userId], references: [id], onDelete: Cascade)
+
+  kind      String
+  title     String
+  body      String   @db.Text
+  itemKey   String?
+  itemName  String?
+  costXp    Int?
+  isRead    Boolean  @default(false)
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([kind, isRead, createdAt])
+  @@index([userId, createdAt])
 }
 
 model XPTransaction {

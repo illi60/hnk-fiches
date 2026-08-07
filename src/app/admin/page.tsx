@@ -9,11 +9,27 @@ export default async function AdminHome() {
   const me = await requireFicheModerator();
   if (me.role !== "ADMIN") redirect("/admin/fiches");
 
-  const [users, pending, validated, progPending, recent] = await Promise.all([
+  const [users, pending, validated, progPending, alertCount, alerts, recent] = await Promise.all([
     prisma.user.count(),
     prisma.ficheTechnique.count({ where: { status: "PENDING", isActive: true } }),
     prisma.ficheTechnique.count({ where: { status: "VALIDATED", isActive: true } }),
     prisma.progressionSubmission.count({ where: { status: "PENDING" } }),
+    prisma.adminAlert.count({ where: { isRead: false } }),
+    prisma.adminAlert.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 6,
+      select: {
+        id: true,
+        title: true,
+        body: true,
+        kind: true,
+        itemName: true,
+        costXp: true,
+        isRead: true,
+        createdAt: true,
+        user: { select: { id: true, username: true } },
+      },
+    }),
     prisma.xPTransaction.findMany({
       orderBy: { createdAt: "desc" },
       take: 10,
@@ -50,7 +66,49 @@ export default async function AdminHome() {
           href="/admin/progression"
           accent={progPending > 0}
         />
+        <Kpi
+          label="Alertes boutique"
+          value={alertCount}
+          accent={alertCount > 0}
+        />
       </div>
+
+      <section>
+        <h2 className="font-serif text-xl text-white2 mb-3 pb-2 border-b border-ember/20">
+          Alertes boutique
+        </h2>
+        <ul className="divide-y divide-white/5 border border-white/5 bg-ink-700">
+          {alerts.map((alert) => (
+            <li key={alert.id} className="px-4 py-3 text-sm">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="font-bold text-bone">
+                    {alert.title}
+                    {!alert.isRead && <span className="ml-2 text-[10px] uppercase tracking-[0.18em] text-ember">nouveau</span>}
+                  </p>
+                  <p className="mt-1 text-smoke">{alert.body}</p>
+                  <p className="mt-2 text-xs text-smoke">
+                    <Link href={`/admin/users/${alert.user.id}`} className="text-bone hover:text-ember">
+                      {alert.user.username}
+                    </Link>
+                    {alert.itemName && <> Â· {alert.itemName}</>}
+                    {alert.costXp !== null && <> Â· {alert.costXp} XP</>}
+                  </p>
+                </div>
+                <span className="shrink-0 text-xs text-smoke">
+                  {new Date(alert.createdAt).toLocaleString("fr-FR", {
+                    dateStyle: "short",
+                    timeStyle: "short",
+                  })}
+                </span>
+              </div>
+            </li>
+          ))}
+          {alerts.length === 0 && (
+            <li className="px-4 py-6 text-sm text-smoke italic">Aucune alerte boutique.</li>
+          )}
+        </ul>
+      </section>
 
       <section>
         <h2 className="font-serif text-xl text-white2 mb-3 pb-2 border-b border-ember/20">

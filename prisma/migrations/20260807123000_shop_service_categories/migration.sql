@@ -1,0 +1,2 @@
+-- Superseded: services are displayed as subcategories inside the single
+-- SERVICES category, not as separate catalogue categories.

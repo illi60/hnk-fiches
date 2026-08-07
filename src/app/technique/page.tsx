@@ -4,16 +4,16 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getOrSyncUser } from "@/lib/forum-sync";
-import { ARTS_ALL, artRank, isArtOwned, type ArtsState } from "@/lib/arts";
 import { effectiveCommRankForUserTrack } from "@/lib/progression-server";
-import ArtsRadar from "@/components/ArtsRadar";
-import ArtsManager from "@/components/ArtsManager";
 import ProgressionManager from "@/components/ProgressionManager";
 import IdentityChooser from "@/components/IdentityChooser";
 import ChangePassword from "@/components/ChangePassword";
+import ProfileDetailTabs from "@/components/ProfileDetailTabs";
 import { type ProgressionState } from "@/lib/quintessence";
+import { type ArtsState } from "@/lib/arts";
 import { loadKgCatalog } from "@/lib/kekkei-server";
 import { isNoClan } from "@/lib/clans";
+import { loadShopItems } from "@/lib/shop-server";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -22,15 +22,13 @@ export default async function DashboardPage() {
   const kgNames = kgCatalog.map((kg) => kg.name);
   const kgColors = Object.fromEntries(kgCatalog.map((kg) => [kg.name, kg.color]));
 
-  // Read-through : rafraîchit depuis le forum si le cache a dépassé le TTL
-  // (best-effort, jamais bloquant — sert le cache si le forum est lent).
   try {
     const ac = new AbortController();
     const to = setTimeout(() => ac.abort(), 6000);
     await getOrSyncUser(session.user.id, { signal: ac.signal });
     clearTimeout(to);
   } catch {
-    // forum injoignable → on continue avec le cache
+    // Forum injoignable: on continue avec le cache.
   }
 
   const user = await prisma.user.findUnique({
@@ -51,6 +49,15 @@ export default async function DashboardPage() {
       rangClan: true,
       artsState: true,
       progressionState: true,
+      inventoryItems: {
+        orderBy: { updatedAt: "desc" },
+        select: {
+          itemKey: true,
+          itemName: true,
+          costXp: true,
+          quantity: true,
+        },
+      },
       grade: true,
       uniteSpeciale: true,
       trame: true,
@@ -73,10 +80,10 @@ export default async function DashboardPage() {
   const xpPct =
     totalXp > 0 ? Math.min(100, Math.round((user.xpAvailable / totalXp) * 100)) : 0;
 
-  // Rangs communautaires effectifs (collectifs) — partagés par tous les membres.
-  const [villageCommRank, clanCommRank] = await Promise.all([
+  const [villageCommRank, clanCommRank, shopItems] = await Promise.all([
     effectiveCommRankForUserTrack("VILLAGE", user.clan),
     hasClan ? effectiveCommRankForUserTrack("CLAN", user.clan) : Promise.resolve(null),
+    loadShopItems(),
   ]);
   const artsState = ((user.artsState ?? {}) as unknown) as ArtsState;
   const progression = ((user.progressionState ?? {}) as unknown) as ProgressionState;
@@ -102,7 +109,7 @@ export default async function DashboardPage() {
           </div>
           <div className="mt-3 max-w-md">
             <div className="flex items-center justify-between mb-1.5">
-              <span className="hnk-eyebrow">Réserve d&apos;XP</span>
+              <span className="hnk-eyebrow">Reserve d&apos;XP</span>
               <span className="text-sm font-bold tabular-nums">
                 <span className="text-ember">{user.xpAvailable}</span>
                 <span className="text-smoke"> / {totalXp} XP</span>
@@ -124,52 +131,30 @@ export default async function DashboardPage() {
         kgColors={kgColors}
       />
 
-      {/* Fiche du personnage — remontée */}
       <section>
         <h2 className="hnk-section-title">Fiche du personnage</h2>
         <div className="grid sm:grid-cols-2 gap-x-8 gap-y-1">
           <Field k="Clan" v={hasClan ? user.clan : null} />
           <Field k="Grade" v={user.grade} />
-          <Field k="Unité spéciale" v={user.uniteSpeciale} />
+          <Field k="Unite speciale" v={user.uniteSpeciale} />
           <Field k="Trame" v={user.trame} />
         </div>
       </section>
 
-      {/* Les 3 rangs — perso (ton rang) + collectif (village/clan, partagé) */}
       <div className="grid sm:grid-cols-3 gap-5">
         <RankCard label="Rang du village" value={user.rangVillage} kanji="里" community={villageCommRank} />
         <RankCard label="Rang histoire" value={user.rangHistoire} kanji="史" />
         <RankCard label="Rang clan" value={hasClan ? user.rangClan : null} kanji="氏" community={hasClan ? clanCommRank : undefined} />
       </div>
 
-      {/* Arts Shinobi */}
-      <section>
-        <h2 className="hnk-section-title">Arts Shinobi</h2>
-        <div className="grid lg:grid-cols-[minmax(0,360px),1fr] gap-6 items-start">
-          <div className="hnk-panel flex items-center justify-center" data-kanji="技">
-            <ArtsRadar
-              axes={ARTS_ALL.map((a) => ({
-                kanji: a.kanji,
-                label: a.name,
-                rank: isArtOwned(artsState, a.key, user.rangHistoire)
-                  ? artRank(a.key, artsState, user.rang)
-                  : "E",
-              }))}
-            />
-          </div>
-          <ArtsManager
-            artsState={artsState}
-            artsRank={user.rang}
-            histoireRank={user.rangHistoire}
-            xpAvailable={user.xpAvailable}
-          />
-        </div>
-        <p className="text-[10px] text-smoke mt-3 tracking-wide">
-          Arts débloqués selon le Rang Histoire (E:1 · D:2 · C:3 · B+:tous). Montée automatique
-          E → B (suit le rang). Au-delà (B → A → S) : expertise (3 arts max parmi les 6) — coût en
-          XP. Kuchiyose : Rang C Histoire + 20 XP.
-        </p>
-      </section>
+      <ProfileDetailTabs
+        artsState={artsState}
+        artsRank={user.rang}
+        histoireRank={user.rangHistoire}
+        xpAvailable={user.xpAvailable}
+        inventory={user.inventoryItems}
+        catalog={shopItems}
+      />
 
       <ProgressionManager
         progression={progression}
@@ -186,13 +171,13 @@ export default async function DashboardPage() {
           <h2 className="hnk-section-title">Lien forum</h2>
           <div className="hnk-panel" data-kanji="絆">
             <div className="flex flex-wrap items-center gap-3 mb-3">
-              <span className="hnk-chip">Synchronisé</span>
+              <span className="hnk-chip">Synchronise</span>
               <a href={user.forumProfileUrl} target="_blank" rel="noopener noreferrer">
                 {user.forumProfileUrl}
               </a>
             </div>
             <p className="text-sm text-smoke">
-              Dernière sync :{" "}
+              Derniere sync:{" "}
               <span className="text-bone">
                 {user.forumLastSyncAt
                   ? new Date(user.forumLastSyncAt).toLocaleString("fr-FR")
@@ -200,7 +185,7 @@ export default async function DashboardPage() {
               </span>
               {user.forumLastXp !== null && (
                 <>
-                  {" · "}XP forum :{" "}
+                  {" · "}XP forum:{" "}
                   <span className="text-bone tabular-nums">{user.forumLastXp}</span>
                 </>
               )}
@@ -218,7 +203,7 @@ export default async function DashboardPage() {
         </Link>
         {hasClan && (
           <Link href="/technique/clan" className="hnk-btn-ghost">
-            Bibliothèque de clan · {user.clan} <span aria-hidden>→</span>
+            Bibliotheque de clan · {user.clan} <span aria-hidden>→</span>
           </Link>
         )}
       </div>

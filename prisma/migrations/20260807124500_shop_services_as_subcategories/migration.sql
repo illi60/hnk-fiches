@@ -1,0 +1,9 @@
+UPDATE "ShopCatalogItem"
+SET "category" = 'SERVICES',
+    "updatedAt" = CURRENT_TIMESTAMP
+WHERE "category" IN (
+  'SERVICES_PROGRESSION',
+  'SERVICES_GRADES',
+  'SERVICES_NARRATIFS',
+  'SERVICES_BOUTIQUE'
+);
