@@ -95,12 +95,14 @@ function humanError(error?: string): string {
 export default function ShopInventory({
   items,
   inventory,
+  globallyOwnedItemKeys = [],
   xpAvailable,
   villageRank,
   grade,
 }: {
   items: ShopItem[];
   inventory: InventoryView[];
+  globallyOwnedItemKeys?: string[];
   xpAvailable: number;
   villageRank?: string | null;
   grade?: string | null;
@@ -121,6 +123,7 @@ export default function ShopInventory({
     () => new Map(inventory.map((item) => [item.itemKey, item])),
     [inventory]
   );
+  const globallyOwnedByKey = useMemo(() => new Set(globallyOwnedItemKeys), [globallyOwnedItemKeys]);
   const hasShopDiscount = ownedByKey.has(SHOP_DISCOUNT_ITEM_KEY);
   const hasChuninPromotion = (ownedByKey.get(SHOP_PROMOTION_CHUNIN_ITEM_KEY)?.quantity ?? 0) > 0;
   const hasJoninPromotion = (ownedByKey.get(SHOP_PROMOTION_JONIN_ITEM_KEY)?.quantity ?? 0) > 0;
@@ -222,6 +225,10 @@ export default function ShopInventory({
 
   function add(item: ShopItem) {
     const owned = ownedByKey.get(item.key);
+    if (item.stock === "UNIQUE" && globallyOwnedByKey.has(item.key) && !owned) {
+      setError("Cet objet permanent est déjà détenu par un autre joueur.");
+      return;
+    }
     if (item.stock === "UNIQUE" && owned) {
       setError("Objet unique déjà possédé.");
       return;
@@ -410,6 +417,7 @@ export default function ShopInventory({
               const owned = ownedByKey.get(item.key);
               const inCart = cart[item.key] ?? 0;
               const uniqueOwned = item.stock === "UNIQUE" && !!owned;
+              const globallyOwned = item.stock === "UNIQUE" && globallyOwnedByKey.has(item.key);
               const previousPurchases = ownedByKey.get(item.key)?.quantity ?? 0;
               const serviceGroup = serviceGroupForItem(item);
               const conditionUnlock = isConditionUnlockItemKey(item.key);
@@ -423,9 +431,8 @@ export default function ShopInventory({
               const isRankIcon = /^[A-Z]$/.test(item.kanji);
               const projectedCost = conditionUnlock || rerollFt ? unitCost : cartTotal + unitCost;
               const cannotAffordNext = projectedCost > xpAvailable;
-              const disablesAdd = pending || uniqueOwned || dlcLocked || !!gradeLockReason || (cannotAffordNext && !rerollFt);
-              const relicOwned = item.category === "RELIQUES" && uniqueOwned;
-              const lockedByXp = relicOwned || dlcLocked || !!gradeLockReason || (cannotAffordNext && !rerollFt);
+              const disablesAdd = pending || uniqueOwned || globallyOwned || dlcLocked || !!gradeLockReason || (cannotAffordNext && !rerollFt);
+              const lockedByXp = globallyOwned || dlcLocked || !!gradeLockReason || (cannotAffordNext && !rerollFt);
 
               return (
                 <article
@@ -490,6 +497,7 @@ export default function ShopInventory({
                       {serviceGroup && <span className="hnk-chip">{SHOP_SERVICE_GROUP_META[serviceGroup].label}</span>}
                       {item.rankHint && <span className="hnk-chip">{item.rankHint}</span>}
                       {owned && <span className="hnk-chip">Possédé x{owned.quantity}</span>}
+                      {globallyOwned && !owned && <span className="hnk-chip hnk-chip--danger">Déjà détenu</span>}
                       {hasLineDiscount && <span className="hnk-chip">Réduction -25%</span>}
                       {inCart > 0 && <span className="hnk-chip">Panier x{inCart}</span>}
                       {dlcLocked && <span className="hnk-chip hnk-chip--danger">Rang Village C requis</span>}

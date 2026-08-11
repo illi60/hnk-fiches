@@ -22,6 +22,7 @@ export interface AdminRelicView {
   key: string;
   name: string;
   kanji: string;
+  category: string;
   owners: AdminRelicOwnerView[];
 }
 
@@ -43,20 +44,20 @@ export default function AdminRelicOwners({ relics }: { relics: AdminRelicView[] 
         setMsg("Retrait impossible.");
         return;
       }
-      setMsg(`${owner.itemName} retirée de l'inventaire de ${holder}.`);
+      setMsg(`${owner.itemName} retire de l'inventaire de ${holder}.`);
       router.refresh();
     });
   }
 
   return (
-    <section className="hnk-panel" data-kanji="碑">
+    <section className="hnk-panel" data-kanji="封">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <p className="hnk-eyebrow">Reliques uniques</p>
-          <h2 className="hnk-serif text-2xl mt-2">Détenteurs des fragments</h2>
+          <p className="hnk-eyebrow">Objets permanents globaux</p>
+          <h2 className="hnk-serif text-2xl mt-2">Detenteurs des reliques et contes</h2>
           <p className="text-sm text-smoke mt-3 max-w-2xl">
-            Suis qui possède chaque fragment. Retirer une relique d'un inventaire la rend à nouveau disponible
-            à l'achat pour le joueur concerné.
+            Suis qui possede chaque relique ou conte. Retirer l'objet d'un inventaire le rend a nouveau
+            disponible a l'achat pour tout le forum.
           </p>
         </div>
         <span className="hnk-chip">{totalOwned} attribution{totalOwned > 1 ? "s" : ""}</span>
@@ -69,12 +70,13 @@ export default function AdminRelicOwners({ relics }: { relics: AdminRelicView[] 
               <div>
                 <p className="hnk-eyebrow">{relic.key}</p>
                 <h3 className="font-display uppercase tracking-wider text-xl text-white mt-2">{relic.name}</h3>
+                <p className="text-xs text-smoke mt-1">{relic.category.replace(/_/g, " ").toLowerCase()}</p>
               </div>
-              <span className="hnk-chip">{relic.owners.length ? "Attribuée" : "Libre"}</span>
+              <span className="hnk-chip">{relic.owners.length ? "Attribue" : "Libre"}</span>
             </div>
 
             {relic.owners.length === 0 ? (
-              <p className="text-sm text-smoke mt-4">Aucun joueur ne possède cette relique.</p>
+              <p className="text-sm text-smoke mt-4">Aucun joueur ne possede cet objet.</p>
             ) : (
               <div className="mt-4 space-y-3">
                 {relic.owners.map((owner) => {
@@ -84,8 +86,8 @@ export default function AdminRelicOwners({ relics }: { relics: AdminRelicView[] 
                       <div>
                         <p className="text-sm text-bone font-semibold">{holder}</p>
                         <p className="text-xs text-smoke">
-                          {owner.user.clan ? `${owner.user.clan} · ` : ""}
-                          acheté {owner.costXp} XP
+                          {owner.user.clan ? `${owner.user.clan} - ` : ""}
+                          achete {owner.costXp} XP
                         </p>
                       </div>
                       <button

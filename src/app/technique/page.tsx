@@ -13,7 +13,7 @@ import { type ProgressionState } from "@/lib/quintessence";
 import { type ArtsState } from "@/lib/arts";
 import { loadKgCatalog } from "@/lib/kekkei-server";
 import { isNoClan } from "@/lib/clans";
-import { loadShopItems } from "@/lib/shop-server";
+import { loadShopItems, loadShopItemsByKeys } from "@/lib/shop-server";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -80,11 +80,17 @@ export default async function DashboardPage() {
   const xpPct =
     totalXp > 0 ? Math.min(100, Math.round((user.xpAvailable / totalXp) * 100)) : 0;
 
-  const [villageCommRank, clanCommRank, shopItems] = await Promise.all([
+  const [villageCommRank, clanCommRank, shopItems, inventoryCatalogItems] = await Promise.all([
     effectiveCommRankForUserTrack("VILLAGE", user.clan),
     hasClan ? effectiveCommRankForUserTrack("CLAN", user.clan) : Promise.resolve(null),
     loadShopItems(),
+    loadShopItemsByKeys(user.inventoryItems.map((item) => item.itemKey)),
   ]);
+  const catalogByKey = new Map(shopItems.map((item) => [item.key, item]));
+  for (const item of inventoryCatalogItems) {
+    catalogByKey.set(item.key, item);
+  }
+  const profileCatalog = Array.from(catalogByKey.values());
   const artsState = ((user.artsState ?? {}) as unknown) as ArtsState;
   const progression = ((user.progressionState ?? {}) as unknown) as ProgressionState;
 
@@ -153,7 +159,7 @@ export default async function DashboardPage() {
         histoireRank={user.rangHistoire}
         xpAvailable={user.xpAvailable}
         inventory={user.inventoryItems}
-        catalog={shopItems}
+        catalog={profileCatalog}
       />
 
       <ProgressionManager

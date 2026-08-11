@@ -8,6 +8,7 @@ import {
   SHOP_PROMOTION_JONIN_ITEM_KEY,
   filterReconquestItemsForScope,
   filterShopItemsForUser,
+  isGloballyLimitedShopItem,
 } from "@/lib/shop";
 import { loadReconquestProgress } from "@/lib/shop-reconquest-server";
 import ShopInventory from "@/components/ShopInventory";
@@ -49,11 +50,19 @@ export default async function BoutiquePage() {
     hasChuninPromotion,
     hasJoninPromotion,
   }), reconquestProgress);
+  const globallyLimitedItemKeys = items.filter(isGloballyLimitedShopItem).map((item) => item.key);
+  const globallyOwnedRows = globallyLimitedItemKeys.length > 0
+    ? await prisma.inventoryItem.findMany({
+        where: { itemKey: { in: globallyLimitedItemKeys } },
+        select: { itemKey: true },
+      })
+    : [];
 
   return (
     <ShopInventory
       items={items}
       inventory={user.inventoryItems}
+      globallyOwnedItemKeys={globallyOwnedRows.map((row) => row.itemKey)}
       xpAvailable={user.xpAvailable}
       villageRank={user.rangVillage}
       grade={user.grade}

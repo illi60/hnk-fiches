@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import AdminShopItems, { type AdminShopItemView } from "@/components/AdminShopItems";
 import AdminReconquestProgress from "@/components/AdminReconquestProgress";
 import AdminRelicOwners, { type AdminRelicView } from "@/components/AdminRelicOwners";
-import { SHOP_RELIC_ITEM_KEYS } from "@/lib/shop";
+import { isGloballyLimitedShopItem } from "@/lib/shop";
 import { loadReconquestProgress } from "@/lib/shop-reconquest-server";
 
 export default async function AdminBoutiquePage() {
@@ -41,10 +41,27 @@ export default async function AdminBoutiquePage() {
   });
 
   const reconquestProgress = missingTable ? 0 : await loadReconquestProgress();
-  const relicOwnerRows = missingTable
+  const items: AdminShopItemView[] = rows.map((row) => ({
+    id: row.id,
+    key: row.itemKey,
+    name: row.name,
+    category: row.category as AdminShopItemView["category"],
+    costXp: row.costXp,
+    stock: row.stock === "UNIQUE" ? "UNIQUE" : "UNLIMITED",
+    kanji: row.kanji,
+    resource: row.resource ?? undefined,
+    rankHint: row.rankHint ?? undefined,
+    description: row.description,
+    effect: row.effect,
+    isActive: row.isActive,
+    sortOrder: row.sortOrder,
+  }));
+  const globallyLimitedItems = items.filter(isGloballyLimitedShopItem);
+  const globallyLimitedKeys = globallyLimitedItems.map((item) => item.key);
+  const ownerRows = missingTable || globallyLimitedKeys.length === 0
     ? []
     : await prisma.inventoryItem.findMany({
-        where: { itemKey: { in: [...SHOP_RELIC_ITEM_KEYS] } },
+        where: { itemKey: { in: globallyLimitedKeys } },
         orderBy: [{ itemKey: "asc" }, { createdAt: "asc" }],
         select: {
           id: true,
@@ -63,40 +80,23 @@ export default async function AdminBoutiquePage() {
           },
         },
       });
-  const items: AdminShopItemView[] = rows.map((row) => ({
-    id: row.id,
-    key: row.itemKey,
-    name: row.name,
-    category: row.category as AdminShopItemView["category"],
-    costXp: row.costXp,
-    stock: row.stock === "UNIQUE" ? "UNIQUE" : "UNLIMITED",
-    kanji: row.kanji,
-    resource: row.resource ?? undefined,
-    rankHint: row.rankHint ?? undefined,
-    description: row.description,
-    effect: row.effect,
-    isActive: row.isActive,
-    sortOrder: row.sortOrder,
+  const relics: AdminRelicView[] = globallyLimitedItems.map((item) => ({
+    key: item.key,
+    name: item.name,
+    kanji: item.kanji,
+    category: item.category,
+    owners: ownerRows
+      .filter((owner) => owner.itemKey === item.key)
+      .map((owner) => ({
+        id: owner.id,
+        itemKey: owner.itemKey,
+        itemName: owner.itemName,
+        costXp: owner.costXp,
+        quantity: owner.quantity,
+        createdAt: owner.createdAt.toISOString(),
+        user: owner.user,
+      })),
   }));
-  const relics: AdminRelicView[] = SHOP_RELIC_ITEM_KEYS.map((key) => {
-    const item = items.find((catalogItem) => catalogItem.key === key);
-    return {
-      key,
-      name: item?.name ?? key,
-      kanji: item?.kanji ?? "碑",
-      owners: relicOwnerRows
-        .filter((owner) => owner.itemKey === key)
-        .map((owner) => ({
-          id: owner.id,
-          itemKey: owner.itemKey,
-          itemName: owner.itemName,
-          costXp: owner.costXp,
-          quantity: owner.quantity,
-          createdAt: owner.createdAt.toISOString(),
-          user: owner.user,
-        })),
-    };
-  });
 
   return (
     <div className="space-y-8">

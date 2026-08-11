@@ -4,6 +4,10 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin, jsonError } from "@/lib/permissions";
 import { SHOP_RELIC_ITEM_KEYS } from "@/lib/shop";
 
+function isTrackedGlobalItemKey(itemKey: string): boolean {
+  return (SHOP_RELIC_ITEM_KEYS as readonly string[]).includes(itemKey) || itemKey.startsWith("conte-");
+}
+
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireAdmin();
@@ -18,7 +22,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
       },
     });
     if (!item) throw new Error("NOT_FOUND");
-    if (!(SHOP_RELIC_ITEM_KEYS as readonly string[]).includes(item.itemKey)) {
+    if (!isTrackedGlobalItemKey(item.itemKey)) {
       return NextResponse.json({ ok: false, error: "INVALID" }, { status: 400 });
     }
 

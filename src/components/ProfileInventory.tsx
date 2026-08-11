@@ -43,6 +43,7 @@ export default function ProfileInventory({
           {inventory.map((owned) => {
             const item = catalogByKey.get(owned.itemKey);
             const unique = item?.stock === "UNIQUE";
+            const displayName = item?.name ?? owned.itemName;
             return (
               <article
                 key={owned.itemKey}
@@ -59,7 +60,7 @@ export default function ProfileInventory({
                         {item ? categoryLabel(item.category) : "Objet"}
                       </p>
                       <h3 className="font-display uppercase tracking-wider text-xl text-white mt-2">
-                        {owned.itemName}
+                        {displayName}
                       </h3>
                     </div>
                     <span className="hnk-chip">x{owned.quantity}</span>
@@ -74,7 +75,7 @@ export default function ProfileInventory({
                     <span className="hnk-chip tabular-nums">{owned.costXp} XP</span>
                     <InventoryForumCopyButton
                       data={{
-                        itemName: owned.itemName,
+                        itemName: displayName,
                         quantity: owned.quantity,
                         costXp: owned.costXp,
                         item,

@@ -11,6 +11,7 @@ import {
   SHOP_PROMOTION_JONIN_ITEM_KEY,
   discountedShopCost,
   isConditionUnlockItemKey,
+  isGloballyLimitedShopItem,
   isGradeServiceItemKey,
   isReconquestItemKey,
   isRerollFtItemKey,
@@ -85,6 +86,16 @@ export async function POST(req: Request) {
         });
         if (item.key !== nextReconquestItemKey(reconquestState.intValue)) {
           throw new Error("INELIGIBLE");
+        }
+      }
+      if (isGloballyLimitedShopItem(item)) {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('hnk_shop_global_unique'))`;
+        const globallyOwned = await tx.inventoryItem.findFirst({
+          where: { itemKey: item.key },
+          select: { id: true },
+        });
+        if (globallyOwned) {
+          throw new Error("DUPLICATE");
         }
       }
       const current = await tx.inventoryItem.findUnique({

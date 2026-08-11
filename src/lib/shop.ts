@@ -133,6 +133,10 @@ export function isReconquestItemKey(itemKey: string): itemKey is ReconquestItemK
   return (RECONQUEST_ITEM_KEYS as readonly string[]).includes(itemKey);
 }
 
+export function isGloballyLimitedShopItem(item: Pick<ShopItem, "category" | "stock">): boolean {
+  return item.stock === "UNIQUE" && (item.category === "RELIQUES" || item.category === "CONTES");
+}
+
 export function nextReconquestItemKey(completedCount: number): ReconquestItemKey | null {
   return RECONQUEST_ITEM_KEYS[Math.max(0, completedCount)] ?? null;
 }
@@ -156,6 +160,7 @@ export const SHOP_RELIC_ITEM_KEYS = [
   "relique-bras-gauche-globe",
   "relique-quatre-jambes",
 ] as const;
+export type ShopRelicItemKey = (typeof SHOP_RELIC_ITEM_KEYS)[number];
 export const SHOP_DISCOUNT_RATE = 0.25;
 
 export function rerollFtBaseCostForPurchase(item: Pick<ShopItem, "costXp">, previousPurchases: number): number {

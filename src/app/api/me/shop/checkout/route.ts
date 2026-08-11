@@ -11,6 +11,7 @@ import {
   SHOP_PROMOTION_JONIN_ITEM_KEY,
   discountedShopCost,
   isConditionUnlockItemKey,
+  isGloballyLimitedShopItem,
   isGradeServiceItemKey,
   isReconquestItemKey,
   isRerollFtItemKey,
@@ -82,6 +83,7 @@ export async function POST(req: Request) {
         }
       }
       const reconquestLines = lines.filter((line) => isReconquestItemKey(line.item.key));
+      const globallyLimitedLines = lines.filter((line) => isGloballyLimitedShopItem(line.item));
       if (reconquestLines.length > 0) {
         if (reconquestLines.length > 1 || reconquestLines.some((line) => line.quantity !== 1)) {
           throw new Error("INELIGIBLE");
@@ -99,6 +101,19 @@ export async function POST(req: Request) {
         });
         if (reconquestLines[0].item.key !== nextReconquestItemKey(reconquestState.intValue)) {
           throw new Error("INELIGIBLE");
+        }
+      }
+      if (globallyLimitedLines.length > 0) {
+        if (globallyLimitedLines.some((line) => line.quantity !== 1)) {
+          throw new Error("DUPLICATE");
+        }
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('hnk_shop_global_unique'))`;
+        const globallyOwned = await tx.inventoryItem.findMany({
+          where: { itemKey: { in: globallyLimitedLines.map((line) => line.item.key) } },
+          select: { itemKey: true },
+        });
+        if (globallyOwned.length > 0) {
+          throw new Error("DUPLICATE");
         }
       }
       const current = await tx.inventoryItem.findMany({
