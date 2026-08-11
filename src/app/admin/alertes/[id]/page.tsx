@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { adminAlertKindLabel, repairAdminAlertText } from "@/lib/admin-alerts";
 import { prisma } from "@/lib/prisma";
 import { requireFicheModerator } from "@/lib/permissions";
 
@@ -48,7 +49,7 @@ export default async function AdminAlertDetailPage({
         <div>
           <p className="hnk-eyebrow">Alerte boutique</p>
           <h1 className="font-display text-4xl uppercase tracking-wider text-ember mt-2">
-            {alert.title}
+            {repairAdminAlertText(alert.title)}
           </h1>
           <p className="text-sm text-smoke mt-2">
             Ouverte le{" "}
@@ -59,7 +60,7 @@ export default async function AdminAlertDetailPage({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <span className="hnk-chip">{alertKindLabel(alert.kind)}</span>
+          <span className="hnk-chip">{adminAlertKindLabel(alert.kind)}</span>
           <span className="hnk-chip">Marquée comme lue</span>
         </div>
       </div>
@@ -69,7 +70,7 @@ export default async function AdminAlertDetailPage({
           <div>
             <p className="hnk-eyebrow">Message joueur</p>
             <div className="mt-3 border border-ember/25 bg-ember/5 px-5 py-4 text-bone leading-relaxed">
-              {alert.body}
+              {repairAdminAlertText(alert.body)}
             </div>
 
             <div className="mt-5 flex flex-wrap gap-3">
@@ -124,11 +125,4 @@ function Info({ label, value }: { label: string; value: string }) {
 function formatMetadata(metadata: unknown) {
   if (!metadata || typeof metadata !== "object") return null;
   return JSON.stringify(metadata, null, 2);
-}
-
-function alertKindLabel(kind: string) {
-  if (kind === "SHOP_RECONQUEST") return "Reconquête";
-  if (kind === "SHOP_GRADE_REQUEST") return "Grade";
-  if (kind === "SHOP_RECONQUEST_ADMIN") return "Admin";
-  return kind.replace(/_/g, " ").toLowerCase();
 }
