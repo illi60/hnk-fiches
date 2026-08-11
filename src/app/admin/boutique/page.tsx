@@ -1,8 +1,8 @@
 import { requireAdmin } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import AdminShopItems, { type AdminShopItemView } from "@/components/AdminShopItems";
-import AdminReconquestProgress from "@/components/AdminReconquestProgress";
-import AdminRelicOwners, { type AdminRelicView } from "@/components/AdminRelicOwners";
+import { type AdminShopItemView } from "@/components/AdminShopItems";
+import { type AdminRelicView } from "@/components/AdminRelicOwners";
+import AdminShopWorkspace, { type AdminShopAlertPreview } from "@/components/AdminShopWorkspace";
 import { isGloballyLimitedShopItem } from "@/lib/shop";
 import { loadReconquestProgress } from "@/lib/shop-reconquest-server";
 
@@ -40,7 +40,32 @@ export default async function AdminBoutiquePage() {
     throw error;
   });
 
-  const reconquestProgress = missingTable ? 0 : await loadReconquestProgress();
+  const [reconquestProgress, alertRows] = missingTable
+    ? [0, []] as const
+    : await Promise.all([
+        loadReconquestProgress(),
+        prisma.adminAlert.findMany({
+          orderBy: [{ isRead: "asc" }, { createdAt: "desc" }],
+          take: 10,
+          select: {
+            id: true,
+            title: true,
+            body: true,
+            kind: true,
+            itemName: true,
+            costXp: true,
+            isRead: true,
+            createdAt: true,
+            user: {
+              select: {
+                username: true,
+                forumPseudo: true,
+                clan: true,
+              },
+            },
+          },
+        }),
+      ]);
   const items: AdminShopItemView[] = rows.map((row) => ({
     id: row.id,
     key: row.itemKey,
@@ -97,6 +122,10 @@ export default async function AdminBoutiquePage() {
         user: owner.user,
       })),
   }));
+  const alerts: AdminShopAlertPreview[] = alertRows.map((alert) => ({
+    ...alert,
+    createdAt: alert.createdAt.toISOString(),
+  }));
 
   return (
     <div className="space-y-8">
@@ -104,7 +133,7 @@ export default async function AdminBoutiquePage() {
         <p className="text-[10px] tracking-[0.34em] uppercase text-smoke">Boutique</p>
         <h1 className="font-serif text-3xl text-white2 mt-1">Catalogue des objets</h1>
         <p className="text-sm text-smoke mt-2 max-w-2xl">
-          Ajoute, masque ou modifie les objets achetables par les joueurs connectes.
+          Ajoute, masque ou modifie les objets achetables par les joueurs connectés.
         </p>
       </div>
 
@@ -118,9 +147,12 @@ export default async function AdminBoutiquePage() {
         </div>
       ) : (
         <>
-          <AdminReconquestProgress progress={reconquestProgress} />
-          <AdminRelicOwners relics={relics} />
-          <AdminShopItems items={items} />
+          <AdminShopWorkspace
+            items={items}
+            relics={relics}
+            reconquestProgress={reconquestProgress}
+            alerts={alerts}
+          />
         </>
       )}
     </div>

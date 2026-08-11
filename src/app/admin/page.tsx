@@ -69,6 +69,7 @@ export default async function AdminHome() {
         <Kpi
           label="Alertes boutique"
           value={alertCount}
+          href="/admin/alertes"
           accent={alertCount > 0}
         />
       </div>
@@ -80,7 +81,7 @@ export default async function AdminHome() {
         <ul className="divide-y divide-white/5 border border-white/5 bg-ink-700">
           {alerts.map((alert) => (
             <li key={alert.id} className="px-4 py-3 text-sm">
-              <div className="flex items-start justify-between gap-4">
+              <Link href={`/admin/alertes/${alert.id}`} className="flex items-start justify-between gap-4 hover:text-ember">
                 <div>
                   <p className="font-bold text-bone">
                     {alert.title}
@@ -88,9 +89,7 @@ export default async function AdminHome() {
                   </p>
                   <p className="mt-1 text-smoke">{alert.body}</p>
                   <p className="mt-2 text-xs text-smoke">
-                    <Link href={`/admin/users/${alert.user.id}`} className="text-bone hover:text-ember">
-                      {alert.user.username}
-                    </Link>
+                    <span className="text-bone">{alert.user.username}</span>
                     {alert.itemName && <> Â· {alert.itemName}</>}
                     {alert.costXp !== null && <> Â· {alert.costXp} XP</>}
                   </p>
@@ -101,7 +100,7 @@ export default async function AdminHome() {
                     timeStyle: "short",
                   })}
                 </span>
-              </div>
+              </Link>
             </li>
           ))}
           {alerts.length === 0 && (
