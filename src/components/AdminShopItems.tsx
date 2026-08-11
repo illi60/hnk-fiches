@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import type { ReactNode } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { SHOP_CATEGORIES, categoryLabel, type ShopCategory, type ShopItem } from "@/lib/shop";
@@ -37,6 +38,15 @@ export default function AdminShopItems({ items }: { items: AdminShopItemView[] }
   const [form, setForm] = useState(EMPTY);
   const [msg, setMsg] = useState<string | null>(null);
   const selected = items.find((item) => item.id === selectedId) ?? null;
+  const groups = useMemo(
+    () =>
+      SHOP_CATEGORIES.map((category) => ({
+        category,
+        label: categoryLabel(category),
+        items: items.filter((item) => normalizeEditableCategory(item.category) === category),
+      })).filter((group) => group.items.length > 0),
+    [items],
+  );
 
   function edit(item: AdminShopItemView) {
     setSelectedId(item.id);
@@ -173,29 +183,48 @@ export default function AdminShopItems({ items }: { items: AdminShopItemView[] }
       </section>
 
       <section>
-        <h2 className="hnk-section-title">Objets configures</h2>
-        <div className="grid md:grid-cols-2 gap-4">
-          {items.map((item) => (
-            <article key={item.id} className={`hnk-panel ${item.stock === "UNIQUE" ? "hnk-shop-unique" : ""}`} data-kanji={item.kanji}>
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="hnk-eyebrow">{categoryLabel(item.category)} · {item.isActive ? "Actif" : "Masque"}</p>
-                  <h3 className="font-display uppercase tracking-wider text-xl text-white mt-2">{item.name}</h3>
-                </div>
-                <span className="hnk-chip">{item.costXp} XP</span>
+        <div className="flex items-end justify-between gap-4 flex-wrap border-b border-ember/25 pb-2">
+          <div>
+            <p className="hnk-eyebrow">Objets configurés</p>
+            <h2 className="hnk-serif text-2xl mt-1">Catalogue par catégorie</h2>
+          </div>
+          <span className="hnk-chip">{items.length} objet{items.length > 1 ? "s" : ""}</span>
+        </div>
+
+        <div className="mt-5 space-y-8">
+          {groups.map((group) => (
+            <div key={group.category}>
+              <div className="flex items-center gap-3 border-b border-white/10 pb-2 mb-4">
+                <h3 className="font-display uppercase tracking-wider text-xl text-white">{group.label}</h3>
+                <span className="hnk-chip ml-auto">
+                  {group.items.length} objet{group.items.length > 1 ? "s" : ""}
+                </span>
               </div>
-              <p className="text-xs text-smoke mt-3">{item.key}</p>
-              <p className="text-sm text-bone/75 mt-3 leading-relaxed">{item.description}</p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <span className="hnk-chip">{item.stock === "UNIQUE" ? "Unique" : "Normal"}</span>
-                <button type="button" className="hnk-btn-ghost !py-1.5 !px-3 !text-[10px]" onClick={() => edit(item)}>
-                  Modifier
-                </button>
-                <button type="button" className="hnk-btn-ghost !py-1.5 !px-3 !text-[10px]" disabled={pending} onClick={() => remove(item)}>
-                  Supprimer
-                </button>
+              <div className="grid md:grid-cols-2 gap-4">
+                {group.items.map((item) => (
+                  <article key={item.id} className={`hnk-panel ${item.stock === "UNIQUE" ? "hnk-shop-unique" : ""}`} data-kanji={item.kanji}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="hnk-eyebrow">{item.isActive ? "Actif" : "Masqué"}</p>
+                        <h4 className="font-display uppercase tracking-wider text-xl text-white mt-2">{item.name}</h4>
+                      </div>
+                      <span className="hnk-chip">{item.costXp} XP</span>
+                    </div>
+                    <p className="text-xs text-smoke mt-3">{item.key}</p>
+                    <p className="text-sm text-bone/75 mt-3 leading-relaxed">{item.description}</p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <span className="hnk-chip">{item.stock === "UNIQUE" ? "Unique" : "Normal"}</span>
+                      <button type="button" className="hnk-btn-ghost !py-1.5 !px-3 !text-[10px]" onClick={() => edit(item)}>
+                        Modifier
+                      </button>
+                      <button type="button" className="hnk-btn-ghost !py-1.5 !px-3 !text-[10px]" disabled={pending} onClick={() => remove(item)}>
+                        Supprimer
+                      </button>
+                    </div>
+                  </article>
+                ))}
               </div>
-            </article>
+            </div>
           ))}
         </div>
       </section>
@@ -203,7 +232,7 @@ export default function AdminShopItems({ items }: { items: AdminShopItemView[] }
   );
 }
 
-function Label({ text, children }: { text: string; children: React.ReactNode }) {
+function Label({ text, children }: { text: string; children: ReactNode }) {
   return (
     <label className="block">
       <span className="hnk-label">{text}</span>
