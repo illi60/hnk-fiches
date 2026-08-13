@@ -11,7 +11,6 @@ import {
   staffMessageForumHtml,
   type StaffMessageData,
   type StaffAccentColor,
-  type StaffMessageType,
   type StaffUrgencyLevel,
 } from "@/lib/staffMessages";
 
@@ -87,10 +86,6 @@ export default function StaffMessageGenerator() {
     setD((p) => ({ ...p, [key]: value }));
   }
 
-  function setType(type: StaffMessageType) {
-    setD((p) => ({ ...p, type, typeLabel: STAFF_MESSAGE_TYPES[type] }));
-  }
-
   function setMeta(index: number, patch: Partial<StaffMessageData["meta"][number]>) {
     setD((p) => ({
       ...p,
@@ -143,19 +138,6 @@ export default function StaffMessageGenerator() {
       <div className="space-y-7 lg:col-span-4">
         <section className="hnk-panel p-5 space-y-4">
           <h2 className="hnk-section-title mb-1">Cadre administratif</h2>
-          <Field label="Type">
-            <select
-              className="hnk-input"
-              value={d.type}
-              onChange={(e) => setType(e.target.value as StaffMessageType)}
-            >
-              {Object.entries(STAFF_MESSAGE_TYPES).map(([key, label]) => (
-                <option key={key} value={key}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </Field>
           <Field label="Titre du cadre">
             <input
               className="hnk-input"
