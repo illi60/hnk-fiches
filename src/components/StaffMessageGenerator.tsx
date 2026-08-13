@@ -3,11 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { RichEditor } from "./RichEditor";
 import {
+  STAFF_ACCENT_COLORS,
   STAFF_MESSAGE_TYPES,
   STAFF_URGENCY_LEVELS,
   emptyStaffMessage,
+  parseStaffMessageForumHtml,
   staffMessageForumHtml,
   type StaffMessageData,
+  type StaffAccentColor,
   type StaffMessageType,
   type StaffUrgencyLevel,
 } from "@/lib/staffMessages";
@@ -19,6 +22,9 @@ export default function StaffMessageGenerator() {
   const [d, setD] = useState<StaffMessageData>(() => emptyStaffMessage());
   const [copied, setCopied] = useState(false);
   const [showCode, setShowCode] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importText, setImportText] = useState("");
+  const [importMsg, setImportMsg] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
@@ -29,10 +35,13 @@ export default function StaffMessageGenerator() {
         const p = JSON.parse(raw) as Partial<StaffMessageData>;
         const base = emptyStaffMessage();
         const type = p.type && p.type in STAFF_MESSAGE_TYPES ? p.type : base.type;
+        const accent = p.accent && p.accent in STAFF_ACCENT_COLORS ? p.accent : base.accent;
         setD({
           ...base,
           ...p,
           type,
+          accent,
+          typeLabel: p.typeLabel ?? STAFF_MESSAGE_TYPES[type],
           meta: Array.isArray(p.meta) ? base.meta.map((m, i) => ({ ...m, ...(p.meta?.[i] ?? {}) })) : base.meta,
         });
         setSavedAt("restauré");
@@ -78,6 +87,10 @@ export default function StaffMessageGenerator() {
     setD((p) => ({ ...p, [key]: value }));
   }
 
+  function setType(type: StaffMessageType) {
+    setD((p) => ({ ...p, type, typeLabel: STAFF_MESSAGE_TYPES[type] }));
+  }
+
   function setMeta(index: number, patch: Partial<StaffMessageData["meta"][number]>) {
     setD((p) => ({
       ...p,
@@ -94,6 +107,18 @@ export default function StaffMessageGenerator() {
     }
     setD(emptyStaffMessage());
     setSavedAt(null);
+  }
+
+  function doImport() {
+    const res = parseStaffMessageForumHtml(importText);
+    if (!res) {
+      setImportMsg("Code non reconnu. Colle le code d'un message d'administration généré ici.");
+      return;
+    }
+    setD(res);
+    setImportMsg("Message importé ✓");
+    setImportText("");
+    setImportOpen(false);
   }
 
   async function copy() {
@@ -122,11 +147,32 @@ export default function StaffMessageGenerator() {
             <select
               className="hnk-input"
               value={d.type}
-              onChange={(e) => set("type", e.target.value as StaffMessageType)}
+              onChange={(e) => setType(e.target.value as StaffMessageType)}
             >
               {Object.entries(STAFF_MESSAGE_TYPES).map(([key, label]) => (
                 <option key={key} value={key}>
                   {label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Titre du cadre">
+            <input
+              className="hnk-input"
+              value={d.typeLabel}
+              onChange={(e) => set("typeLabel", e.target.value)}
+              placeholder="Décret officiel"
+            />
+          </Field>
+          <Field label="Couleur du cadre">
+            <select
+              className="hnk-input"
+              value={d.accent}
+              onChange={(e) => set("accent", e.target.value as StaffAccentColor)}
+            >
+              {Object.entries(STAFF_ACCENT_COLORS).map(([key, color]) => (
+                <option key={key} value={key}>
+                  {color.label}
                 </option>
               ))}
             </select>
@@ -260,6 +306,9 @@ export default function StaffMessageGenerator() {
             <button type="button" className="hnk-btn-ghost !py-1.5 !px-3 !text-[10px]" onClick={resetAll}>
               Réinitialiser
             </button>
+            <button type="button" className="hnk-btn-ghost !py-1.5 !px-3 !text-[10px]" onClick={() => { setImportOpen((s) => !s); setImportMsg(null); }}>
+              {importOpen ? "Fermer l'import" : "Importer"}
+            </button>
             <button type="button" className="hnk-btn-ghost !py-1.5 !px-3 !text-[10px]" onClick={() => setShowCode((s) => !s)}>
               {showCode ? "Masquer le code" : "Voir le code"}
             </button>
@@ -268,6 +317,27 @@ export default function StaffMessageGenerator() {
             </button>
           </div>
         </div>
+
+        {importOpen && (
+          <div className="hnk-panel p-4 space-y-2">
+            <p className="hnk-label">Récupérer un message depuis son code forum</p>
+            <p className="text-smoke text-[11px]">
+              Colle le code d'un message d'administration généré ici pour recharger ses champs.
+            </p>
+            <textarea
+              className="hnk-input w-full h-32 font-mono text-[11px] leading-relaxed"
+              placeholder="Colle ici le code &lt;div class=&quot;hnkf hnkf--staff&quot;&gt;..."
+              value={importText}
+              onChange={(e) => setImportText(e.target.value)}
+            />
+            <div className="flex items-center gap-3">
+              <button type="button" className="hnk-btn !py-1.5 !px-3 !text-[10px]" onClick={doImport} disabled={!importText.trim()}>
+                Charger le message
+              </button>
+              {importMsg && <span className="text-xs text-bone">{importMsg}</span>}
+            </div>
+          </div>
+        )}
 
         <iframe
           ref={iframeRef}
