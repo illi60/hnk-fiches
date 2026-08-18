@@ -20,7 +20,7 @@ export default async function EchangesPage() {
     },
   });
   if (!me) redirect("/login");
-  const canCreateTrade = me.role === "ADMIN";
+  const canCreateTrade = true;
 
   const inventoryItems = tradesReady
     ? await prisma.inventoryItem.findMany({
@@ -45,17 +45,15 @@ export default async function EchangesPage() {
         },
       });
 
-  const players = canCreateTrade
-    ? await prisma.user.findMany({
-        where: { id: { not: me.id } },
-        orderBy: { username: "asc" },
-        select: {
-          id: true,
-          username: true,
-          forumAvatar: true,
-        },
-      })
-    : [];
+  const players = await prisma.user.findMany({
+    where: me.role === "ADMIN" ? { id: { not: me.id } } : { id: { not: me.id }, role: { not: "ADMIN" } },
+    orderBy: { username: "asc" },
+    select: {
+      id: true,
+      username: true,
+      forumAvatar: true,
+    },
+  });
 
   const trades = tradesReady ? await listUserTrades(me.id) : [];
   const ownedKeys = [
