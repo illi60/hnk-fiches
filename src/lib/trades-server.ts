@@ -30,6 +30,11 @@ const TRADE_INCLUDE = {
     include: { author: { select: { id: true, username: true, forumAvatar: true } } },
   },
 };
+const TRADE_INCLUDE_LEGACY = {
+  initiator: { select: { id: true, username: true, forumAvatar: true } },
+  recipient: { select: { id: true, username: true, forumAvatar: true } },
+  items: { orderBy: [{ side: "asc" as const }, { itemName: "asc" as const }] },
+};
 
 function isMissingTradeSchema(error: unknown): boolean {
   return (
@@ -48,6 +53,24 @@ export async function isTradesSchemaReady(): Promise<boolean> {
     if (isMissingTradeSchema(error)) return false;
     throw error;
   }
+}
+
+async function isTradeMessageSchemaReady(): Promise<boolean> {
+  try {
+    await prisma.tradeMessage.findFirst({ select: { id: true } });
+    return true;
+  } catch (error) {
+    if (isMissingTradeSchema(error)) return false;
+    throw error;
+  }
+}
+
+async function tradeInclude(): Promise<Prisma.TradeInclude> {
+  return (await isTradeMessageSchemaReady()) ? TRADE_INCLUDE : TRADE_INCLUDE_LEGACY;
+}
+
+function withMessages<T extends { messages?: unknown[] }>(trade: T): T & { messages: NonNullable<T["messages"]> } {
+  return { ...trade, messages: (trade.messages ?? []) as NonNullable<T["messages"]> };
 }
 
 function normalizeLines(lines: TradeLineInput[]): TradeLineInput[] {
@@ -236,12 +259,14 @@ function sideHasValue(
 
 export async function listUserTrades(userId: string): Promise<TradeListItem[]> {
   try {
-    return await prisma.trade.findMany({
+    const include = await tradeInclude();
+    const trades = await prisma.trade.findMany({
       where: { OR: [{ initiatorId: userId }, { recipientId: userId }] },
       orderBy: { updatedAt: "desc" },
       take: 50,
-      include: TRADE_INCLUDE,
+      include,
     });
+    return trades.map((trade) => withMessages(trade)) as unknown as TradeListItem[];
   } catch (error) {
     if (isMissingTradeSchema(error)) return [];
     throw error;
@@ -271,19 +296,22 @@ export async function createTrade({
   if (!initiator || !recipient) throw new Error("TRADE_NOT_FOUND");
   if (initiator.role !== "ADMIN") throw new Error("TRADE_FORBIDDEN");
 
-  return prisma.trade.create({
+  const include = await tradeInclude();
+  const trade = await prisma.trade.create({
     data: {
       initiatorId,
       recipientId,
       requestMessage: message.trim(),
       expiresAt: new Date(Date.now() + TRADE_TTL_MS),
     },
-    include: TRADE_INCLUDE,
+    include,
   });
+  return withMessages(trade);
 }
 
 export async function acceptTradeStep(userId: string, tradeId: string) {
-  return prisma.$transaction(async (tx) => {
+  const include = await tradeInclude();
+  const trade = await prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`hnk_trade_${tradeId}`}))`;
     const trade = await tx.trade.findUnique({ where: { id: tradeId }, include: { items: true } });
     if (!trade) throw new Error("TRADE_NOT_FOUND");
@@ -295,7 +323,7 @@ export async function acceptTradeStep(userId: string, tradeId: string) {
       return tx.trade.update({
         where: { id: trade.id },
         data: { status: "NEGOTIATING" },
-        include: TRADE_INCLUDE,
+        include,
       });
     }
 
@@ -304,7 +332,7 @@ export async function acceptTradeStep(userId: string, tradeId: string) {
     const initiatorAccepted = side === "INITIATOR" ? true : trade.initiatorFinalAccepted;
     const recipientAccepted = side === "RECIPIENT" ? true : trade.recipientFinalAccepted;
     if (!initiatorAccepted || !recipientAccepted) {
-      return tx.trade.update({ where: { id: trade.id }, data, include: TRADE_INCLUDE });
+      return tx.trade.update({ where: { id: trade.id }, data, include });
     }
 
     for (const line of trade.items.filter((item) => item.side === "INITIATOR")) {
@@ -319,16 +347,18 @@ export async function acceptTradeStep(userId: string, tradeId: string) {
     return tx.trade.update({
       where: { id: trade.id },
       data: { ...data, status: "ACCEPTED", acceptedAt: new Date() },
-      include: TRADE_INCLUDE,
+      include,
     });
   });
+  return withMessages(trade);
 }
 
 export async function submitTradeOffer(userId: string, tradeId: string, input: { items: TradeLineInput[]; xp: number }) {
   const lines = normalizeLines(input.items);
   const catalogByKey = await loadTradeableCatalog(lines.map((line) => line.itemKey));
+  const include = await tradeInclude();
 
-  return prisma.$transaction(async (tx) => {
+  const trade = await prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`hnk_trade_${tradeId}`}))`;
     const trade = await tx.trade.findUnique({ where: { id: tradeId }, include: { items: true } });
     if (!trade) throw new Error("TRADE_NOT_FOUND");
@@ -380,9 +410,10 @@ export async function submitTradeOffer(userId: string, tradeId: string, input: {
         recipientFinalAccepted: false,
         status: nextInitiatorSubmitted && nextRecipientSubmitted ? "FINAL_PENDING" : "NEGOTIATING",
       },
-      include: TRADE_INCLUDE,
+      include,
     });
   });
+  return withMessages(trade);
 }
 
 async function releaseTradeReservations(tx: Prisma.TransactionClient, trade: Prisma.TradeGetPayload<{ include: { items: true } }>) {
@@ -393,7 +424,8 @@ async function releaseTradeReservations(tx: Prisma.TransactionClient, trade: Pri
 }
 
 export async function cancelTrade(userId: string, tradeId: string) {
-  return prisma.$transaction(async (tx) => {
+  const include = await tradeInclude();
+  const trade = await prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`hnk_trade_${tradeId}`}))`;
     const trade = await tx.trade.findUnique({ where: { id: tradeId }, include: { items: true } });
     if (!trade) throw new Error("TRADE_NOT_FOUND");
@@ -403,13 +435,15 @@ export async function cancelTrade(userId: string, tradeId: string) {
     return tx.trade.update({
       where: { id: trade.id },
       data: { status: "CANCELLED", cancelledAt: new Date() },
-      include: TRADE_INCLUDE,
+      include,
     });
   });
+  return withMessages(trade);
 }
 
 export async function declineTrade(userId: string, tradeId: string) {
-  return prisma.$transaction(async (tx) => {
+  const include = await tradeInclude();
+  const trade = await prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`hnk_trade_${tradeId}`}))`;
     const trade = await tx.trade.findUnique({ where: { id: tradeId }, include: { items: true } });
     if (!trade) throw new Error("TRADE_NOT_FOUND");
@@ -419,13 +453,15 @@ export async function declineTrade(userId: string, tradeId: string) {
     return tx.trade.update({
       where: { id: trade.id },
       data: { status: "DECLINED", declinedAt: new Date() },
-      include: TRADE_INCLUDE,
+      include,
     });
   });
+  return withMessages(trade);
 }
 
 export async function renegotiateTrade(userId: string, tradeId: string) {
-  return prisma.$transaction(async (tx) => {
+  const include = await tradeInclude();
+  const trade = await prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`hnk_trade_${tradeId}`}))`;
     const trade = await tx.trade.findUnique({ where: { id: tradeId }, include: { items: true } });
     if (!trade) throw new Error("TRADE_NOT_FOUND");
@@ -446,9 +482,10 @@ export async function renegotiateTrade(userId: string, tradeId: string) {
         initiatorFinalAccepted: false,
         recipientFinalAccepted: false,
       },
-      include: TRADE_INCLUDE,
+      include,
     });
   });
+  return withMessages(trade);
 }
 
 export async function deleteCancelledTrade(userId: string, tradeId: string) {
@@ -464,6 +501,7 @@ export async function deleteCancelledTrade(userId: string, tradeId: string) {
 }
 
 export async function addTradeMessage(userId: string, tradeId: string, body: string) {
+  if (!(await isTradeMessageSchemaReady())) throw new Error("TRADE_SCHEMA_NOT_READY");
   return prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`hnk_trade_${tradeId}`}))`;
     const trade = await tx.trade.findUnique({ where: { id: tradeId }, select: { id: true, initiatorId: true, recipientId: true, status: true } });
