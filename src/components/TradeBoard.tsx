@@ -119,6 +119,7 @@ export default function TradeBoard({
   xpAvailable,
   myInventory,
   players,
+  canCreateTrade,
   trades,
   tradesReady,
   catalog,
@@ -127,6 +128,7 @@ export default function TradeBoard({
   xpAvailable: number;
   myInventory: InventoryLine[];
   players: PlayerOption[];
+  canCreateTrade: boolean;
   trades: TradeView[];
   tradesReady: boolean;
   catalog: ShopItem[];
@@ -214,6 +216,10 @@ export default function TradeBoard({
 
   function createRequest() {
     setNotice(null);
+    if (!canCreateTrade) {
+      setNotice({ type: "error", body: "Seuls les administrateurs peuvent envoyer une demande d'échange." });
+      return;
+    }
     if (!tradesReady) {
       setNotice({ type: "error", body: "Le module d'échanges attend encore sa migration de base de données." });
       return;
@@ -416,35 +422,37 @@ export default function TradeBoard({
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-[360px_minmax(0,1fr)] gap-6 p-4 md:p-6">
-          <aside className="hnk-shop-cart !static">
-            <h2>Demande</h2>
-            <div className="p-4 space-y-4">
-              <label className="hnk-label block">
-                Joueur
-                <select className="hnk-input mt-2" value={recipientId} onChange={(e) => setRecipientId(e.target.value)}>
-                  {players.map((player) => (
-                    <option key={player.id} value={player.id}>
-                      {player.username}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="hnk-label block">
-                Termes demandés
-                <textarea
-                  className="hnk-input mt-2 !min-h-40"
-                  value={message}
-                  maxLength={1000}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Ex: Je cherche 2 bombes fumigènes contre 30 XP, ouvert à discussion."
-                />
-              </label>
-              <button type="button" className="hnk-btn w-full justify-center" disabled={pending} onClick={createRequest}>
-                {pending ? "Envoi..." : "Envoyer la demande"}
-              </button>
-            </div>
-          </aside>
+        <div className={`${canCreateTrade ? "grid lg:grid-cols-[360px_minmax(0,1fr)]" : ""} gap-6 p-4 md:p-6`}>
+          {canCreateTrade && (
+            <aside className="hnk-shop-cart !static">
+              <h2>Demande</h2>
+              <div className="p-4 space-y-4">
+                <label className="hnk-label block">
+                  Joueur
+                  <select className="hnk-input mt-2" value={recipientId} onChange={(e) => setRecipientId(e.target.value)}>
+                    {players.map((player) => (
+                      <option key={player.id} value={player.id}>
+                        {player.username}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="hnk-label block">
+                  Termes demandés
+                  <textarea
+                    className="hnk-input mt-2 !min-h-40"
+                    value={message}
+                    maxLength={1000}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="Ex: Je cherche 2 bombes fumigènes contre 30 XP, ouvert à discussion."
+                  />
+                </label>
+                <button type="button" className="hnk-btn w-full justify-center" disabled={pending} onClick={createRequest}>
+                  {pending ? "Envoi..." : "Envoyer la demande"}
+                </button>
+              </div>
+            </aside>
+          )}
 
           <section>
             <div className="flex flex-wrap items-center justify-between gap-3">

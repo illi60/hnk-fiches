@@ -5,7 +5,6 @@ import { prisma } from "@/lib/prisma";
 import { loadShopItems, loadShopItemsByKeys } from "@/lib/shop-server";
 import { isTradesSchemaReady, listUserTrades } from "@/lib/trades-server";
 import TradeBoard from "@/components/TradeBoard";
-import TradeTeaser from "@/components/TradeTeaser";
 
 export default async function EchangesPage() {
   const session = await auth();
@@ -21,7 +20,7 @@ export default async function EchangesPage() {
     },
   });
   if (!me) redirect("/login");
-  if (me.role !== "ADMIN") return <TradeTeaser />;
+  const canCreateTrade = me.role === "ADMIN";
 
   const inventoryItems = tradesReady
     ? await prisma.inventoryItem.findMany({
@@ -46,15 +45,17 @@ export default async function EchangesPage() {
         },
       });
 
-  const players = await prisma.user.findMany({
-    where: { id: { not: me.id } },
-    orderBy: { username: "asc" },
-    select: {
-      id: true,
-      username: true,
-      forumAvatar: true,
-    },
-  });
+  const players = canCreateTrade
+    ? await prisma.user.findMany({
+        where: { id: { not: me.id } },
+        orderBy: { username: "asc" },
+        select: {
+          id: true,
+          username: true,
+          forumAvatar: true,
+        },
+      })
+    : [];
 
   const trades = tradesReady ? await listUserTrades(me.id) : [];
   const ownedKeys = [
@@ -74,6 +75,7 @@ export default async function EchangesPage() {
       xpAvailable={me.xpAvailable}
       myInventory={inventoryItems}
       players={players}
+      canCreateTrade={canCreateTrade}
       tradesReady={tradesReady}
       trades={trades.map((trade) => ({
         ...trade,
