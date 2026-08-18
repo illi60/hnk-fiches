@@ -83,6 +83,25 @@ enum XPReason {
   QUINTESSENCE_SPEND      // dépense XP : quintessence d'art/KG, second KG
   PROGRESSION_SPEND       // dépense XP : « Dépenser X XP pour monter en Rang » (voie de progression)
   SHOP_SPEND              // dépense XP : achat en boutique / inventaire
+  TRADE_RESERVE           // réserve XP proposée dans un échange
+  TRADE_RELEASE           // libère XP réservée si échange annulé/refusé/renégocié
+  TRADE_TRANSFER          // crédite l'autre joueur lors d'un échange finalisé
+}
+
+// Workflow d'un échange d'objets entre joueurs.
+enum TradeStatus {
+  REQUESTED
+  NEGOTIATING
+  FINAL_PENDING
+  ACCEPTED
+  DECLINED
+  CANCELLED
+  EXPIRED
+}
+
+enum TradeSide {
+  INITIATOR
+  RECIPIENT
 }
 
 // ============================================================
@@ -151,6 +170,8 @@ model User {
   progressionSubmissions ProgressionSubmission[] @relation("ProgSubmitter")
   progressionReviewed    ProgressionSubmission[] @relation("ProgReviewer")
   inventoryItems  InventoryItem[] @relation("UserInventory")
+  tradesInitiated Trade[] @relation("TradeInitiator")
+  tradesReceived  Trade[] @relation("TradeRecipient")
   adminAlerts     AdminAlert[] @relation("UserAdminAlerts")
 
   @@index([forumUserId])
@@ -246,6 +267,7 @@ model InventoryItem {
   itemName  String
   costXp    Int
   quantity  Int      @default(1)
+  reservedQuantity Int @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -253,6 +275,52 @@ model InventoryItem {
   @@unique([userId, itemKey])
   @@index([userId])
   @@index([itemKey])
+}
+
+model Trade {
+  id          String      @id @default(cuid())
+  initiatorId String
+  initiator   User        @relation("TradeInitiator", fields: [initiatorId], references: [id], onDelete: Cascade)
+  recipientId String
+  recipient   User        @relation("TradeRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  status      TradeStatus @default(REQUESTED)
+  requestMessage String   @db.Text
+  initiatorXpOffered Int  @default(0)
+  recipientXpOffered Int  @default(0)
+  initiatorSubmitted Boolean @default(false)
+  recipientSubmitted Boolean @default(false)
+  initiatorFinalAccepted Boolean @default(false)
+  recipientFinalAccepted Boolean @default(false)
+  expiresAt   DateTime?
+  acceptedAt  DateTime?
+  declinedAt  DateTime?
+  cancelledAt DateTime?
+
+  items       TradeItem[]
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([initiatorId, status])
+  @@index([recipientId, status])
+  @@index([status, createdAt])
+}
+
+model TradeItem {
+  id        String    @id @default(cuid())
+  tradeId   String
+  trade     Trade     @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+
+  side      TradeSide
+  ownerId   String
+  itemKey   String
+  itemName  String
+  costXp    Int
+  quantity  Int
+
+  @@index([tradeId])
+  @@index([ownerId, itemKey])
 }
 
 model ShopCatalogItem {

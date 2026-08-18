@@ -64,7 +64,14 @@ export const SHOP_SERVICE_GROUP_META: Record<ShopServiceGroup, { label: string; 
 };
 
 export function serviceGroupForItem(item: Pick<ShopItem, "key">): ShopServiceGroup | null {
-  if (item.key === SHOP_DISCOUNT_ITEM_KEY || item.key === SHOP_REROLL_FT_ITEM_KEY) return "BOUTIQUE";
+  if (
+    item.key === SHOP_DISCOUNT_ITEM_KEY ||
+    item.key === SHOP_REROLL_FT_ITEM_KEY ||
+    item.key === SHOP_INVITATION_INTERLOPE_ITEM_KEY ||
+    item.key === SHOP_MINOR_CLAN_BANNER_ITEM_KEY
+  ) {
+    return "BOUTIQUE";
+  }
   if (item.key.startsWith("reconquete-contree-")) return "RECONQUETES";
   if (item.key.startsWith("condition-rang-")) {
     return "PROGRESSION";
@@ -148,6 +155,8 @@ export function filterReconquestItemsForScope(items: ShopItem[], completedCount:
 
 export const SHOP_DISCOUNT_ITEM_KEY = "reduction-marchandises-vie";
 export const SHOP_REROLL_FT_ITEM_KEY = "jeton-reroll-ft";
+export const SHOP_INVITATION_INTERLOPE_ITEM_KEY = "lettre-cachetee-jdc";
+export const SHOP_MINOR_CLAN_BANNER_ITEM_KEY = "banniere-clanique";
 export const SHOP_PROMOTION_CHUNIN_ITEM_KEY = "promotion-chunin";
 export const SHOP_PROMOTION_JONIN_ITEM_KEY = "promotion-jonin";
 export const SHOP_BONUS_CHUNIN_ITEM_KEY = "changer-bonus-chunin";
@@ -162,6 +171,11 @@ export const SHOP_RELIC_ITEM_KEYS = [
 ] as const;
 export type ShopRelicItemKey = (typeof SHOP_RELIC_ITEM_KEYS)[number];
 export const SHOP_DISCOUNT_RATE = 0.25;
+export const SHOP_INVITATION_INTERLOPE_COSTS = [100, 150, 200] as const;
+
+export function invitationInterlopeCost(purchases: number): number | null {
+  return SHOP_INVITATION_INTERLOPE_COSTS[Math.max(0, purchases)] ?? null;
+}
 
 export function rerollFtBaseCostForPurchase(item: Pick<ShopItem, "costXp">, previousPurchases: number): number {
   const purchases = Math.max(0, previousPurchases);
@@ -266,6 +280,24 @@ export function isRerollFtItemKey(itemKey: string): boolean {
   return itemKey === SHOP_REROLL_FT_ITEM_KEY;
 }
 
+export function isInvitationInterlopeItemKey(itemKey: string): boolean {
+  return itemKey === SHOP_INVITATION_INTERLOPE_ITEM_KEY;
+}
+
+export function isMinorClanBannerItemKey(itemKey: string): boolean {
+  return itemKey === SHOP_MINOR_CLAN_BANNER_ITEM_KEY;
+}
+
+export function isTradeableShopItem(item: Pick<ShopItem, "key" | "category">): boolean {
+  if (item.category === "SERVICES") return false;
+  if (isConditionUnlockItemKey(item.key)) return false;
+  if (isRerollFtItemKey(item.key)) return false;
+  if (isMinorClanBannerItemKey(item.key)) return false;
+  if (isGradeServiceItemKey(item.key)) return false;
+  if (item.key === SHOP_DISCOUNT_ITEM_KEY) return false;
+  return true;
+}
+
 export function filterShopItemsForUser(items: ShopItem[], ranks: ShopRankContext): ShopItem[] {
   return items.filter((item) => isShopItemVisibleForUser(item, ranks));
 }
@@ -367,14 +399,15 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     key: "lettre-cachetee-jdc",
-    name: "Lettre cachetée",
+    name: "Invitation interlope",
     category: "TRAMES",
     costXp: 100,
     stock: "UNIQUE",
     kanji: "封",
+    rankHint: "Stock global 3",
     resource: "Accès JDC",
-    description: "Lettre fermée par un cachet officiel, destinée à ouvrir un dossier sensible.",
-    effect: "Donne accès au JDC.",
+    description: "Enveloppe noire dépourvue d'expéditeur, de destinataire et de toute indication permettant d'en retracer l'origine. Un cachet de cire écarlate en interdit l'ouverture ; lorsqu'il est brisé, quelques lignes manuscrites apparaissent aux côtés d'un lieu, d'une heure et d'un nom : le tien.",
+    effect: "Confère un accès nominatif à la Trame Jeu du Calmar, ainsi qu'à la Boutique du Marché Noir. Trois exemplaires peuvent circuler sur tout le forum ; le prix augmente à chaque achat global.",
   },
   {
     key: "jeton-reroll-ft",
@@ -386,6 +419,17 @@ export const SHOP_ITEMS: ShopItem[] = [
     resource: "Fiche technique",
     description: "Jeton gravé, échangeable contre une reprise encadrée de fiche technique.",
     effect: "Remet la partie technique à zéro. Le prix augmente à chaque achat : +25% au deuxième jeton, puis +50% par jeton supplémentaire.",
+  },
+  {
+    key: SHOP_MINOR_CLAN_BANNER_ITEM_KEY,
+    name: "Bannière clanique",
+    category: "SERVICES",
+    costXp: 250,
+    stock: "UNIQUE",
+    kanji: "旗",
+    rankHint: "Clan mineur",
+    description: "Bannière vierge destinée à fonder une lignée secondaire reconnue.",
+    effect: "Ouvre une création directe de clan mineur : nom du clan, Kekkei Genkai associé, rang clanique E.",
   },
 ];
 

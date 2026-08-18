@@ -84,6 +84,15 @@ export function jsonError(e: unknown): NextResponse {
       "SELF_DELETE",
       "USERNAME_TAKEN",
       "COMMENT_REQUIS",
+      "INVALID_CLAN",
+      "KG_INVALIDE",
+      "KG_DEJA_CHOISI",
+      "TRADE_NOT_FOUND",
+      "TRADE_FORBIDDEN",
+      "TRADE_INVALID_STATE",
+      "TRADE_ITEM_UNAVAILABLE",
+      "TRADE_ITEM_NOT_TRADEABLE",
+      "TRADE_SCHEMA_NOT_READY",
     ]);
     if (known.has(e.message)) {
       const statusMap: Record<string, number> = {
@@ -100,6 +109,15 @@ export function jsonError(e: unknown): NextResponse {
         SELF_DELETE: 409,
         USERNAME_TAKEN: 409,
         COMMENT_REQUIS: 400,
+        INVALID_CLAN: 400,
+        KG_INVALIDE: 400,
+        KG_DEJA_CHOISI: 409,
+        TRADE_NOT_FOUND: 404,
+        TRADE_FORBIDDEN: 403,
+        TRADE_INVALID_STATE: 409,
+        TRADE_ITEM_UNAVAILABLE: 409,
+        TRADE_ITEM_NOT_TRADEABLE: 409,
+        TRADE_SCHEMA_NOT_READY: 503,
       };
       return NextResponse.json({ error: e.message }, { status: statusMap[e.message] ?? 400 });
     }

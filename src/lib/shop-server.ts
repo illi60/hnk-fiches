@@ -1,5 +1,9 @@
 import { prisma } from "@/lib/prisma";
-import { SHOP_ITEMS, type ShopItem } from "@/lib/shop";
+import { SHOP_ITEMS, SHOP_MINOR_CLAN_BANNER_ITEM_KEY, type ShopItem } from "@/lib/shop";
+
+const RUNTIME_FALLBACK_KEYS = new Set([
+  SHOP_MINOR_CLAN_BANNER_ITEM_KEY,
+]);
 
 function rowToShopItem(row: {
   itemKey: string;
@@ -55,7 +59,16 @@ export async function loadShopItems(): Promise<ShopItem[]> {
       },
     });
 
-    return rows.length > 0 ? rows.map(rowToShopItem) : SHOP_ITEMS;
+    if (rows.length === 0) return SHOP_ITEMS;
+
+    const items = rows.map(rowToShopItem);
+    const existing = new Set(items.map((item) => item.key));
+    for (const fallback of SHOP_ITEMS) {
+      if (RUNTIME_FALLBACK_KEYS.has(fallback.key) && !existing.has(fallback.key)) {
+        items.push(fallback);
+      }
+    }
+    return items;
   } catch (error) {
     if (isMissingShopCatalogTable(error)) return SHOP_ITEMS;
     throw error;

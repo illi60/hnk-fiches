@@ -33,6 +33,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <Link href="/technique">Profil</Link>
           <Link href="/technique/progression">Progression</Link>
           <Link href="/technique/boutique">Boutique</Link>
+          <Link href="/technique/echanges">Échanges</Link>
           <Link href="/technique/fiches">Mes techniques</Link>
           {hasClan && <Link href="/technique/clan">Bibliothèque clan</Link>}
           {hasKuchiyose && <Link href="/technique/invocations">Invocations</Link>}

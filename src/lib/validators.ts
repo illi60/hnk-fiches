@@ -229,6 +229,36 @@ export const shopRerollFtSchema = z.object({
 });
 export type ShopRerollFtInput = z.infer<typeof shopRerollFtSchema>;
 
+export const minorClanCreateSchema = z.object({
+  clanName: z
+    .string()
+    .trim()
+    .min(2)
+    .max(40)
+    .regex(/^[\p{L}0-9][\p{L}0-9 '\-]{1,39}$/u),
+  kekkeiGenkai: z.string().trim().min(2).max(80),
+});
+export type MinorClanCreateInput = z.infer<typeof minorClanCreateSchema>;
+
+const tradeLineSchema = z.object({
+  itemKey: z.string().min(2).max(80).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  quantity: z.number().int().min(1).max(99),
+});
+
+export const tradeCreateSchema = z.object({
+  recipientId: z.string().cuid(),
+  message: z.string().trim().min(3).max(1000),
+});
+export type TradeCreateInput = z.infer<typeof tradeCreateSchema>;
+
+export const tradeOfferSchema = z.object({
+  items: z.array(tradeLineSchema).max(20),
+  xp: z.number().int().min(0).max(100_000).default(0),
+}).refine((data) => data.items.length > 0 || data.xp > 0, {
+  message: "Une proposition doit contenir au moins un objet ou de l'XP.",
+});
+export type TradeOfferInput = z.infer<typeof tradeOfferSchema>;
+
 export const adminShopItemSchema = z.object({
   itemKey: z
     .string()

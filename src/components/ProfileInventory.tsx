@@ -29,6 +29,9 @@ export default function ProfileInventory({
           <Link href="/technique/boutique" className="hnk-btn-ghost !py-2 !px-4 !text-[10px]">
             Boutique
           </Link>
+          <Link href="/technique/echanges" className="hnk-btn-ghost !py-2 !px-4 !text-[10px]">
+            Échanges
+          </Link>
         </div>
       )}
 
