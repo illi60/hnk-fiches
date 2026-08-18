@@ -265,11 +265,11 @@ export async function createTrade({
     }),
     prisma.user.findUnique({
       where: { id: recipientId },
-      select: { id: true, role: true },
+      select: { id: true },
     }),
   ]);
   if (!initiator || !recipient) throw new Error("TRADE_NOT_FOUND");
-  if (initiator.role !== "ADMIN" || recipient.role !== "ADMIN") throw new Error("TRADE_FORBIDDEN");
+  if (initiator.role !== "ADMIN") throw new Error("TRADE_FORBIDDEN");
 
   return prisma.trade.create({
     data: {

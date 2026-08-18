@@ -47,7 +47,7 @@ export default async function EchangesPage() {
       });
 
   const players = await prisma.user.findMany({
-    where: { id: { not: me.id }, role: "ADMIN" },
+    where: { id: { not: me.id } },
     orderBy: { username: "asc" },
     select: {
       id: true,
