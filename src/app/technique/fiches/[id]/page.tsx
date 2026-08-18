@@ -49,6 +49,7 @@ export default async function FicheDetailPage({
       status: true,
       rejectionReason: true,
       authorId: true,
+      author: { select: { role: true } },
       isActive: true,
       ...(hasInvRank
         ? {
@@ -65,6 +66,7 @@ export default async function FicheDetailPage({
   });
 
   if (!fiche || !fiche.isActive) notFound();
+  if (fiche.author.role === "ADMIN" && fiche.authorId !== session.user.id && session.user.role !== "ADMIN") notFound();
   if (fiche.authorId !== session.user.id && session.user.role !== "ADMIN") notFound();
 
   // Profil du lecteur courant : les techniques collectives affichent leurs spés

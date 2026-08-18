@@ -13,6 +13,7 @@
 // ============================================================
 
 import { prisma } from "@/lib/prisma";
+import { clanStatusLabel } from "@/lib/clans";
 import {
   RANKS,
   rankIndex,
@@ -70,6 +71,7 @@ export interface LadderClanMember {
 export interface LadderClan {
   key: string;
   name: string;
+  status: "Clan fondateur" | "Clan mineur";
   level: Rank; // niveau de clan (rang communautaire effectif)
   xp: number; // XP cumulé du clan
   contribution: number; // somme des contributions des membres affichés
@@ -85,7 +87,12 @@ export interface LadderData {
 export async function loadLadder(): Promise<LadderData> {
   const [users, contribRows, agg, baseRanks, clanCounts] = await Promise.all([
     prisma.user.findMany({
-      where: { characterStatus: "ACTIVE", forumPseudo: { not: null }, forumAvatar: { not: null } },
+      where: {
+        characterStatus: "ACTIVE",
+        role: { not: "ADMIN" },
+        forumPseudo: { not: null },
+        forumAvatar: { not: null },
+      },
       select: {
         id: true,
         username: true,
@@ -164,6 +171,7 @@ export async function loadLadder(): Promise<LadderData> {
     return {
       key,
       name: displayName.get(key) ?? key.toUpperCase(),
+      status: clanStatusLabel(key) === "Clan fondateur" ? "Clan fondateur" : "Clan mineur",
       level,
       xp: agg.xpClans[key] ?? 0,
       contribution: shown.reduce((a, m) => a + m.contribution, 0),

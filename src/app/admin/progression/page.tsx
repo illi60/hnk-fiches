@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { prisma } from "@/lib/prisma";
-import { requireFicheModerator } from "@/lib/permissions";
+import { requireAdmin } from "@/lib/permissions";
 import {
   condMeta,
   TRACK_LABEL,
@@ -81,14 +81,12 @@ function individualRows(track: ProgTrack, up: UserProgress): AdminCondRow[] {
   return rows;
 }
 
-// File de validation des conditions de progression (staff : ADMIN ou TECH_MOD).
-// Gestion des rangs communautaires de base : ADMIN uniquement.
+// File de validation et gestion des conditions de progression : ADMIN uniquement.
 export default async function AdminProgressionPage() {
-  const me = await requireFicheModerator();
-  const isAdmin = me.role === "ADMIN";
+  await requireAdmin();
 
   const pending = await prisma.progressionSubmission.findMany({
-    where: { status: "PENDING" },
+    where: { status: "PENDING", user: { role: { not: "ADMIN" } } },
     orderBy: { createdAt: "asc" },
     select: {
       id: true,
@@ -110,19 +108,19 @@ export default async function AdminProgressionPage() {
   const scopes: ScopeRow[] = [];
   let progUsers: ProgUser[] = [];
   let conditionsByUser: UserConditionMap = {};
-  if (isAdmin) {
-    const [agg, baseRanks, villageCounts, clanCountsByScope, clanRows, allUsers, userCountRows] = await Promise.all([
+  const [agg, baseRanks, villageCounts, clanCountsByScope, clanRows, allUsers, userCountRows] = await Promise.all([
       loadScopeAggregates(),
       loadAllBaseRanks(),
       loadCommunityCounts("VILLAGE", VILLAGE_SCOPE_KEY),
       loadAllClanCommunityCounts(),
       prisma.user.findMany({
-        where: { clan: { not: null } },
+        where: { clan: { not: null }, role: { not: "ADMIN" } },
         select: { clan: true },
         distinct: ["clan"],
         orderBy: { clan: "asc" },
       }),
       prisma.user.findMany({
+        where: { role: { not: "ADMIN" } },
         select: {
           id: true,
           username: true,
@@ -137,11 +135,11 @@ export default async function AdminProgressionPage() {
       }),
       prisma.progressionSubmission.groupBy({
         by: ["userId", "condId"],
-        where: { tier: "INDIVIDUAL", status: "VALIDATED" },
+        where: { tier: "INDIVIDUAL", status: "VALIDATED", user: { role: { not: "ADMIN" } } },
         _count: { _all: true },
       }),
-    ]);
-    progUsers = allUsers;
+  ]);
+  progUsers = allUsers;
 
     const countsByUser = new Map<string, Record<string, number>>();
     for (const r of userCountRows) {
@@ -214,7 +212,6 @@ export default async function AdminProgressionPage() {
         conditions: communityRows("CLAN", sp),
       });
     }
-  }
 
   return (
     <div className="space-y-8">
@@ -226,9 +223,9 @@ export default async function AdminProgressionPage() {
         <span className="hnk-chip">{pending.length} en attente</span>
       </div>
 
-      {isAdmin && scopes.length > 0 && <AdminCommunityRanks scopes={scopes} />}
+      {scopes.length > 0 && <AdminCommunityRanks scopes={scopes} />}
 
-      {isAdmin && progUsers.length > 0 && (
+      {progUsers.length > 0 && (
         <AdminProgressionUser users={progUsers} conditionsByUser={conditionsByUser} />
       )}
 

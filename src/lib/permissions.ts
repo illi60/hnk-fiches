@@ -93,6 +93,7 @@ export function jsonError(e: unknown): NextResponse {
       "TRADE_ITEM_UNAVAILABLE",
       "TRADE_ITEM_NOT_TRADEABLE",
       "TRADE_SCHEMA_NOT_READY",
+      "TRADE_EMPTY",
     ]);
     if (known.has(e.message)) {
       const statusMap: Record<string, number> = {
@@ -118,6 +119,7 @@ export function jsonError(e: unknown): NextResponse {
         TRADE_ITEM_UNAVAILABLE: 409,
         TRADE_ITEM_NOT_TRADEABLE: 409,
         TRADE_SCHEMA_NOT_READY: 503,
+        TRADE_EMPTY: 400,
       };
       return NextResponse.json({ error: e.message }, { status: statusMap[e.message] ?? 400 });
     }

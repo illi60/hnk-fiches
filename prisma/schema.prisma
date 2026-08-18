@@ -172,6 +172,7 @@ model User {
   inventoryItems  InventoryItem[] @relation("UserInventory")
   tradesInitiated Trade[] @relation("TradeInitiator")
   tradesReceived  Trade[] @relation("TradeRecipient")
+  tradeMessages   TradeMessage[]
   adminAlerts     AdminAlert[] @relation("UserAdminAlerts")
 
   @@index([forumUserId])
@@ -298,6 +299,7 @@ model Trade {
   cancelledAt DateTime?
 
   items       TradeItem[]
+  messages    TradeMessage[]
 
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
@@ -321,6 +323,19 @@ model TradeItem {
 
   @@index([tradeId])
   @@index([ownerId, itemKey])
+}
+
+model TradeMessage {
+  id        String   @id @default(cuid())
+  tradeId   String
+  trade     Trade    @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([tradeId, createdAt])
+  @@index([authorId, createdAt])
 }
 
 model ShopCatalogItem {

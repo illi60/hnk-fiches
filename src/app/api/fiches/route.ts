@@ -28,7 +28,11 @@ export async function GET(req: Request) {
             // Mes fiches + celles où je suis participant (type d'action COLLECTIVE).
             OR: [{ authorId: me.id }, { collaboratorIds: { has: me.id } }],
           }
-        : { status: "VALIDATED" as const, isActive: true, author: { characterStatus: "ACTIVE" } };
+        : {
+            status: "VALIDATED" as const,
+            isActive: true,
+            author: { characterStatus: "ACTIVE", role: { not: "ADMIN" as const } },
+          };
 
     const fiches = await prisma.ficheTechnique.findMany({
       where,

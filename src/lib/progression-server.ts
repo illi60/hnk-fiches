@@ -61,7 +61,7 @@ export interface ScopeAggregates {
 }
 export async function loadScopeAggregates(): Promise<ScopeAggregates> {
   const users = await prisma.user.findMany({
-    where: { characterStatus: "ACTIVE" },
+    where: { characterStatus: "ACTIVE", role: { not: "ADMIN" } },
     select: {
       clan: true,
       forumLastXp: true,
@@ -198,7 +198,9 @@ export async function recomputeRanks(userIds: string[] | "all"): Promise<number>
 
   // 2) Joueurs ciblés + leurs compteurs individuels validés (un seul groupBy).
   const userWhere =
-    userIds === "all" ? { characterStatus: "ACTIVE" as const } : { id: { in: userIds }, characterStatus: "ACTIVE" as const };
+    userIds === "all"
+      ? { characterStatus: "ACTIVE" as const, role: { not: "ADMIN" as const } }
+      : { id: { in: userIds }, characterStatus: "ACTIVE" as const, role: { not: "ADMIN" as const } };
   const users = await prisma.user.findMany({
     where: userWhere,
     select: {
@@ -290,7 +292,7 @@ export async function recomputeRanks(userIds: string[] | "all"): Promise<number>
 // Membres d'un clan (clé normalisée) → ids, pour recompute ciblé.
 export async function clanMemberIds(scopeKey: string): Promise<string[]> {
   const users = await prisma.user.findMany({
-    where: { characterStatus: "ACTIVE" },
+    where: { characterStatus: "ACTIVE", role: { not: "ADMIN" } },
     select: { id: true, clan: true },
   });
   return users.filter((u) => clanScopeKey(u.clan) === scopeKey).map((u) => u.id);
@@ -369,7 +371,7 @@ export async function attemptSubmission(opts: {
   let collaborators: string[] = [];
   if (mode === "GROUP") {
     const found = await prisma.user.findMany({
-      where: { username: { in: rawCollaborators }, characterStatus: "ACTIVE" },
+      where: { username: { in: rawCollaborators }, characterStatus: "ACTIVE", role: { not: "ADMIN" } },
       select: { id: true, username: true },
     });
     const foundByName = new Map(found.map((u) => [u.username, u]));

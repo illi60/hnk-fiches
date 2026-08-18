@@ -14,6 +14,9 @@ export type TradeListItem = Prisma.TradeGetPayload<{
     initiator: { select: { id: true; username: true; forumAvatar: true } };
     recipient: { select: { id: true; username: true; forumAvatar: true } };
     items: true;
+    messages: {
+      include: { author: { select: { id: true; username: true; forumAvatar: true } } };
+    };
   };
 }>;
 
@@ -22,6 +25,10 @@ const TRADE_INCLUDE = {
   initiator: { select: { id: true, username: true, forumAvatar: true } },
   recipient: { select: { id: true, username: true, forumAvatar: true } },
   items: { orderBy: [{ side: "asc" as const }, { itemName: "asc" as const }] },
+  messages: {
+    orderBy: { createdAt: "asc" as const },
+    include: { author: { select: { id: true, username: true, forumAvatar: true } } },
+  },
 };
 
 function isMissingTradeSchema(error: unknown): boolean {
@@ -220,6 +227,13 @@ function tradeLines(trade: { items: Array<{ side: TradeSide; itemKey: string; qu
   return trade.items.filter((item) => item.side === side).map((item) => ({ itemKey: item.itemKey, quantity: item.quantity }));
 }
 
+function sideHasValue(
+  trade: { items: Array<{ side: TradeSide; quantity: number }>; initiatorXpOffered: number; recipientXpOffered: number },
+  side: TradeSide
+) {
+  return trade.items.some((item) => item.side === side && item.quantity > 0) || trade[xpField(side)] > 0;
+}
+
 export async function listUserTrades(userId: string): Promise<TradeListItem[]> {
   try {
     return await prisma.trade.findMany({
@@ -244,11 +258,19 @@ export async function createTrade({
   message: string;
 }) {
   if (initiatorId === recipientId) throw new Error("TRADE_FORBIDDEN");
-  const recipient = await prisma.user.findUnique({
-    where: { id: recipientId },
-    select: { id: true },
-  });
-  if (!recipient) throw new Error("TRADE_NOT_FOUND");
+  const [initiator, recipient] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: initiatorId },
+      select: { id: true, role: true },
+    }),
+    prisma.user.findUnique({
+      where: { id: recipientId },
+      select: { id: true, role: true },
+    }),
+  ]);
+  if (!initiator || !recipient) throw new Error("TRADE_NOT_FOUND");
+  if (initiator.role !== "ADMIN" || recipient.role !== "ADMIN") throw new Error("TRADE_FORBIDDEN");
+
   return prisma.trade.create({
     data: {
       initiatorId,
@@ -312,6 +334,9 @@ export async function submitTradeOffer(userId: string, tradeId: string, input: {
     if (!trade) throw new Error("TRADE_NOT_FOUND");
     const side = sideForUser(trade, userId);
     if (trade.status !== "NEGOTIATING" && trade.status !== "FINAL_PENDING") throw new Error("TRADE_INVALID_STATE");
+    const hasOfferValue = lines.length > 0 || input.xp > 0;
+    const otherSide = side === "INITIATOR" ? "RECIPIENT" : "INITIATOR";
+    if (!hasOfferValue && !sideHasValue(trade, otherSide)) throw new Error("TRADE_EMPTY");
 
     const oldLines = tradeLines(trade, side);
     const oldXp = trade[xpField(side)];
@@ -435,5 +460,25 @@ export async function deleteCancelledTrade(userId: string, tradeId: string) {
     if (trade.status !== "CANCELLED") throw new Error("TRADE_INVALID_STATE");
     await tx.trade.delete({ where: { id: trade.id } });
     return { id: trade.id };
+  });
+}
+
+export async function addTradeMessage(userId: string, tradeId: string, body: string) {
+  return prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`hnk_trade_${tradeId}`}))`;
+    const trade = await tx.trade.findUnique({ where: { id: tradeId }, select: { id: true, initiatorId: true, recipientId: true, status: true } });
+    if (!trade) throw new Error("TRADE_NOT_FOUND");
+    sideForUser(trade, userId);
+    if (!["REQUESTED", "NEGOTIATING", "FINAL_PENDING"].includes(trade.status)) throw new Error("TRADE_INVALID_STATE");
+
+    await tx.tradeMessage.create({
+      data: {
+        tradeId: trade.id,
+        authorId: userId,
+        body: body.trim(),
+      },
+    });
+
+    return tx.trade.findUniqueOrThrow({ where: { id: trade.id }, include: TRADE_INCLUDE });
   });
 }

@@ -47,7 +47,7 @@ export default async function EchangesPage() {
       });
 
   const players = await prisma.user.findMany({
-    where: { id: { not: me.id } },
+    where: { id: { not: me.id }, role: "ADMIN" },
     orderBy: { username: "asc" },
     select: {
       id: true,
@@ -83,6 +83,10 @@ export default async function EchangesPage() {
         acceptedAt: trade.acceptedAt?.toISOString() ?? null,
         declinedAt: trade.declinedAt?.toISOString() ?? null,
         cancelledAt: trade.cancelledAt?.toISOString() ?? null,
+        messages: trade.messages.map((message) => ({
+          ...message,
+          createdAt: message.createdAt.toISOString(),
+        })),
       }))}
       catalog={Array.from(catalogByKey.values())}
     />

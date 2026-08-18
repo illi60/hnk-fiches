@@ -254,10 +254,13 @@ export type TradeCreateInput = z.infer<typeof tradeCreateSchema>;
 export const tradeOfferSchema = z.object({
   items: z.array(tradeLineSchema).max(20),
   xp: z.number().int().min(0).max(100_000).default(0),
-}).refine((data) => data.items.length > 0 || data.xp > 0, {
-  message: "Une proposition doit contenir au moins un objet ou de l'XP.",
 });
 export type TradeOfferInput = z.infer<typeof tradeOfferSchema>;
+
+export const tradeMessageSchema = z.object({
+  body: z.string().trim().min(1).max(1000),
+});
+export type TradeMessageInput = z.infer<typeof tradeMessageSchema>;
 
 export const adminShopItemSchema = z.object({
   itemKey: z

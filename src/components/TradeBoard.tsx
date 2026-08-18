@@ -27,6 +27,13 @@ type TradeItemView = {
   quantity: number;
 };
 
+type TradeMessageView = {
+  id: string;
+  body: string;
+  createdAt: string | Date;
+  author: { id: string; username: string; forumAvatar?: string | null };
+};
+
 type TradeView = {
   id: string;
   status: "REQUESTED" | "NEGOTIATING" | "FINAL_PENDING" | "ACCEPTED" | "DECLINED" | "CANCELLED" | "EXPIRED";
@@ -43,6 +50,7 @@ type TradeView = {
   initiator: { id: string; username: string; forumAvatar?: string | null };
   recipient: { id: string; username: string; forumAvatar?: string | null };
   items: TradeItemView[];
+  messages: TradeMessageView[];
 };
 
 type Quantities = Record<string, number>;
@@ -75,6 +83,8 @@ function humanError(error?: string): string {
       return "Trop d'actions en peu de temps, réessaie dans une minute.";
     case "CONFLICT":
       return "L'échange a changé pendant l'envoi, recharge puis réessaie.";
+    case "TRADE_EMPTY":
+      return "L'autre joueur doit proposer quelque chose avant que tu puisses valider une offre vide.";
     default:
       return "Action impossible.";
   }
@@ -93,6 +103,11 @@ function availableQuantity(item: InventoryLine, extra = 0): number {
 
 function totalValue(items: TradeItemView[], xp: number): number {
   return items.reduce((sum, item) => sum + item.costXp * item.quantity, xp);
+}
+
+function sideValue(trade: TradeView, side: "INITIATOR" | "RECIPIENT"): number {
+  const xp = side === "INITIATOR" ? trade.initiatorXpOffered : trade.recipientXpOffered;
+  return totalValue(trade.items.filter((item) => item.side === side), xp);
 }
 
 function isActiveTrade(trade: TradeView): boolean {
@@ -122,6 +137,7 @@ export default function TradeBoard({
   const [message, setMessage] = useState("");
   const [drafts, setDrafts] = useState<Record<string, Quantities>>({});
   const [xpDrafts, setXpDrafts] = useState<Record<string, number>>({});
+  const [messageDrafts, setMessageDrafts] = useState<Record<string, string>>({});
   const [localTrades, setLocalTrades] = useState<TradeView[]>(trades);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [ticketNotices, setTicketNotices] = useState<Record<string, Notice>>({});
@@ -288,12 +304,13 @@ export default function TradeBoard({
     );
     const quantities = drafts[trade.id] ?? currentQuantities;
     const xp = xpDrafts[trade.id] ?? (mySide === "INITIATOR" ? trade.initiatorXpOffered : trade.recipientXpOffered);
+    const otherSide = mySide === "INITIATOR" ? "RECIPIENT" : "INITIATOR";
     const items = Object.entries(quantities)
       .filter(([, quantity]) => quantity > 0)
       .map(([itemKey, quantity]) => ({ itemKey, quantity }));
 
-    if (items.length === 0 && xp <= 0) {
-      setTicketNotice(trade.id, "error", "Ta proposition doit contenir au moins un objet ou de l'XP.");
+    if (items.length === 0 && xp <= 0 && sideValue(trade, otherSide) <= 0) {
+      setTicketNotice(trade.id, "error", "L'autre joueur doit proposer quelque chose avant que tu puisses envoyer une offre vide.");
       return;
     }
 
@@ -317,6 +334,34 @@ export default function TradeBoard({
         } catch (error) {
           const aborted = error instanceof DOMException && error.name === "AbortError";
           setTicketNotice(trade.id, "error", aborted ? "La requête a expiré après 15 secondes." : "La requête n'a pas pu partir.");
+        } finally {
+          setBusyTicketId(null);
+        }
+      })();
+    });
+  }
+
+  function sendMessage(tradeId: string) {
+    const body = (messageDrafts[tradeId] ?? "").trim();
+    if (!body || busyTicketId === tradeId) return;
+
+    clearTicketNotice(tradeId);
+    setBusyTicketId(tradeId);
+    start(() => {
+      void (async () => {
+        try {
+          const res = await postJson(`/api/me/trades/${tradeId}/messages`, { body });
+          const json = await res.json().catch(() => ({}));
+          if (!res.ok || !json.ok) {
+            setTicketNotice(tradeId, "error", apiErrorMessage(json));
+            return;
+          }
+          if (json.trade) replaceTrade(json.trade);
+          setMessageDrafts((current) => ({ ...current, [tradeId]: "" }));
+          router.refresh();
+        } catch (error) {
+          const aborted = error instanceof DOMException && error.name === "AbortError";
+          setTicketNotice(tradeId, "error", aborted ? "La requête a expiré après 15 secondes." : "La requête n'a pas pu partir.");
         } finally {
           setBusyTicketId(null);
         }
@@ -460,6 +505,16 @@ export default function TradeBoard({
                         <p className="text-sm text-bone mt-2 leading-relaxed">{trade.requestMessage}</p>
                       </div>
 
+                      <TradeMessages
+                        trade={trade}
+                        meId={meId}
+                        value={messageDrafts[trade.id] ?? ""}
+                        busy={busy}
+                        canPost={canAcceptRequest || canNegotiate}
+                        onChange={(value) => setMessageDrafts((current) => ({ ...current, [trade.id]: value }))}
+                        onSend={() => sendMessage(trade.id)}
+                      />
+
                       {ticketNotice && (
                         <div className={`hnk-shop-receipt mt-4 ${ticketNotice.type === "error" ? "hnk-shop-receipt--error" : "hnk-shop-receipt--success"}`}>
                           <p className="hnk-eyebrow">{ticketNotice.type === "error" ? "Action refusée" : "Action validée"}</p>
@@ -599,6 +654,7 @@ export default function TradeBoard({
                                     <p className="hnk-eyebrow">Message initial</p>
                                     <p className="text-sm text-bone mt-2 leading-relaxed">{trade.requestMessage}</p>
                                   </div>
+                                  <TradeMessages trade={trade} meId={meId} compact />
                                   <div className="grid md:grid-cols-2 gap-4">
                                     <TradeSummary
                                       title={trade.initiator.username}
@@ -749,6 +805,71 @@ function TradeSummary({ title, items, xp, submitted, accepted }: { title: string
               <span className="tabular-nums text-ember">x{item.quantity}</span>
             </div>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TradeMessages({
+  trade,
+  meId,
+  value = "",
+  busy = false,
+  canPost = false,
+  compact = false,
+  onChange,
+  onSend,
+}: {
+  trade: TradeView;
+  meId: string;
+  value?: string;
+  busy?: boolean;
+  canPost?: boolean;
+  compact?: boolean;
+  onChange?: (value: string) => void;
+  onSend?: () => void;
+}) {
+  return (
+    <div className={`${compact ? "" : "mt-4"} hnk-shop-confirm-box relative z-10`}>
+      <p className="hnk-eyebrow">Discussion</p>
+      {trade.messages.length === 0 ? (
+        <p className="text-sm text-smoke mt-3">Aucun message pour le moment.</p>
+      ) : (
+        <div className="mt-3 space-y-3">
+          {trade.messages.map((message) => {
+            const mine = message.author.id === meId;
+            return (
+              <div key={message.id} className={mine ? "text-right" : ""}>
+                <p className="hnk-eyebrow">
+                  {message.author.username} · {new Date(message.createdAt).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}
+                </p>
+                <p className={`inline-block max-w-full mt-1 px-3 py-2 text-sm leading-relaxed ${mine ? "bg-ember/15 text-white" : "bg-white/5 text-bone"}`}>
+                  {message.body}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {canPost && onChange && onSend && (
+        <div className="mt-4 flex flex-col md:flex-row gap-3">
+          <input
+            className="hnk-input"
+            value={value}
+            maxLength={1000}
+            onChange={(event) => onChange(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                onSend();
+              }
+            }}
+            placeholder="Ajouter un message..."
+          />
+          <button type="button" className="hnk-btn md:w-44 justify-center" disabled={busy || value.trim().length === 0} onClick={onSend}>
+            Envoyer
+          </button>
         </div>
       )}
     </div>
