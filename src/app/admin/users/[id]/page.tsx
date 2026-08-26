@@ -254,7 +254,7 @@ function LiveMemberView({
 }: {
   user: {
     username: string;
-    role: "USER" | "ADMIN" | "TECH_MOD";
+    role: "USER" | "ADMIN" | "TECH_MOD" | "FORUM_MOD";
     characterStatus: string;
     canManageAdmins: boolean;
     xpAvailable: number;
@@ -306,6 +306,8 @@ function LiveMemberView({
                 Admin{user.canManageAdmins ? " maître" : ""}
               </span>
             )}
+            {user.role === "TECH_MOD" && <span className="hnk-chip">Mod technique</span>}
+            {user.role === "FORUM_MOD" && <span className="hnk-chip">Mod forum</span>}
             {user.characterStatus === "DEAD_MISSING" && <span className="hnk-chip">Mort / Disparu</span>}
             {user.rang && <span className={`hnk-chip ${rangClass(user.rang)}`}>Rang {user.rang}</span>}
           </div>

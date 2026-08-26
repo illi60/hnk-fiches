@@ -14,28 +14,30 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     where: { id: session.user.id },
     select: { role: true, username: true },
   });
-  // Accès au panneau : ADMIN (complet) ou TECH_MOD (modération des fiches seule).
+  // Accès au panneau : ADMIN (complet), TECH_MOD (fiches) ou FORUM_MOD (générateurs staff).
   const isAdmin = me?.role === "ADMIN";
-  const isMod = me?.role === "TECH_MOD";
-  if (!me || (!isAdmin && !isMod)) redirect("/technique");
+  const isTechMod = me?.role === "TECH_MOD";
+  const isForumMod = me?.role === "FORUM_MOD";
+  if (!me || (!isAdmin && !isTechMod && !isForumMod)) redirect("/technique");
+  const homeHref = isAdmin ? "/admin" : isTechMod ? "/admin/fiches" : "/admin/messages";
 
   return (
     <div className="min-h-screen flex flex-col">
       <header className="hnk-header">
-        <Link href={isAdmin ? "/admin" : "/admin/fiches"} className="brand">
+        <Link href={homeHref} className="brand">
           <span className="kanji">監</span>
           <span className="name">{isAdmin ? "Vigie · Admin" : "Vigie · Modération"}</span>
         </Link>
         <nav className="hnk-nav">
           {isAdmin && <Link href="/admin">KPIs</Link>}
           {isAdmin && <Link href="/admin/users">Joueurs</Link>}
-          <Link href="/admin/fiches">Fiches</Link>
+          {(isAdmin || isTechMod) && <Link href="/admin/fiches">Fiches</Link>}
           {isAdmin && <Link href="/admin/progression">Progression</Link>}
           {isAdmin && <Link href="/admin/alertes">Alertes</Link>}
           {isAdmin && <Link href="/admin/echanges">Échanges</Link>}
-          {isAdmin && <Link href="/admin/messages">Messages</Link>}
-          {isAdmin && <Link href="/admin/effort-guerre">Effort</Link>}
-          {isAdmin && <Link href="/admin/missions">Contrats</Link>}
+          {(isAdmin || isForumMod) && <Link href="/admin/messages">Messages</Link>}
+          {(isAdmin || isForumMod) && <Link href="/admin/effort-guerre">Effort</Link>}
+          {(isAdmin || isForumMod) && <Link href="/admin/missions">Contrats</Link>}
           {isAdmin && <Link href="/admin/boutique">Boutique</Link>}
           {isAdmin && <Link href="/admin/clans">Clans</Link>}
           <Link href="/technique" className="!text-smoke">

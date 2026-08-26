@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import StaffMessageGenerator from "@/components/StaffMessageGenerator";
-import { requireAdmin } from "@/lib/permissions";
+import { requireForumGeneratorModerator } from "@/lib/permissions";
 
 export const metadata: Metadata = {
   title: "Hi no Kuni - Messages d'administration",
@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminMessagesPage() {
-  await requireAdmin();
+  await requireForumGeneratorModerator();
 
   return (
     <div className="relative left-1/2 w-[calc(100vw-3rem)] max-w-[1760px] -translate-x-1/2 space-y-8">

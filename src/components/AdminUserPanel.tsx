@@ -12,7 +12,7 @@ import { CHARACTER_STATUS_LABEL, type CharacterStatus } from "@/lib/character-st
 
 type Rang = "E" | "D" | "C" | "B" | "A" | "S";
 type Grade = "GENIN" | "CHUNIN" | "JONIN";
-type Role = "USER" | "ADMIN" | "TECH_MOD";
+type Role = "USER" | "ADMIN" | "TECH_MOD" | "FORUM_MOD";
 
 export interface AdminUser {
   id: string;
@@ -360,6 +360,7 @@ function RoleForm({
   const ROLES: { value: Role; label: string }[] = [
     { value: "USER", label: "Joueur" },
     { value: "TECH_MOD", label: "Modérateur technique" },
+    { value: "FORUM_MOD", label: "Modérateur forum" },
     { value: "ADMIN", label: "Administrateur" },
   ];
   const roleLabel = (r: Role) => ROLES.find((x) => x.value === r)?.label ?? r;
@@ -421,8 +422,8 @@ function RoleForm({
         })}
       </div>
       <p className="text-[10px] text-smoke mt-2">
-        Seul un admin maître attribue les statuts. Le modérateur technique ne peut que
-        valider/refuser des fiches — il ne peut transmettre aucun statut.
+        Seul un admin maître attribue les statuts. Les modérateurs ne peuvent
+        transmettre aucun statut.
       </p>
       {msg && <p className="text-xs text-bone mt-2">{msg}</p>}
     </div>

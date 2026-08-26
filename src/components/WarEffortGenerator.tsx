@@ -8,6 +8,7 @@ import {
   clampWarEffortValue,
   emptyWarEffort,
   emptyWarEffortEntry,
+  parseWarEffortForumHtml,
   warEffortForumHtml,
   warEffortPercent,
   type WarEffortColor,
@@ -25,6 +26,8 @@ export default function WarEffortGenerator() {
   const [showCode, setShowCode] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [importText, setImportText] = useState("");
+  const [importMsg, setImportMsg] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -148,6 +151,19 @@ export default function WarEffortGenerator() {
     }
     setD(emptyWarEffort());
     setSavedAt(null);
+    setImportMsg(null);
+  }
+
+  function importFromCode() {
+    const res = parseWarEffortForumHtml(importText);
+    if (!res) {
+      setImportMsg("Code non reconnu. Colle le code d'une jauge d'effort de guerre générée ici.");
+      return;
+    }
+    setD(res);
+    setImportText("");
+    setImportMsg("Effort de guerre importé");
+    setSavedAt("importé");
   }
 
   async function copy() {
@@ -340,6 +356,36 @@ export default function WarEffortGenerator() {
           <Field label="Cachet final">
             <input className="hnk-input" value={d.stamp} onChange={(e) => set("stamp", e.target.value)} />
           </Field>
+        </section>
+
+        <section className="hnk-panel p-5 space-y-4">
+          <div>
+            <p className="hnk-label">Récupérer une jauge depuis son code forum</p>
+            <p className="text-xs text-smoke mt-1">
+              Colle le code d'un effort de guerre déjà posté pour recharger ses champs.
+            </p>
+          </div>
+          <textarea
+            value={importText}
+            onChange={(e) => {
+              setImportText(e.target.value);
+              setImportMsg(null);
+            }}
+            rows={5}
+            className="hnk-input w-full font-mono text-[11px]"
+            placeholder="<div class=&quot;hnkf hnkf--war&quot;..."
+          />
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              className="hnk-btn-ghost !py-2 !px-4 !text-[10px]"
+              onClick={importFromCode}
+              disabled={!importText.trim()}
+            >
+              Charger la jauge
+            </button>
+            {importMsg && <span className="text-xs text-bone">{importMsg}</span>}
+          </div>
         </section>
       </div>
 

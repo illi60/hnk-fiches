@@ -2,11 +2,13 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
-import { requireFicheModerator } from "@/lib/permissions";
+import { requireUser } from "@/lib/permissions";
 
 export default async function AdminHome() {
-  // Le modérateur technique n'a pas de KPIs : on l'envoie direct à la file de modération.
-  const me = await requireFicheModerator();
+  // Les modérateurs limités n'ont pas de KPIs : redirection vers leur atelier.
+  const me = await requireUser();
+  if (me.role === "FORUM_MOD") redirect("/admin/messages");
+  if (me.role !== "ADMIN" && me.role !== "TECH_MOD") redirect("/technique");
   if (me.role !== "ADMIN") redirect("/admin/fiches");
 
   const [users, pending, validated, progPending, alertCount, alerts, recent] = await Promise.all([

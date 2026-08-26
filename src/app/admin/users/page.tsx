@@ -103,6 +103,11 @@ export default async function AdminUsersPage({
                         mod technique
                       </span>
                     )}
+                    {u.role === "FORUM_MOD" && (
+                      <span className="ml-2 text-[10px] tracking-[0.24em] uppercase text-sky-300">
+                        mod forum
+                      </span>
+                    )}
                     {u.characterStatus === "DEAD_MISSING" && (
                       <span className="ml-2 text-[10px] tracking-[0.24em] uppercase text-smoke">
                         mort / disparu

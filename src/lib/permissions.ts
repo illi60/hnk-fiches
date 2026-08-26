@@ -63,6 +63,16 @@ export async function requireFicheModerator(): Promise<SessionUser> {
   return user;
 }
 
+// Générateurs de codage staff : ADMIN (complet) ou FORUM_MOD
+// (modérateur forum : accès limité aux ateliers de messages admin).
+export async function requireForumGeneratorModerator(): Promise<SessionUser> {
+  const user = await requireUser();
+  if (user.role !== "ADMIN" && user.role !== "FORUM_MOD") {
+    throw new AuthError("FORBIDDEN", 403);
+  }
+  return user;
+}
+
 // Mapper standard d'erreurs vers Response JSON.
 // N'expose JAMAIS le message brut d'une erreur DB / Prisma.
 export function jsonError(e: unknown): NextResponse {

@@ -158,3 +158,89 @@ export function warEffortForumHtml(d: WarEffortData): string {
     `</div></div></div>`
   );
 }
+
+function warEffortStatusFromLabel(label: string): WarEffortStatus {
+  const normalized = label.trim().toLowerCase();
+  const found = Object.entries(WAR_EFFORT_STATUSES).find(([, value]) => value.toLowerCase() === normalized);
+  return (found?.[0] as WarEffortStatus | undefined) ?? "en_cours";
+}
+
+function warEffortAccentFromValue(value: string): WarEffortColor {
+  const normalized = value.trim().toLowerCase();
+  const found = Object.entries(WAR_EFFORT_COLORS).find(([, color]) => color.value.toLowerCase() === normalized);
+  return (found?.[0] as WarEffortColor | undefined) ?? "red";
+}
+
+function nodeText(el: Element | null | undefined): string {
+  return (el?.textContent ?? "").replace(/\s+/g, " ").trim();
+}
+
+function nodeInnerHtml(el: Element | null | undefined): string {
+  return (el?.innerHTML ?? "").trim();
+}
+
+function textWithoutFirstLabel(el: Element | null | undefined): string {
+  if (!el) return "";
+  const label = nodeText(el.querySelector("b"));
+  return nodeText(el).replace(label, "").trim();
+}
+
+export function parseWarEffortForumHtml(html: string): WarEffortData | null {
+  if (typeof DOMParser === "undefined") return null;
+  let root: Element | null = null;
+  try {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    root = doc.querySelector(".hnkf--war");
+  } catch {
+    return null;
+  }
+  if (!root) return null;
+
+  const base = emptyWarEffort();
+  const rawStatus = root.getAttribute("data-state") ?? "";
+  const status =
+    rawStatus in WAR_EFFORT_STATUSES
+      ? (rawStatus as WarEffortStatus)
+      : warEffortStatusFromLabel(nodeText(root.querySelector(".hnkf-war-status")));
+  const styleAccent = root.getAttribute("style")?.match(/--war\s*:\s*([^;"]+)/i)?.[1] ?? "";
+  const gaugeText = nodeText(root.querySelector(".hnkf-war-gauge-head b"));
+  const gaugeMatch = gaugeText.match(/(\d+)\s*\/\s*(\d+)/);
+  const target = Math.max(1, Number(gaugeMatch?.[2]) || base.target);
+
+  const metaSpans = Array.from(root.querySelectorAll(".hnkf-war-meta span"));
+  const command = textWithoutFirstLabel(metaSpans.find((span) => nodeText(span.querySelector("b")).toLowerCase() === "commandement"));
+  const objectiveLabel = textWithoutFirstLabel(metaSpans.find((span) => nodeText(span.querySelector("b")).toLowerCase() === "objectif"));
+
+  const entries = Array.from(root.querySelectorAll(".hnkf-war-rp")).map((rp) => {
+    const titleNode = rp.querySelector(".hnkf-war-rp-title");
+    const meta = Array.from(rp.querySelectorAll(".hnkf-war-rp-meta span"));
+    const valueFor = (label: string) =>
+      textWithoutFirstLabel(meta.find((span) => nodeText(span.querySelector("b")).toLowerCase() === label));
+    const gainText = valueFor("gain");
+    const contribution = Math.max(0, Number(gainText.match(/(\d+)/)?.[1]) || 0);
+    return {
+      title: nodeText(titleNode),
+      url: titleNode instanceof HTMLAnchorElement ? titleNode.getAttribute("href") ?? "" : "",
+      participants: valueFor("effectifs"),
+      theater: valueFor("theatre"),
+      contribution,
+      report: nodeInnerHtml(rp.querySelector(".hnkf-war-rp-report")),
+    };
+  });
+
+  return {
+    ...base,
+    title: nodeText(root.querySelector(".hnkf-war-title")) || base.title,
+    subtitle: nodeText(root.querySelector(".hnkf-war-sub")),
+    operation: nodeText(root.querySelector(".hnkf-war-kicker")) || base.operation,
+    command: command || base.command,
+    status,
+    accent: warEffortAccentFromValue(styleAccent),
+    objectiveLabel: objectiveLabel || base.objectiveLabel,
+    current: clampWarEffortValue(Number(gaugeMatch?.[1]) || 0, target),
+    target,
+    entries: entries.length ? entries : base.entries,
+    orders: nodeInnerHtml(root.querySelector(".hnkf-war-orders > div")),
+    stamp: nodeText(root.querySelector(".hnkf-war-stamp")),
+  };
+}

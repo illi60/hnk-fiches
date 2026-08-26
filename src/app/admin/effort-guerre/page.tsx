@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import WarEffortGenerator from "@/components/WarEffortGenerator";
-import { requireAdmin } from "@/lib/permissions";
+import { requireForumGeneratorModerator } from "@/lib/permissions";
 
 export const metadata: Metadata = {
   title: "Hi no Kuni - Effort de guerre",
@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminWarEffortPage() {
-  await requireAdmin();
+  await requireForumGeneratorModerator();
 
   return (
     <div className="relative left-1/2 w-[calc(100vw-3rem)] max-w-[1760px] -translate-x-1/2 space-y-8">

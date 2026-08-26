@@ -150,7 +150,7 @@ export const adminUsernameSchema = z.object({
 });
 
 export const adminRoleSchema = z.object({
-  role: z.enum(["USER", "ADMIN", "TECH_MOD"]),
+  role: z.enum(["USER", "ADMIN", "TECH_MOD", "FORUM_MOD"]),
 });
 
 // ----- Arts Shinobi (dépense XP joueur) -----

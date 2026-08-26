@@ -15,7 +15,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
   });
   // Rôle lu en base (le JWT peut être périmé après une promotion).
   const isAdmin = dbUser?.role === "ADMIN";
-  const isMod = dbUser?.role === "TECH_MOD";
+  const isTechMod = dbUser?.role === "TECH_MOD";
+  const isForumMod = dbUser?.role === "FORUM_MOD";
   const artsState = ((dbUser?.artsState ?? {}) as unknown) as ArtsState;
   const hasKuchiyose = !!getArtState(artsState, "kuchiyose").unlocked;
   const hasClan = !!dbUser?.clan;
@@ -42,8 +43,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
               Admin
             </Link>
           )}
-          {isMod && (
+          {isTechMod && (
             <Link href="/admin/fiches" className="active">
+              Modération
+            </Link>
+          )}
+          {isForumMod && (
+            <Link href="/admin/messages" className="active">
               Modération
             </Link>
           )}

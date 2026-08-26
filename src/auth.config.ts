@@ -1,5 +1,7 @@
 import type { NextAuthConfig } from "next-auth";
 
+type HnkRole = "USER" | "ADMIN" | "TECH_MOD" | "FORUM_MOD";
+
 const authConfig = {
   session: { strategy: "jwt" },
   pages: {
@@ -11,7 +13,7 @@ const authConfig = {
       if (user) {
         token.id = (user as { id: string }).id;
         token.username = (user as { username: string }).username;
-        token.role = (user as { role: "USER" | "ADMIN" | "TECH_MOD" }).role;
+        token.role = (user as { role: HnkRole }).role;
         token.canManageAdmins = (user as { canManageAdmins?: boolean }).canManageAdmins ?? false;
       }
       return token;
@@ -20,7 +22,7 @@ const authConfig = {
       if (token && session.user) {
         session.user.id = token.id as string;
         session.user.username = token.username as string;
-        session.user.role = token.role as "USER" | "ADMIN" | "TECH_MOD";
+        session.user.role = token.role as HnkRole;
         session.user.canManageAdmins = Boolean(token.canManageAdmins);
       }
       return session;
