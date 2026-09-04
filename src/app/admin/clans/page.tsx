@@ -1,12 +1,16 @@
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/permissions";
-import ClanLibraryView from "@/components/ClanLibraryView";
-import KekkeiCatalogAdmin from "@/components/KekkeiCatalogAdmin";
-import ClanLibraryAccessAdmin from "@/components/ClanLibraryAccessAdmin";
+import AdminClansWorkspace, { type AdminClanGroup } from "@/components/AdminClansWorkspace";
 import { loadKgCatalog, loadKgCatalogRows } from "@/lib/kekkei-server";
-import { isNoClan } from "@/lib/clans";
+import {
+  FOUNDER_CLAN_NAMES,
+  clanStatusLabel,
+  isFounderClan,
+  isNoClan,
+  playableClanKey,
+} from "@/lib/clans";
 
-const KNOWN_CLANS = ["SENJU", "UCHIHA", "UZUMAKI", "SARUTOBI", "HYUGA"];
+const KNOWN_CLANS = [...FOUNDER_CLAN_NAMES];
 
 export default async function AdminClansPage() {
   await requireAdmin();
@@ -16,20 +20,40 @@ export default async function AdminClansPage() {
   const kgColors = Object.fromEntries(kgCatalog.map((kg) => [kg.name, kg.color]));
   const permissions = await prisma.clanLibraryPermission.findMany({
     orderBy: [{ clan: "asc" }, { kind: "asc" }, { value: "asc" }],
-    select: { id: true, clan: true, kind: true, value: true },
+    select: { id: true, clan: true, clanKey: true, kind: true, value: true },
   });
 
-  // Clans connus + clans réellement présents sur les profils.
+  // Clans connus + clans réellement présents dans les profils, rangs, permissions et fiches.
   const usersWithClan = await prisma.user.findMany({
     where: { clan: { not: null } },
+    select: { clan: true },
+  });
+  const communityClanRows = await prisma.communityRank.findMany({
+    where: { scopeType: "CLAN" },
+    select: { scopeKey: true },
+  });
+  const ficheClanRows = await prisma.ficheTechnique.findMany({
+    where: { clan: { not: null }, isActive: true },
     select: { clan: true },
   });
   const clanSet = new Map<string, string>(); // clé lower → libellé affiché
   for (const c of KNOWN_CLANS) clanSet.set(c.toLowerCase(), c);
   for (const u of usersWithClan) {
-    if (u.clan && !isNoClan(u.clan) && !clanSet.has(u.clan.toLowerCase())) clanSet.set(u.clan.toLowerCase(), u.clan);
+    const key = playableClanKey(u.clan);
+    if (key && !clanSet.has(key)) clanSet.set(key, u.clan ?? key);
+  }
+  for (const p of permissions) {
+    if (p.clanKey && !clanSet.has(p.clanKey)) clanSet.set(p.clanKey, p.clan);
+  }
+  for (const c of communityClanRows) {
+    if (c.scopeKey && !clanSet.has(c.scopeKey)) clanSet.set(c.scopeKey, c.scopeKey);
+  }
+  for (const f of ficheClanRows) {
+    const key = playableClanKey(f.clan);
+    if (key && !clanSet.has(key)) clanSet.set(key, f.clan ?? key);
   }
   const clans = Array.from(clanSet.values()).sort();
+  const clanKeys = new Map(clans.map((clan) => [clan, playableClanKey(clan) ?? clan.toLowerCase()]));
 
   // Toutes les techniques collectives validées, groupées par clan (insensible casse).
   const techniques = await prisma.ficheTechnique.findMany({
@@ -58,6 +82,82 @@ export default async function AdminClansPage() {
     list.push(t);
     byClan.set(key, list);
   }
+  const clanGroups: AdminClanGroup[] = clans.map((clan) => {
+    const list = byClan.get(clan.toLowerCase()) ?? [];
+    const activeList = list.filter((t) => t.author.characterStatus !== "DEAD_MISSING");
+    const forgottenList = list.filter((t) => t.author.characterStatus === "DEAD_MISSING");
+    return {
+      clan,
+      active: activeList.map((t) => ({
+        id: t.id,
+        nom: t.nom,
+        description: t.description,
+        art: t.art,
+        secondaryArt: t.secondaryArt,
+        actionType: t.actionType,
+        element: t.element,
+        kekkeiGenkai: t.kekkeiGenkai,
+        secondaryElement: t.secondaryElement,
+        secondaryKekkeiGenkai: t.secondaryKekkeiGenkai,
+        coutXp: t.coutXp,
+        author: t.author,
+      })),
+      forgotten: forgottenList.map((t) => ({
+        id: t.id,
+        nom: t.nom,
+        description: t.description,
+        art: t.art,
+        secondaryArt: t.secondaryArt,
+        actionType: t.actionType,
+        element: t.element,
+        kekkeiGenkai: t.kekkeiGenkai,
+        secondaryElement: t.secondaryElement,
+        secondaryKekkeiGenkai: t.secondaryKekkeiGenkai,
+        coutXp: t.coutXp,
+        author: t.author,
+        forgotten: true,
+      })),
+    };
+  });
+
+  const kinjutsu = await prisma.ficheTechnique.findMany({
+    where: {
+      nature: "KINJUTSU",
+      isActive: true,
+      OR: [{ kinjutsuScope: "CLAN" }, { kinjutsuScope: { startsWith: "UNIT:" } }],
+    },
+    orderBy: [{ kinjutsuScope: "asc" }, { clan: "asc" }, { nom: "asc" }],
+    select: {
+      id: true,
+      nom: true,
+      description: true,
+      actionType: true,
+      kinjutsuScope: true,
+      clan: true,
+      coutXp: true,
+    },
+  });
+  const registryRows = clans.map((clan) => {
+    const key = clanKeys.get(clan) ?? clan.toLowerCase();
+    const memberCount = usersWithClan.filter((u) => playableClanKey(u.clan) === key).length;
+    const techniqueCount = techniques.filter((t) => playableClanKey(t.clan) === key).length;
+    const kinjutsuCount = kinjutsu.filter(
+      (t) => t.kinjutsuScope === "CLAN" && playableClanKey(t.clan) === key
+    ).length;
+    const permissionCount = permissions.filter((p) => p.clanKey === key).length;
+    const hasCommunityRank = communityClanRows.some((row) => row.scopeKey === key);
+    return {
+      key,
+      name: clan,
+      status: clanStatusLabel(clan) ?? "Clan",
+      memberCount,
+      techniqueCount,
+      kinjutsuCount,
+      permissionCount,
+      hasCommunityRank,
+      canDelete: !isFounderClan(clan),
+    };
+  });
 
   return (
     <div className="space-y-8">
@@ -70,58 +170,16 @@ export default async function AdminClansPage() {
         </p>
       </div>
 
-      <KekkeiCatalogAdmin kg={kgCatalogRows} />
-
-      <ClanLibraryAccessAdmin clans={clans} kgNames={kgNames} permissions={permissions} />
-
-      <div className="space-y-6">
-        {clans.map((clan) => {
-          const list = byClan.get(clan.toLowerCase()) ?? [];
-          const activeList = list.filter((t) => t.author.characterStatus !== "DEAD_MISSING");
-          const forgottenList = list.filter((t) => t.author.characterStatus === "DEAD_MISSING");
-          return (
-            <section key={clan} className="border border-white/5 bg-ink-700 p-4">
-              <h2 className="font-display uppercase tracking-[0.2em] text-ember mb-3">
-                {clan} <span className="text-smoke text-xs">· {list.length}</span>
-              </h2>
-              <ClanLibraryView
-                clan={clan}
-                showUsable={false}
-                kgColors={kgColors}
-                techniques={activeList.map((t) => ({
-                  id: t.id,
-                  nom: t.nom,
-                  description: t.description,
-                  art: t.art,
-                  secondaryArt: t.secondaryArt,
-                  actionType: t.actionType,
-                  element: t.element,
-                  kekkeiGenkai: t.kekkeiGenkai,
-                  secondaryElement: t.secondaryElement,
-                  secondaryKekkeiGenkai: t.secondaryKekkeiGenkai,
-                  coutXp: t.coutXp,
-                  author: t.author,
-                }))}
-                forgottenTechniques={forgottenList.map((t) => ({
-                  id: t.id,
-                  nom: t.nom,
-                  description: t.description,
-                  art: t.art,
-                  secondaryArt: t.secondaryArt,
-                  actionType: t.actionType,
-                  element: t.element,
-                  kekkeiGenkai: t.kekkeiGenkai,
-                  secondaryElement: t.secondaryElement,
-                  secondaryKekkeiGenkai: t.secondaryKekkeiGenkai,
-                  coutXp: t.coutXp,
-                  author: t.author,
-                  forgotten: true,
-                }))}
-              />
-            </section>
-          );
-        })}
-      </div>
+      <AdminClansWorkspace
+        clans={clans}
+        clanGroups={clanGroups}
+        kgCatalogRows={kgCatalogRows}
+        kgNames={kgNames}
+        kgColors={kgColors}
+        permissions={permissions}
+        kinjutsu={kinjutsu}
+        registryRows={registryRows}
+      />
     </div>
   );
 }

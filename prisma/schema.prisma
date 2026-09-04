@@ -222,7 +222,7 @@ model FicheTechnique {
   kekkeiGenkai    String?     // si manifesté par un Kekkei Genkai (lequel)
   secondaryKekkeiGenkai String? // 2e KG (COMBINEE : x2 KG ou KG/affi)
   nature          String?     // PERSONNELLE | COLLECTIVE (clan / bibliothèque commune)
-  kinjutsuScope   String?     // legacy (ancien scope Kinjutsu : CLAN | VILLAGE)
+  kinjutsuScope   String?     // Kinjutsu : PLAYER | CLAN | UNIT:<unite> | legacy VILLAGE
   clan            String?     // clan propriétaire (Nature COLLECTIVE → bibliothèque commune)
   type            String?     // legacy (ancien champ "type")
   rangMin         Rang?       // legacy (rang minimal)

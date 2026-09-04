@@ -14,6 +14,7 @@ import { ownedKgsFull, ownedAffinities, type ProgressionState } from "@/lib/quin
 import { ARTS_ALL, type ArtsState } from "@/lib/arts";
 import { loadClanLibraryAccess, loadKgCatalogRows } from "@/lib/kekkei-server";
 import { hasInvocationRankColumn } from "@/lib/invocation-schema";
+import { canAccessSharedKinjutsu } from "@/lib/kinjutsu";
 
 export default async function FicheDetailPage({
   params,
@@ -66,15 +67,24 @@ export default async function FicheDetailPage({
   });
 
   if (!fiche || !fiche.isActive) notFound();
-  if (fiche.author.role === "ADMIN" && fiche.authorId !== session.user.id && session.user.role !== "ADMIN") notFound();
-  if (fiche.authorId !== session.user.id && session.user.role !== "ADMIN") notFound();
 
   // Profil du lecteur courant : les techniques collectives affichent leurs spés
   // selon celui qui les copie, pas selon l'auteur.
   const viewer = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { artsState: true, rang: true },
+    select: { artsState: true, rang: true, clan: true, uniteSpeciale: true, grade: true },
   });
+
+  const canViewSharedKinjutsu = canAccessSharedKinjutsu(fiche, viewer);
+  if (
+    fiche.author.role === "ADMIN" &&
+    fiche.authorId !== session.user.id &&
+    session.user.role !== "ADMIN" &&
+    !canViewSharedKinjutsu
+  )
+    notFound();
+  if (fiche.authorId !== session.user.id && session.user.role !== "ADMIN" && !canViewSharedKinjutsu)
+    notFound();
 
   // Seule la version validée est figée. Une fiche en attente peut encore être corrigée.
   const readOnly = !isFicheEditable(fiche.status);

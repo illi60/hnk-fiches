@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 
-import { actionLabel, techniqueArtChipLabel } from "@/lib/techniques";
+import { actionLabel, natureLabel, techniqueArtChipLabel } from "@/lib/techniques";
 import { kgColor } from "@/lib/kekkei";
 import ForumCopyButton from "@/components/ForumCopyButton";
 
@@ -34,6 +34,7 @@ export interface MyTech {
 }
 
 type GroupBy = "status" | "actionType" | "art" | "kekkeiGenkai" | "nom";
+type TechniqueTab = "standard" | "kinjutsu";
 
 const GROUP_OPTIONS: { key: GroupBy; label: string }[] = [
   { key: "status", label: "Statut" },
@@ -74,10 +75,14 @@ export default function TechniquesView({
   variant?: "default" | "kuchy";
 }) {
   const [by, setBy] = useState<GroupBy>("status");
+  const [tab, setTab] = useState<TechniqueTab>("standard");
+  const kinjutsuTechniques = techniques.filter((t) => t.nature === "KINJUTSU");
+  const standardTechniques = techniques.filter((t) => t.nature !== "KINJUTSU");
+  const visibleTechniques = tab === "kinjutsu" ? kinjutsuTechniques : standardTechniques;
 
   const groups = useMemo(() => {
     const map = new Map<string, MyTech[]>();
-    const sorted = [...techniques].sort((a, b) => a.nom.localeCompare(b.nom));
+    const sorted = [...visibleTechniques].sort((a, b) => a.nom.localeCompare(b.nom));
     for (const t of sorted) {
       const k = groupKey(t, by);
       const list = map.get(k) ?? [];
@@ -85,7 +90,7 @@ export default function TechniquesView({
       map.set(k, list);
     }
     return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-  }, [techniques, by]);
+  }, [visibleTechniques, by]);
 
   if (techniques.length === 0) {
     return <p className="text-smoke italic">Aucune technique pour l&apos;instant.</p>;
@@ -93,6 +98,35 @@ export default function TechniquesView({
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center gap-2 flex-wrap">
+        <button
+          type="button"
+          onClick={() => setTab("standard")}
+          className={`px-3 py-1.5 border text-[10px] tracking-[0.2em] uppercase ${
+            tab === "standard" ? "border-ember text-ember" : "border-white/10 text-smoke hover:text-bone"
+          }`}
+        >
+          Techniques · {standardTechniques.length}
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("kinjutsu")}
+          className={`px-3 py-1.5 border text-[10px] tracking-[0.2em] uppercase ${
+            tab === "kinjutsu" ? "border-ember text-ember" : "border-white/10 text-smoke hover:text-bone"
+          }`}
+        >
+          Kinjutsu · {kinjutsuTechniques.length}
+        </button>
+      </div>
+
+      {visibleTechniques.length === 0 && (
+        <p className="text-sm text-smoke italic">
+          {tab === "kinjutsu"
+            ? "Aucun Kinjutsu débloqué pour l'instant."
+            : "Aucune technique classique pour l'instant."}
+        </p>
+      )}
+
       <div className="flex items-center gap-2 flex-wrap">
         <span className="hnk-eyebrow">Trier par</span>
         {GROUP_OPTIONS.map((o) => (
@@ -111,138 +145,12 @@ export default function TechniquesView({
 
       {groups.map(([label, list]) => (
         <section key={label}>
-          <h2 className="hnk-section-title !text-base">
+          <h2 className={`hnk-section-title !text-base ${tab === "kinjutsu" ? "text-ember" : ""}`}>
             {label} <span className="text-smoke text-xs">· {list.length}</span>
           </h2>
           <div className="grid sm:grid-cols-2 gap-4">
             {list.map((t) => (
-              <div
-                key={t.id}
-                className={
-                  variant === "kuchy"
-                    ? "hnk-kuchy-panel hnk-kuchy-panel--frame hnk-kuchy-panel--kuchy"
-                    : "hnk-panel"
-                }
-                data-kanji="技"
-                style={buildCardStyle(t.kekkeiGenkai, kgColors)}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <Link
-                    href={`/technique/fiches/${t.id}`}
-                    className="font-display uppercase tracking-wider text-lg text-white hover:text-ember min-w-0 break-words"
-                  >
-                    {t.nom}
-                  </Link>
-                  <span
-                    className={`text-[10px] tracking-[0.2em] uppercase flex-none ${
-                      STATUS_COLOR[t.status] ?? "text-smoke"
-                    }`}
-                  >
-                    {STATUS_LABEL[t.status] ?? t.status}
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {techniqueArtChipLabel({
-                    art: t.art,
-                    spec: t.spec ?? null,
-                    specRank: t.specRank ?? null,
-                    nature: t.nature,
-                  }) && <span className="hnk-tech-chip">{techniqueArtChipLabel({
-                    art: t.art,
-                    spec: t.spec ?? null,
-                    specRank: t.specRank ?? null,
-                    nature: t.nature,
-                  })}</span>}
-                  {techniqueArtChipLabel({
-                    art: t.secondaryArt,
-                    spec: t.secondarySpec ?? null,
-                    specRank: t.secondarySpecRank ?? null,
-                    nature: t.nature,
-                  }) && <span className="hnk-tech-chip">+ {techniqueArtChipLabel({
-                    art: t.secondaryArt,
-                    spec: t.secondarySpec ?? null,
-                    specRank: t.secondarySpecRank ?? null,
-                    nature: t.nature,
-                  })}</span>}
-                  {t.actionType && <span className="hnk-tech-chip">{actionLabel(t.actionType)}</span>}
-                  {t.element && <span className="hnk-tech-chip">{t.element}</span>}
-                  {t.secondaryElement && <span className="hnk-tech-chip">{t.secondaryElement}</span>}
-                  {t.kekkeiGenkai && (
-                    <span
-                      className="hnk-tech-chip"
-                      style={{
-                        color: resolveKgColor(t.kekkeiGenkai, kgColors),
-                        borderColor: resolveKgColor(t.kekkeiGenkai, kgColors),
-                      }}
-                    >
-                      KG · {t.kekkeiGenkai}
-                    </span>
-                  )}
-                  {t.secondaryKekkeiGenkai && (
-                    <span
-                      className="hnk-tech-chip"
-                      style={{
-                        color: resolveKgColor(t.secondaryKekkeiGenkai, kgColors),
-                        borderColor: resolveKgColor(t.secondaryKekkeiGenkai, kgColors),
-                      }}
-                    >
-                      KG · {t.secondaryKekkeiGenkai}
-                    </span>
-                  )}
-                  {t.invocationNom && (
-                    <span className="hnk-tech-chip">
-                      口 {t.invocationEspece ? `${t.invocationEspece} · ` : ""}
-                      {t.invocationNom}
-                      {t.invocationRank ? ` · Rang ${t.invocationRank}` : ""}
-                    </span>
-                  )}
-                  {!t.mine && <span className="hnk-tech-chip">Tag Team (partenaire)</span>}
-                </div>
-                {t.description && (
-                  <p className="text-sm text-bone/80 mt-3 whitespace-pre-line break-words text-justify line-clamp-3">
-                    {t.description}
-                  </p>
-                )}
-                <div className="flex items-center justify-between gap-2 mt-3">
-                  <span className="text-xs text-smoke tabular-nums">{t.coutXp} XP</span>
-                  <div className="flex items-center gap-2">
-                    <Link
-                      href={`/technique/fiches/${t.id}`}
-                      className="hnk-btn-ghost !py-1.5 !px-3 !text-[10px]"
-                    >
-                      Voir
-                    </Link>
-                    {t.status === "VALIDATED" && (
-                      <ForumCopyButton
-                        data={{
-                          nom: t.nom,
-                          art: t.art,
-                          spec: t.spec ?? null,
-                          specRank: t.specRank ?? null,
-                          secondaryArt: t.secondaryArt,
-                          secondarySpec: t.secondarySpec ?? null,
-                          secondarySpecRank: t.secondarySpecRank ?? null,
-                          actionType: t.actionType,
-                          element: t.element,
-                          kekkeiGenkai: t.kekkeiGenkai,
-                          kgColorHex: t.kekkeiGenkai ? resolveKgColor(t.kekkeiGenkai, kgColors) : null,
-                          secondaryElement: t.secondaryElement,
-                          secondaryKekkeiGenkai: t.secondaryKekkeiGenkai,
-                          secondaryKgColorHex: t.secondaryKekkeiGenkai
-                            ? resolveKgColor(t.secondaryKekkeiGenkai, kgColors)
-                            : null,
-                          nature: t.nature,
-                          kinjutsuScope: t.kinjutsuScope,
-                          clan: t.clan,
-                          espece: t.invocationEspece ?? null,
-                          description: t.description ?? "",
-                          coutXp: t.coutXp,
-                        }}
-                      />
-                    )}
-                  </div>
-                </div>
-              </div>
+              <TechniqueCard key={t.id} technique={t} kgColors={kgColors} variant={variant} />
             ))}
           </div>
         </section>
@@ -251,11 +159,162 @@ export default function TechniquesView({
   );
 }
 
+function TechniqueCard({
+  technique: t,
+  kgColors,
+  variant,
+}: {
+  technique: MyTech;
+  kgColors?: Record<string, string>;
+  variant: "default" | "kuchy";
+}) {
+  return (
+    <div
+      className={
+        variant === "kuchy"
+          ? "hnk-kuchy-panel hnk-kuchy-panel--frame hnk-kuchy-panel--kuchy"
+          : "hnk-panel"
+      }
+      data-kanji={t.nature === "KINJUTSU" ? "禁" : "技"}
+      style={buildCardStyle(t.kekkeiGenkai, kgColors, t.nature === "KINJUTSU")}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <Link
+          href={`/technique/fiches/${t.id}`}
+          className="font-display uppercase tracking-wider text-lg text-white hover:text-ember min-w-0 break-words"
+        >
+          {t.nom}
+        </Link>
+        <span
+          className={`text-[10px] tracking-[0.2em] uppercase flex-none ${
+            STATUS_COLOR[t.status] ?? "text-smoke"
+          }`}
+        >
+          {STATUS_LABEL[t.status] ?? t.status}
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-1.5 mt-2">
+        {t.nature === "KINJUTSU" && (
+          <span className="hnk-tech-chip !text-ember !border-ember/70">
+            {natureLabel(t.nature, t.kinjutsuScope, t.clan)}
+          </span>
+        )}
+        {techniqueArtChipLabel({
+          art: t.art,
+          spec: t.spec ?? null,
+          specRank: t.specRank ?? null,
+          nature: t.nature,
+        }) && <span className="hnk-tech-chip">{techniqueArtChipLabel({
+          art: t.art,
+          spec: t.spec ?? null,
+          specRank: t.specRank ?? null,
+          nature: t.nature,
+        })}</span>}
+        {techniqueArtChipLabel({
+          art: t.secondaryArt,
+          spec: t.secondarySpec ?? null,
+          specRank: t.secondarySpecRank ?? null,
+          nature: t.nature,
+        }) && <span className="hnk-tech-chip">+ {techniqueArtChipLabel({
+          art: t.secondaryArt,
+          spec: t.secondarySpec ?? null,
+          specRank: t.secondarySpecRank ?? null,
+          nature: t.nature,
+        })}</span>}
+        {t.actionType && <span className="hnk-tech-chip">{actionLabel(t.actionType)}</span>}
+        {t.element && <span className="hnk-tech-chip">{t.element}</span>}
+        {t.secondaryElement && <span className="hnk-tech-chip">{t.secondaryElement}</span>}
+        {t.kekkeiGenkai && (
+          <span
+            className="hnk-tech-chip"
+            style={{
+              color: resolveKgColor(t.kekkeiGenkai, kgColors),
+              borderColor: resolveKgColor(t.kekkeiGenkai, kgColors),
+            }}
+          >
+            KG · {t.kekkeiGenkai}
+          </span>
+        )}
+        {t.secondaryKekkeiGenkai && (
+          <span
+            className="hnk-tech-chip"
+            style={{
+              color: resolveKgColor(t.secondaryKekkeiGenkai, kgColors),
+              borderColor: resolveKgColor(t.secondaryKekkeiGenkai, kgColors),
+            }}
+          >
+            KG · {t.secondaryKekkeiGenkai}
+          </span>
+        )}
+        {t.invocationNom && (
+          <span className="hnk-tech-chip">
+            口 {t.invocationEspece ? `${t.invocationEspece} · ` : ""}
+            {t.invocationNom}
+            {t.invocationRank ? ` · Rang ${t.invocationRank}` : ""}
+          </span>
+        )}
+        {!t.mine && <span className="hnk-tech-chip">Tag Team (partenaire)</span>}
+      </div>
+      {t.description && (
+        <p className="text-sm text-bone/80 mt-3 whitespace-pre-line break-words text-justify line-clamp-3">
+          {t.description}
+        </p>
+      )}
+      <div className="flex items-center justify-between gap-2 mt-3">
+        <span className="text-xs text-smoke tabular-nums">{t.coutXp} XP</span>
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/technique/fiches/${t.id}`}
+            className="hnk-btn-ghost !py-1.5 !px-3 !text-[10px]"
+          >
+            Voir
+          </Link>
+          {t.status === "VALIDATED" && (
+            <ForumCopyButton
+              data={{
+                nom: t.nom,
+                art: t.art,
+                spec: t.spec ?? null,
+                specRank: t.specRank ?? null,
+                secondaryArt: t.secondaryArt,
+                secondarySpec: t.secondarySpec ?? null,
+                secondarySpecRank: t.secondarySpecRank ?? null,
+                actionType: t.actionType,
+                element: t.element,
+                kekkeiGenkai: t.kekkeiGenkai,
+                kgColorHex: t.kekkeiGenkai ? resolveKgColor(t.kekkeiGenkai, kgColors) : null,
+                secondaryElement: t.secondaryElement,
+                secondaryKekkeiGenkai: t.secondaryKekkeiGenkai,
+                secondaryKgColorHex: t.secondaryKekkeiGenkai
+                  ? resolveKgColor(t.secondaryKekkeiGenkai, kgColors)
+                  : null,
+                nature: t.nature,
+                kinjutsuScope: t.kinjutsuScope,
+                clan: t.clan,
+                espece: t.invocationEspece ?? null,
+                description: t.description ?? "",
+                coutXp: t.coutXp,
+              }}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function resolveKgColor(name: string, kgColors?: Record<string, string>) {
   return kgColors?.[name] ?? kgColor(name);
 }
 
-function buildCardStyle(name: string | null, kgColors?: Record<string, string>) {
+function buildCardStyle(name: string | null, kgColors?: Record<string, string>, kinjutsu = false) {
+  if (kinjutsu) {
+    return {
+      backgroundImage: "linear-gradient(135deg, rgba(255,87,34,0.22) 0%, rgba(255,184,77,0.08) 42%, rgba(0,0,0,0) 76%)",
+      borderColor: "rgba(255,87,34,0.55)",
+      boxShadow: "inset 4px 0 0 #ff5722, 0 0 24px rgba(255,87,34,0.16)",
+    };
+  }
   if (!name) return {};
   const c = resolveKgColor(name, kgColors);
   return {

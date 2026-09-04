@@ -5,8 +5,10 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin, jsonError } from "@/lib/permissions";
 import { registerSchema } from "@/lib/validators";
 
+const USERS_PAGE_LIMIT = 500;
+
 // GET /api/admin/users?q=<search>
-//   - q sur username / email (case-insensitive)
+//   - q sur username / email / pseudo forum (case-insensitive)
 //   - retourne le minimum nécessaire pour l'écran admin
 export async function GET(req: Request) {
   try {
@@ -15,13 +17,19 @@ export async function GET(req: Request) {
     const q = (url.searchParams.get("q") ?? "").trim();
 
     const where = q
-      ? { username: { contains: q, mode: "insensitive" as const } }
+      ? {
+          OR: [
+            { username: { contains: q, mode: "insensitive" as const } },
+            { email: { contains: q, mode: "insensitive" as const } },
+            { forumPseudo: { contains: q, mode: "insensitive" as const } },
+          ],
+        }
       : {};
 
     const users = await prisma.user.findMany({
       where,
       orderBy: { createdAt: "desc" },
-      take: 100,
+      take: USERS_PAGE_LIMIT,
       select: {
         id: true,
         username: true,

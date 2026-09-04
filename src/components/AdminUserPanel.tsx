@@ -9,6 +9,12 @@ import { ARTS_ALL, specRank, type ArtsState } from "@/lib/arts";
 import { AdminArtsForm, AdminQuintForm } from "@/components/AdminArtsQuint";
 import { isNoClan } from "@/lib/clans";
 import { CHARACTER_STATUS_LABEL, type CharacterStatus } from "@/lib/character-status";
+import {
+  SPECIAL_UNIT_NAMES,
+  hasKinjutsuUnitGrade,
+  normalizeSpecialUnit,
+  unitKinjutsuScope,
+} from "@/lib/kinjutsu";
 
 type Rang = "E" | "D" | "C" | "B" | "A" | "S";
 type Grade = "GENIN" | "CHUNIN" | "JONIN";
@@ -71,6 +77,8 @@ export default function AdminUserPanel({
       <AddTechniqueForm
         userId={user.id}
         userClan={user.clan}
+        userUnit={user.uniteSpeciale}
+        userGrade={user.grade}
         artsState={(user.artsState ?? {}) as ArtsState}
         artsRank={user.rang}
         kgNames={kgNames}
@@ -511,6 +519,7 @@ function XpForm({ userId }: { userId: string }) {
 
 function ProfilForm({ user, kgNames }: { user: AdminUser; kgNames: string[] }) {
   const router = useRouter();
+  const initialUnit = normalizeSpecialUnit(user.uniteSpeciale) ?? "";
   const [v, setV] = useState({
     characterStatus: user.characterStatus ?? "ACTIVE",
     primaryKg: user.primaryKg ?? "",
@@ -521,7 +530,7 @@ function ProfilForm({ user, kgNames }: { user: AdminUser; kgNames: string[] }) {
     rangHistoire: user.rangHistoire ?? "",
     rangClan: user.rangClan ?? "",
     grade: user.grade ?? "",
-    uniteSpeciale: user.uniteSpeciale ?? "",
+    uniteSpeciale: initialUnit,
     trame: user.trame ?? "",
     prime: user.prime ?? "",
     age: user.age?.toString() ?? "",
@@ -621,10 +630,11 @@ function ProfilForm({ user, kgNames }: { user: AdminUser; kgNames: string[] }) {
           on={(x) => update("grade", x)}
           options={["GENIN", "CHUNIN", "JONIN"]}
         />
-        <Inp
+        <Sel
           label="Unité spéciale"
           v={v.uniteSpeciale}
           on={(x) => update("uniteSpeciale", x)}
+          options={[...SPECIAL_UNIT_NAMES]}
         />
         <Inp label="Trame" v={v.trame} on={(x) => update("trame", x)} />
         <Inp label="Age" v={v.age} on={(x) => update("age", x)} />
@@ -734,17 +744,22 @@ function PactAffinityAdminForm({ userId, current }: { userId: string; current: s
 function AddTechniqueForm({
   userId,
   userClan,
+  userUnit,
+  userGrade,
   artsState,
   artsRank,
   kgNames,
 }: {
   userId: string;
   userClan: string | null;
+  userUnit: string | null;
+  userGrade: Grade | null;
   artsState: ArtsState;
   artsRank: string | null;
   kgNames: string[];
 }) {
   const router = useRouter();
+  const userUnitScope = unitKinjutsuScope(userUnit);
   const [v, setV] = useState({
     nom: "",
     description: "",
@@ -755,6 +770,7 @@ function AddTechniqueForm({
     kekkeiGenkai: "",
     nature: "",
     clan: userClan ?? "",
+    kinjutsuScope: userUnitScope ?? "PLAYER",
     coutXp: "0",
   });
   const [msg, setMsg] = useState<string | null>(null);
@@ -771,7 +787,22 @@ function AddTechniqueForm({
     : null;
   const artDef = artKey ? ARTS_ALL.find((a) => a.key === artKey) : null;
   const noPlayableClan = isNoClan(userClan);
-  const natureOptions = noPlayableClan ? ["PERSONNELLE"] : ["PERSONNELLE", "COLLECTIVE"];
+  const natureOptions = noPlayableClan ? ["PERSONNELLE", "KINJUTSU"] : ["PERSONNELLE", "COLLECTIVE", "KINJUTSU"];
+  const kinjutsuScopeOptions = [
+    "PLAYER",
+    ...(noPlayableClan ? [] : ["CLAN"]),
+    ...(userUnitScope ? [userUnitScope] : []),
+  ];
+  const kinjutsuScopeLabels: Record<string, string> = {
+    PLAYER: "Joueur",
+    CLAN: userClan ? `Clan · ${userClan}` : "Clan",
+    ...(userUnit && userUnitScope
+      ? {
+          [userUnitScope]: `Unité spéciale · ${userUnit} · Chunin+`,
+        }
+      : {}),
+  };
+  const unitKinjutsuLocked = !!userUnit && !hasKinjutsuUnitGrade(userGrade);
 
   function submit() {
     if (v.nom.trim().length < 2 || v.description.trim().length < 1) {
@@ -782,16 +813,24 @@ function AddTechniqueForm({
       setMsg("Indique le clan pour une technique collective.");
       return;
     }
+    if (v.nature === "KINJUTSU" && v.kinjutsuScope.startsWith("UNIT:") && !userUnit) {
+      setMsg("Le joueur n'a pas d'unité spéciale.");
+      return;
+    }
     const payload = {
       nom: v.nom.trim(),
       description: v.description.trim(),
-      art: v.art || null,
-      spec: v.spec || null,
+      art: v.nature === "KINJUTSU" ? null : v.art || null,
+      spec: v.nature === "KINJUTSU" ? null : v.spec || null,
       actionType: v.actionType || null,
-      element: v.element || null,
-      kekkeiGenkai: v.kekkeiGenkai || null,
+      element: v.nature === "KINJUTSU" ? null : v.element || null,
+      kekkeiGenkai: v.nature === "KINJUTSU" ? null : v.kekkeiGenkai || null,
       nature: v.nature || null,
-      clan: v.nature === "COLLECTIVE" ? v.clan.trim() || null : null,
+      clan:
+        v.nature === "COLLECTIVE" || (v.nature === "KINJUTSU" && v.kinjutsuScope === "CLAN")
+          ? v.clan.trim() || null
+          : null,
+      kinjutsuScope: v.nature === "KINJUTSU" ? v.kinjutsuScope : null,
       coutXp: parseInt(v.coutXp, 10) || 0,
     };
     start(async () => {
@@ -818,8 +857,16 @@ function AddTechniqueForm({
       </h3>
       <p className="text-[10px] text-smoke mb-3">
         Créée directement en VALIDATED, sans débit d&apos;XP. Nature « Collective » + clan = ajout à
-        la bibliothèque commune du clan.
+        la bibliothèque commune du clan. Nature « Kinjutsu » = attribution staff séparée des
+        techniques classiques. Les Kinjutsu d&apos;unité apparaissent côté joueur à partir du grade
+        Chunin.
       </p>
+      {unitKinjutsuLocked && (
+        <p className="text-[10px] text-amber-200 mb-3">
+          Ce joueur est dans {userUnit}, mais son Kinjutsu d&apos;unité restera masqué jusqu&apos;au grade
+          Chunin.
+        </p>
+      )}
       <div className="grid sm:grid-cols-3 gap-3">
         <Inp label="Nom" v={v.nom} on={(x) => up("nom", x)} />
         <Sel
@@ -873,6 +920,15 @@ function AddTechniqueForm({
           options={natureOptions}
         />
         {v.nature === "COLLECTIVE" && <Inp label="Clan" v={v.clan} on={(x) => up("clan", x)} />}
+        {v.nature === "KINJUTSU" && (
+          <Sel
+            label="Portée Kinjutsu"
+            v={v.kinjutsuScope}
+            on={(x) => up("kinjutsuScope", x)}
+            options={kinjutsuScopeOptions}
+            labels={kinjutsuScopeLabels}
+          />
+        )}
         <Inp label="Coût XP (info)" v={v.coutXp} on={(x) => up("coutXp", x)} />
       </div>
       <label className="block mt-3">

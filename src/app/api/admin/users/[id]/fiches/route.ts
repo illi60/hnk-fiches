@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin, jsonError } from "@/lib/permissions";
 import { adminFicheCreateSchema } from "@/lib/validators";
 import { isNoClan } from "@/lib/clans";
+import { normalizeSpecialUnit, unitKinjutsuScope } from "@/lib/kinjutsu";
 
 // POST /api/admin/users/[id]/fiches
 //
@@ -20,11 +21,29 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (!parsed.success) return NextResponse.json({ ok: false, error: "INVALID" }, { status: 400 });
     const d = parsed.data;
 
-    const target = await prisma.user.findUnique({ where: { id: targetId }, select: { id: true, clan: true } });
+    const target = await prisma.user.findUnique({
+      where: { id: targetId },
+      select: { id: true, clan: true, uniteSpeciale: true },
+    });
     if (!target) return NextResponse.json({ ok: false, error: "NOT_FOUND" }, { status: 404 });
     if (d.nature === "COLLECTIVE" && (isNoClan(target.clan) || isNoClan(d.clan ?? target.clan))) {
       return NextResponse.json({ ok: false, error: "CLAN_REQUIS" }, { status: 400 });
     }
+    if (d.nature === "KINJUTSU" && d.kinjutsuScope === "CLAN" && isNoClan(d.clan ?? target.clan)) {
+      return NextResponse.json({ ok: false, error: "CLAN_REQUIS" }, { status: 400 });
+    }
+    if (d.nature === "KINJUTSU" && d.kinjutsuScope?.startsWith("UNIT:")) {
+      const unit = normalizeSpecialUnit(d.kinjutsuScope.slice(5));
+      if (!target.uniteSpeciale || normalizeSpecialUnit(target.uniteSpeciale) !== unit) {
+        return NextResponse.json({ ok: false, error: "UNITE_REQUISE" }, { status: 400 });
+      }
+    }
+    const kinjutsuScope =
+      d.nature === "KINJUTSU"
+        ? d.kinjutsuScope?.startsWith("UNIT:")
+          ? unitKinjutsuScope(d.kinjutsuScope.slice(5)) ?? d.kinjutsuScope
+          : d.kinjutsuScope ?? "PLAYER"
+        : null;
 
     // L'invocation (si fournie) doit appartenir au joueur cible.
     let invocationId: string | null = null;
@@ -61,15 +80,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         slug: slugVal,
         nom: d.nom,
         description: d.description,
-        art: d.art ?? null,
-        spec: d.spec ?? null,
-        secondaryArt: d.actionType === "COMBINEE" ? d.secondaryArt ?? null : null,
-        secondarySpec: d.actionType === "COMBINEE" ? d.secondarySpec ?? null : null,
+        art: d.nature === "KINJUTSU" ? null : d.art ?? null,
+        spec: d.nature === "KINJUTSU" ? null : d.spec ?? null,
+        secondaryArt: d.nature !== "KINJUTSU" && d.actionType === "COMBINEE" ? d.secondaryArt ?? null : null,
+        secondarySpec: d.nature !== "KINJUTSU" && d.actionType === "COMBINEE" ? d.secondarySpec ?? null : null,
         actionType: d.actionType ?? null,
-        element: d.element ?? null,
-        kekkeiGenkai: d.kekkeiGenkai ?? null,
+        element: d.nature === "KINJUTSU" ? null : d.element ?? null,
+        kekkeiGenkai: d.nature === "KINJUTSU" ? null : d.kekkeiGenkai ?? null,
         nature: invocationId ? null : d.nature ?? null,
-        clan: d.nature === "COLLECTIVE" ? d.clan ?? target.clan ?? null : null,
+        kinjutsuScope,
+        clan:
+          d.nature === "COLLECTIVE" || (d.nature === "KINJUTSU" && kinjutsuScope === "CLAN")
+            ? d.clan ?? target.clan ?? null
+            : null,
         invocationId,
         coutXp: d.coutXp ?? 0,
         status: "VALIDATED",

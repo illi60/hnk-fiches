@@ -8,6 +8,7 @@ import { ARTS_ALL, type ArtsState } from "@/lib/arts";
 import { resolveTechniqueSpecRanks } from "@/lib/technique-display";
 import { loadKgCatalogRows } from "@/lib/kekkei-server";
 import { hasInvocationRankColumn } from "@/lib/invocation-schema";
+import { hasKinjutsuUnitGrade, unitKinjutsuScope } from "@/lib/kinjutsu";
 
 export default async function MyFichesPage() {
   const session = await auth();
@@ -16,17 +17,39 @@ export default async function MyFichesPage() {
 
   const me = await prisma.user.findUnique({
     where: { id: meId },
-    select: { artsState: true, rang: true },
+    select: { artsState: true, rang: true, clan: true, uniteSpeciale: true, grade: true },
   });
   const meArts = (me?.artsState ?? null) as ArtsState | null;
   const meArtsRank = me?.rang ?? null;
+  const unitScope = hasKinjutsuUnitGrade(me?.grade)
+    ? unitKinjutsuScope(me?.uniteSpeciale)
+    : null;
   const kgCatalog = await loadKgCatalogRows();
   const kgColors = Object.fromEntries(kgCatalog.map((kg) => [kg.name, kg.color]));
   const hasInvRank = await hasInvocationRankColumn();
 
   // Mes fiches + celles où je suis participant (type d'action COLLECTIVE).
   const fiches = await prisma.ficheTechnique.findMany({
-    where: { isActive: true, OR: [{ authorId: meId }, { collaboratorIds: { has: meId } }] },
+    where: {
+      isActive: true,
+      OR: [
+        { authorId: meId, NOT: { nature: "KINJUTSU" } },
+        { collaboratorIds: { has: meId } },
+        { authorId: meId, nature: "KINJUTSU", kinjutsuScope: "PLAYER" },
+        ...(me?.clan
+          ? [{ status: "VALIDATED" as const, nature: "KINJUTSU", kinjutsuScope: "CLAN", clan: me.clan }]
+          : []),
+        ...(unitScope
+          ? [
+              {
+                status: "VALIDATED" as const,
+                nature: "KINJUTSU",
+                kinjutsuScope: { equals: unitScope, mode: "insensitive" as const },
+              },
+            ]
+          : []),
+      ],
+    },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,

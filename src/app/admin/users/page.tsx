@@ -5,6 +5,8 @@ import { requireAdmin } from "@/lib/permissions";
 import CreateUserForm from "@/components/CreateUserForm";
 import { XP_AUDIT_REASONS, xpAudit, type XpReasonSums } from "@/lib/xp-audit";
 
+const USERS_PAGE_LIMIT = 500;
+
 export default async function AdminUsersPage({
   searchParams,
 }: {
@@ -13,11 +15,22 @@ export default async function AdminUsersPage({
   await requireAdmin();
   const sp = await searchParams;
   const q = (sp.q ?? "").trim();
+  const where = q
+    ? {
+        OR: [
+          { username: { contains: q, mode: "insensitive" as const } },
+          { email: { contains: q, mode: "insensitive" as const } },
+          { forumPseudo: { contains: q, mode: "insensitive" as const } },
+        ],
+      }
+    : {};
+
+  const totalUsers = await prisma.user.count({ where });
 
   const users = await prisma.user.findMany({
-    where: q ? { username: { contains: q, mode: "insensitive" } } : {},
+    where,
     orderBy: { createdAt: "desc" },
-    take: 100,
+    take: USERS_PAGE_LIMIT,
     select: {
       id: true,
       username: true,
@@ -65,13 +78,18 @@ export default async function AdminUsersPage({
         <input
           name="q"
           defaultValue={q}
-          placeholder="Pseudo…"
+          placeholder="Pseudo, email, pseudo forum…"
           className="flex-1 bg-ink-900 border border-white/10 border-b-2 border-b-ember/50 px-3 py-2 text-bone focus:outline-none focus:border-ember"
         />
         <button className="px-5 py-2 bg-ember text-black font-bold tracking-[0.2em] uppercase text-xs hover:bg-ember-hot transition">
           Chercher
         </button>
       </form>
+      <p className="text-xs text-smoke">
+        {users.length} joueur{users.length > 1 ? "s" : ""} affiché{users.length > 1 ? "s" : ""} sur{" "}
+        {totalUsers}
+        {totalUsers > USERS_PAGE_LIMIT ? ` · résultats limités aux ${USERS_PAGE_LIMIT} plus récents` : ""}
+      </p>
 
       <ul className="divide-y divide-white/5 border border-white/5 bg-ink-700">
         {users.map((u) => {

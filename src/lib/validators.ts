@@ -5,6 +5,7 @@
 
 import { z } from "zod";
 
+import { SPECIAL_UNIT_NAMES } from "@/lib/kinjutsu";
 import { isManualReviewSubmission, requiresCollaborators } from "@/lib/progression";
 import { SHOP_CATEGORIES } from "@/lib/shop";
 
@@ -128,7 +129,7 @@ export const adminProfilSchema = z.object({
   rangHistoire: rangEnum,
   rangClan: rangEnum,
   grade: z.enum(["GENIN", "CHUNIN", "JONIN"]).nullable().optional(),
-  uniteSpeciale: z.string().max(60).optional().nullable(),
+  uniteSpeciale: z.enum(SPECIAL_UNIT_NAMES).optional().nullable(),
   trame: z.string().max(60).optional().nullable(),
   prime: z.string().max(2000).optional().nullable(),
   age: z.number().int().min(0).max(999).optional().nullable(),
@@ -281,6 +282,11 @@ export const adminShopItemSchema = z.object({
   sortOrder: z.number().int().min(-10_000).max(10_000).optional(),
 });
 export type AdminShopItemInput = z.infer<typeof adminShopItemSchema>;
+
+export const adminInventoryRemoveSchema = z.object({
+  quantity: z.number().int().min(1).max(999).default(1),
+});
+export type AdminInventoryRemoveInput = z.infer<typeof adminInventoryRemoveSchema>;
 
 // ----- Progression (Village / Clan / Histoire) -----
 // Le joueur soumet UN RP pour une condition. Le serveur résout
@@ -480,12 +486,37 @@ export const adminFicheCreateSchema = z.object({
     .nullable(),
   element: z.string().max(40).optional().nullable(),
   kekkeiGenkai: z.string().max(60).optional().nullable(),
-  nature: z.enum(["PERSONNELLE", "COLLECTIVE"]).optional().nullable(),
+  nature: z.enum(["PERSONNELLE", "COLLECTIVE", "KINJUTSU"]).optional().nullable(),
   clan: z.string().max(60).optional().nullable(),
+  kinjutsuScope: z.string().max(80).optional().nullable(),
   invocationId: z.string().cuid().optional().nullable(),
   coutXp: z.number().int().min(0).max(100_000).optional(),
 });
 export type AdminFicheCreateInput = z.infer<typeof adminFicheCreateSchema>;
+
+export const adminKinjutsuSchema = z.object({
+  nom: z.string().min(2).max(120),
+  description: z.string().min(1).max(20000),
+  actionType: z
+    .enum([
+      "EVOLUTIVE",
+      "UNIQUE",
+      "DURABLE",
+      "CHARGEE",
+      "COMPLEXE",
+      "COMBINEE",
+      "COLLECTIVE",
+      "ULTIME",
+      "SUPREME",
+    ])
+    .optional()
+    .nullable(),
+  scopeType: z.enum(["CLAN", "UNIT"]),
+  clan: z.string().max(60).optional().nullable(),
+  unit: z.enum(SPECIAL_UNIT_NAMES).optional().nullable(),
+  coutXp: z.number().int().min(0).max(100_000).optional(),
+});
+export type AdminKinjutsuInput = z.infer<typeof adminKinjutsuSchema>;
 
 export const adminKekkeiCatalogSchema = z.object({
   name: z.string().min(2).max(80),

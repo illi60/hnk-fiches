@@ -1,5 +1,6 @@
 export const NO_CLAN_LABEL = "Konoha";
 export const FOUNDER_CLAN_KEYS = ["hyuga", "sarutobi", "senju", "uchiha", "uzumaki"] as const;
+export const FOUNDER_CLAN_NAMES = ["HYUGA", "SARUTOBI", "SENJU", "UCHIHA", "UZUMAKI"] as const;
 export const MINOR_CLAN_KEYS = ["shiranui"] as const;
 
 export function normalizeClanKey(clan?: string | null): string {

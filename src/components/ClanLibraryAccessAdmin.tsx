@@ -8,6 +8,7 @@ import { ELEMENTS } from "@/lib/techniques";
 export interface ClanLibraryPermissionRow {
   id: string;
   clan: string;
+  clanKey?: string;
   kind: string;
   value: string;
 }

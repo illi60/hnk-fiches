@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin, jsonError } from "@/lib/permissions";
 import { adminProfilSchema } from "@/lib/validators";
 import { highestRank } from "@/lib/progression";
+import { normalizeSpecialUnit } from "@/lib/kinjutsu";
 
 // PATCH /api/admin/users/[id]/profil — édite les champs RP d'un user.
 // Aucun champ XP / role n'est touché ici (séparation de pouvoirs).
@@ -46,7 +47,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         ...(parsed.data.rangHistoire !== undefined && { rangHistoire: parsed.data.rangHistoire }),
         ...(parsed.data.rangClan !== undefined && { rangClan: parsed.data.rangClan }),
         ...(parsed.data.grade !== undefined && { grade: parsed.data.grade }),
-        ...(parsed.data.uniteSpeciale !== undefined && { uniteSpeciale: parsed.data.uniteSpeciale }),
+        ...(parsed.data.uniteSpeciale !== undefined && {
+          uniteSpeciale: normalizeSpecialUnit(parsed.data.uniteSpeciale),
+        }),
         ...(parsed.data.trame !== undefined && { trame: parsed.data.trame }),
         ...(parsed.data.prime !== undefined && { prime: parsed.data.prime }),
         ...(parsed.data.age !== undefined && { age: parsed.data.age }),

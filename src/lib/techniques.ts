@@ -54,8 +54,12 @@ export const NATURES = [
 ] as const;
 export type NatureKey = (typeof NATURES)[number]["key"];
 
-// Legacy : ancien scope des Kinjutsu (conservé pour l'affichage des anciennes fiches).
+export const KINJUTSU_NATURE = { key: "KINJUTSU", label: "Kinjutsu" } as const;
+
+// Scopes Kinjutsu partagés. Les scopes d'unité spéciale sont stockés sous la
+// forme UNIT:<nom unite> et se débloquent au grade Chunin côté accès.
 export const KINJUTSU_SCOPES = [
+  { key: "PLAYER", label: "Kinjutsu · Joueur" },
   { key: "CLAN", label: "Kinjutsu de clan" },
   { key: "VILLAGE", label: "Kinjutsu de village" },
 ] as const;
@@ -79,8 +83,9 @@ export function natureLabel(key?: string | null, scope?: string | null, clan?: s
   if (key === "COLLECTIVE") {
     return clan ? `Collective · ${clan}` : "Collective (clan)";
   }
-  // Legacy : anciennes fiches Kinjutsu.
   if (key === "KINJUTSU") {
+    if (scope?.startsWith("UNIT:")) return `Kinjutsu · ${scope.slice(5)}`;
+    if (scope === "PLAYER") return "Kinjutsu · Joueur";
     return KINJUTSU_SCOPES.find((s) => s.key === scope)?.label ?? "Kinjutsu";
   }
   if (key === "PERSONNELLE") return "Technique personnelle";
