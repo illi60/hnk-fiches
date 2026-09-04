@@ -89,6 +89,7 @@ export const FOREIGN_COUNTRY_MISSION_COUNTRIES = [
   { key: "mizu", label: "Mizu no Kuni", kanji: "水" },
   { key: "tetsu", label: "Tetsu no Kuni", kanji: "鉄" },
 ] as const;
+export type ForeignCountryKey = (typeof FOREIGN_COUNTRY_MISSION_COUNTRIES)[number]["key"];
 export const FOREIGN_COUNTRY_MISSION_RANKS = ["D", "C", "B"] as const;
 
 const FOREIGN_COUNTRY_MISSION_CONDITIONS: ProgCond[] = FOREIGN_COUNTRY_MISSION_COUNTRIES.flatMap(
@@ -98,6 +99,97 @@ const FOREIGN_COUNTRY_MISSION_CONDITIONS: ProgCond[] = FOREIGN_COUNTRY_MISSION_C
       label: `Réaliser 1 Mission de Rang ${missionRank} à ${country.label}.`,
       count: 1,
     }))
+);
+
+export const FOREIGN_COUNTRY_CONDITION_GROUPS = [
+  {
+    baseId: "VILLAGE.B.c4",
+    label: "Purifier 5 RP Anomalies non narrées par pays étranger.",
+  },
+  {
+    baseId: "VILLAGE.B.c5",
+    label: "Réaliser au moins 5 RP Trivia par pays étranger.",
+  },
+  {
+    baseId: "CLAN.B.c6",
+    label: "Réaliser 2 RP libres par pays étranger (rayonner).",
+  },
+  {
+    baseId: "CLAN.A.c2",
+    label: "Réaliser 5 missions D, C et B avantageant le Clan par pays étranger.",
+  },
+  {
+    baseId: "VILLAGE.A.c3",
+    label: "Réaliser 5 Missions D, C et B avantageant le Village par pays étranger.",
+  },
+] as const;
+
+export type ForeignCountryConditionGroup = (typeof FOREIGN_COUNTRY_CONDITION_GROUPS)[number];
+
+export function foreignCountryConditionGroupForCondId(
+  condId: string
+): ForeignCountryConditionGroup | undefined {
+  return FOREIGN_COUNTRY_CONDITION_GROUPS.find((group) =>
+    condId.startsWith(`${group.baseId}.`)
+  );
+}
+
+export function foreignCountryForCondId(condId: string):
+  | (typeof FOREIGN_COUNTRY_MISSION_COUNTRIES)[number]
+  | undefined {
+  const communityGroup = foreignCountryConditionGroupForCondId(condId);
+  if (communityGroup) {
+    const countryKey = condId.slice(communityGroup.baseId.length + 1) as ForeignCountryKey;
+    return FOREIGN_COUNTRY_MISSION_COUNTRIES.find((country) => country.key === countryKey);
+  }
+  if (condId.startsWith("HISTOIRE.A.i2.")) {
+    return FOREIGN_COUNTRY_MISSION_COUNTRIES.find((country) =>
+      condId.startsWith(`HISTOIRE.A.i2.${country.key}.`)
+    );
+  }
+  return undefined;
+}
+
+function foreignCountryConditions(
+  baseId: ForeignCountryConditionGroup["baseId"],
+  count: number,
+  labelForCountry: (country: (typeof FOREIGN_COUNTRY_MISSION_COUNTRIES)[number]) => string
+): ProgCond[] {
+  return FOREIGN_COUNTRY_MISSION_COUNTRIES.map((country) => ({
+    id: `${baseId}.${country.key}`,
+    label: labelForCountry(country),
+    count,
+  }));
+}
+
+const VILLAGE_B_FOREIGN_ANOMALY_CONDITIONS = foreignCountryConditions(
+  "VILLAGE.B.c4",
+  5,
+  (country) => `Purifier 5 RP Anomalies non narrées à ${country.label}.`
+);
+
+const VILLAGE_B_FOREIGN_TRIVIA_CONDITIONS = foreignCountryConditions(
+  "VILLAGE.B.c5",
+  5,
+  (country) => `Réaliser au moins 5 RP Trivia à ${country.label}.`
+);
+
+const CLAN_B_FOREIGN_RADIANCE_CONDITIONS = foreignCountryConditions(
+  "CLAN.B.c6",
+  2,
+  (country) => `Réaliser 2 RP libres à ${country.label} pour faire rayonner le Clan.`
+);
+
+const CLAN_A_FOREIGN_MISSION_CONDITIONS = foreignCountryConditions(
+  "CLAN.A.c2",
+  5,
+  (country) => `Réaliser 5 missions D, C et B avantageant le Clan à ${country.label}.`
+);
+
+const VILLAGE_A_FOREIGN_MISSION_CONDITIONS = foreignCountryConditions(
+  "VILLAGE.A.c3",
+  5,
+  (country) => `Réaliser 5 Missions D, C et B avantageant le Village à ${country.label}.`
 );
 
 // ------------------------------------------------------------
@@ -215,8 +307,8 @@ const VILLAGE: ProgTrackDef = {
         { id: "VILLAGE.B.c1", label: "Atteindre 1200 XP cumulés à l'échelle du village.", count: 1200 },
         { id: "VILLAGE.B.c2", label: "Atteindre 500 réponses RP postées au total sur le forum.", count: 500 },
         { id: "VILLAGE.B.c3", label: "Réaliser 30 missions de Rang B dont au moins 10 à l'étranger avantageant le Village.", count: 30 },
-        { id: "VILLAGE.B.c4", label: "Purifier 5 RP Anomalies non narrées par pays étrangers.", count: 5 },
-        { id: "VILLAGE.B.c5", label: "Réaliser au moins 5 RP Trivia par pays étrangers.", count: 5 },
+        ...VILLAGE_B_FOREIGN_ANOMALY_CONDITIONS,
+        ...VILLAGE_B_FOREIGN_TRIVIA_CONDITIONS,
         { id: "VILLAGE.B.c6", label: "Avoir 5 personnages de Rang B.", count: 5 },
         { id: "VILLAGE.B.c7", label: "Avoir 3 personnages disposant d'un Titre.", count: 3 },
       ],
@@ -245,7 +337,7 @@ const VILLAGE: ProgTrackDef = {
       community: [
         { id: "VILLAGE.A.c1", label: "Atteindre 2500 XP cumulés à l'échelle du village.", count: 2500 },
         { id: "VILLAGE.A.c2", label: "Atteindre 1000 réponses RP postées au total sur le forum.", count: 1000 },
-        { id: "VILLAGE.A.c3", label: "Réaliser 5 Missions D, C et B avantageant le Village par pays étrangers.", count: 5 },
+        ...VILLAGE_A_FOREIGN_MISSION_CONDITIONS,
         { id: "VILLAGE.A.c4", label: "Acheter 60 marchandises dans la boutique.", count: 60 },
         { id: "VILLAGE.A.c5", label: "Utiliser dans 30 RP différents le Kinjutsu de Konoha.", count: 30 },
         { id: "VILLAGE.A.c6", label: "Avoir au moins 2 Chefs de Clan.", count: 2 },
@@ -397,7 +489,7 @@ const CLAN: ProgTrackDef = {
         { id: "CLAN.B.c3", label: "Valider 10 Missions de Rang B par des membres externes au Clan.", count: 10 },
         { id: "CLAN.B.c4", label: "Utiliser dans 5 RP une action combinée en lien avec son Kekkei Genkai.", count: 5 },
         { id: "CLAN.B.c5", label: "Réaliser 3 projets claniques déterminés collectivement.", count: 3 },
-        { id: "CLAN.B.c6", label: "Réaliser 2 RP libres par pays étranger (rayonner).", count: 2 },
+        ...CLAN_B_FOREIGN_RADIANCE_CONDITIONS,
         { id: "CLAN.B.c7", label: "Sceller une alliance avec un autre clan par 1 Kumite.", count: 1 },
         { id: "CLAN.B.c8", label: "Éteindre une rivalité avec un autre clan par 1 Kumite.", count: 1 },
         { id: "CLAN.B.c9", label: "Sceller une alliance avec un autre clan par diplomatie.", count: 1 },
@@ -428,7 +520,7 @@ const CLAN: ProgTrackDef = {
         "Le personnage s'impose comme un représentant emblématique dont l'influence dépasse les cercles du clan.",
       community: [
         { id: "CLAN.A.c1", label: "Atteindre 2000 XP cumulés à l'échelle du clan.", count: 2000 },
-        { id: "CLAN.A.c2", label: "Réaliser 5 missions D, C et B avantageant le Clan par pays étrangers.", count: 5 },
+        ...CLAN_A_FOREIGN_MISSION_CONDITIONS,
         { id: "CLAN.A.c3", label: "Utiliser dans 10 RP une Quintessence (Kekkei Genkai).", count: 10 },
         { id: "CLAN.A.c4", label: "Utiliser dans 10 RP une action tag-team à 2 avec un membre du Clan.", count: 10 },
         { id: "CLAN.A.c5", label: "Utiliser dans 10 RP une action ultime en lien avec son Kekkei Genkai.", count: 10 },

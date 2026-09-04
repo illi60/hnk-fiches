@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import type { TrackView, CondView } from "./ProgressionBoard";
 import {
+  foreignCountryForCondId,
   FOREIGN_COUNTRY_MISSION_COUNTRIES,
   FOREIGN_COUNTRY_MISSION_GROUP_ID,
 } from "@/lib/progression";
@@ -48,7 +49,7 @@ function collectSubmittable(tracks: TrackView[]): PickItem[] {
         ? FOREIGN_COUNTRY_MISSION_COUNTRIES.find((candidate) =>
             c.id.startsWith(`HISTOIRE.A.i2.${candidate.key}.`)
           )
-        : undefined;
+        : foreignCountryForCondId(c.id);
     out.push({
       condId: c.id,
       label: c.label,
@@ -133,7 +134,7 @@ export default function SubmitRpModal({ tracks, onClose }: { tracks: TrackView[]
         it.section === "Optionnelles"
           ? `${it.trackLabel} · ${it.routeLabel}`
           : it.countryLabel
-          ? `${it.trackLabel} · Missions ${it.countryLabel}`
+          ? `${it.trackLabel} · ${it.countryLabel}`
           : it.trackLabel;
       const g = m.get(key) ?? { label, kanji: it.countryKanji, items: [] };
       g.items.push(it);

@@ -5,9 +5,12 @@ import { useRouter } from "next/navigation";
 
 import SubmitRpModal from "./SubmitRpModal";
 import {
+  foreignCountryConditionGroupForCondId,
+  foreignCountryForCondId,
   FOREIGN_COUNTRY_MISSION_COUNTRIES,
   FOREIGN_COUNTRY_MISSION_GROUP_ID,
   FOREIGN_COUNTRY_MISSION_RANKS,
+  type ForeignCountryConditionGroup,
 } from "@/lib/progression";
 
 // ---- View models (construits côté serveur dans /technique/progression) ----
@@ -264,9 +267,7 @@ function PalierCard({ track, palier }: { track: TrackView; palier: PalierView })
             </p>
           )}
           <ul className="space-y-2.5">
-            {palier.community.map((c) => (
-              <CondRow key={c.id} cond={c} community />
-            ))}
+            {renderCommunityConditions(palier.community)}
           </ul>
         </section>
       )}
@@ -465,6 +466,77 @@ function ForeignCountryMissionGrid({ choices }: { choices: CondView[] }) {
   );
 }
 
+function renderCommunityConditions(conditions: CondView[]) {
+  const renderedGroups = new Set<string>();
+
+  return conditions.flatMap((cond) => {
+    const group = foreignCountryConditionGroupForCondId(cond.id);
+    if (!group) return [<CondRow key={cond.id} cond={cond} community />];
+    if (renderedGroups.has(group.baseId)) return [];
+
+    renderedGroups.add(group.baseId);
+    const groupChoices = conditions.filter(
+      (choice) => foreignCountryConditionGroupForCondId(choice.id)?.baseId === group.baseId
+    );
+    return [
+      <li key={group.baseId}>
+        <ForeignCountryCommunityGrid group={group} choices={groupChoices} />
+      </li>,
+    ];
+  });
+}
+
+function ForeignCountryCommunityGrid({
+  group,
+  choices,
+}: {
+  group: ForeignCountryConditionGroup;
+  choices: CondView[];
+}) {
+  const byCountry = new Map(
+    choices.flatMap((choice) => {
+      const country = foreignCountryForCondId(choice.id);
+      return country ? [[country.key, choice] as const] : [];
+    })
+  );
+  const done = choices.filter((choice) => choice.met).length;
+
+  return (
+    <div className="border-l-2 border-white/10 pl-3">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <p className="text-[11px] text-smoke leading-relaxed">{group.label}</p>
+        <span className="text-[10px] text-amber-300/80 tabular-nums flex-none">
+          {done}/{choices.length}
+        </span>
+      </div>
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
+        {FOREIGN_COUNTRY_MISSION_COUNTRIES.map((country) => {
+          const choice = byCountry.get(country.key);
+          if (!choice) return null;
+          return (
+            <div key={country.key} className="border border-white/10 bg-black/10 p-3">
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <div>
+                  <p className="font-jp text-ember text-lg leading-none">{country.kanji}</p>
+                  <p className="mt-1 text-[10px] uppercase tracking-[0.22em] text-bone/70">
+                    {country.label}
+                  </p>
+                </div>
+                <span className="text-[10px] text-amber-300/80 tabular-nums">
+                  {choice.current}/{choice.target}
+                </span>
+              </div>
+              <ul className="space-y-2.5">
+                <CondRow cond={choice} community compact />
+              </ul>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function OptionalRoutes({ group }: { group: OptionalView }) {
   const buckets = new Map<
     "Voie Ermite" | "Voie Jinchuuriki" | "Voie Otsutsuki",
@@ -543,7 +615,15 @@ function ProgressMeter({ cond }: { cond: CondView }) {
   );
 }
 
-function CondRow({ cond, community = false }: { cond: CondView; community?: boolean }) {
+function CondRow({
+  cond,
+  community = false,
+  compact = false,
+}: {
+  cond: CondView;
+  community?: boolean;
+  compact?: boolean;
+}) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [open, setOpen] = useState(false);
@@ -642,7 +722,8 @@ function CondRow({ cond, community = false }: { cond: CondView; community?: bool
 
   return (
     <li className="text-xs">
-      <div className="flex items-start gap-2">
+      <div className={compact ? "space-y-2" : "flex items-start gap-2"}>
+        <div className={compact ? "flex items-start gap-2" : "contents"}>
         <span className={`flex-none mt-[2px] ${iconColor}`}>{icon}</span>
         <span className="flex-1 text-bone/85 leading-relaxed">
           {cond.label}
@@ -652,10 +733,11 @@ function CondRow({ cond, community = false }: { cond: CondView; community?: bool
             </span>
           )}
         </span>
+        </div>
 
-        <ProgressMeter cond={cond} />
+        {!compact && <ProgressMeter cond={cond} />}
 
-        <span className="flex-none">
+        <span className={compact ? "block pl-5" : "flex-none"}>
           {cond.auto ? (
             <span className="text-[9px] text-smoke uppercase tracking-wider">auto</span>
           ) : cond.met ? (
