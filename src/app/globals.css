@@ -1760,14 +1760,14 @@ textarea.hnk-input {
 .hnk-tech[data-kanji]::after {
   content: attr(data-kanji);
   position: absolute;
-  right: 12px;
-  bottom: -24px;
+  right: 22px;
+  bottom: 14px;
   z-index: 0;
   font-family: var(--jp);
-  font-size: 132px;
+  font-size: 92px;
   font-weight: 900;
-  line-height: 0.8;
-  color: color-mix(in srgb, var(--tech-accent) 14%, transparent);
+  line-height: 1;
+  color: color-mix(in srgb, var(--tech-accent) 12%, transparent);
   pointer-events: none;
 }
 .hnk-tech-card--standard {

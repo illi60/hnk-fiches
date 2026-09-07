@@ -209,10 +209,9 @@ export function techniqueForumHtml(t: TechniqueExportData): string {
       ? "rgba(29,185,159,0.08)"
       : `${accent}16`;
     return (
-      `<span style="display:inline-block;margin:0 7px 7px 0;padding:5px 10px;` +
+      `<b style="display:inline-block;margin:0 6px 6px 0;padding:4px 9px;` +
       `border:1px solid ${border};background:${bg};color:${familyColor};` +
-      `font:800 11px/1.35 Arial,Helvetica,sans-serif;letter-spacing:1.1px;` +
-      `text-transform:uppercase;border-radius:2px;">${escapeHtml(txt)}</span>`
+      `border-radius:2px">${escapeHtml(txt)}</b>`
     );
   };
 
@@ -265,31 +264,32 @@ export function techniqueForumHtml(t: TechniqueExportData): string {
   const kanji = isKinjutsu ? "禁" : isKuchyTechnique ? "口" : "技";
   const bg =
     cardKind === "kinjutsu"
-      ? "radial-gradient(circle at 84% 16%, rgba(255,47,47,0.20), transparent 26%), repeating-linear-gradient(110deg, rgba(255,47,47,0.14) 0 2px, transparent 2px 18px), linear-gradient(135deg, rgba(255,47,47,0.22) 0%, rgba(255,184,77,0.07) 42%, rgba(0,0,0,0) 76%), linear-gradient(160deg, rgba(23,10,12,0.99), rgba(9,8,10,0.99))"
+      ? "repeating-linear-gradient(110deg,#ff2f2f24 0 2px,#0000 2px 18px),linear-gradient(135deg,#ff2f2f38,#ffb84d12 42%,#0000 76%),#0b090b"
       : cardKind === "kuchiyose"
-      ? "radial-gradient(circle at 82% 18%, rgba(29,185,159,0.18), transparent 28%), radial-gradient(circle at 12% 92%, rgba(255,184,77,0.09), transparent 32%), linear-gradient(90deg, rgba(29,185,159,0.13) 0 1px, transparent 1px), linear-gradient(0deg, rgba(29,185,159,0.08) 0 1px, transparent 1px), linear-gradient(135deg, rgba(29,185,159,0.18) 0%, rgba(255,184,77,0.08) 44%, rgba(0,0,0,0) 76%), linear-gradient(160deg, rgba(13,22,23,0.99), rgba(8,12,14,0.99))"
-      : `linear-gradient(90deg, ${accent}24, rgba(0,0,0,0) 34%), linear-gradient(135deg, ${accent}2e 0%, ${accent}14 38%, rgba(0,0,0,0) 72%), linear-gradient(160deg, rgba(16,20,25,0.98), rgba(9,11,14,0.98))`;
+      ? "linear-gradient(90deg,#1db99f21 1px,#0000 1px),linear-gradient(0deg,#1db99f14 1px,#0000 1px),linear-gradient(135deg,#1db99f2e,#ffb84d14 44%,#0000 76%),#081013"
+      : `linear-gradient(90deg,${accent}24,#0000 34%),linear-gradient(135deg,${accent}2e,${accent}14 38%,#0000 72%),#0d1116`;
   const borderColor =
     cardKind === "kinjutsu" ? "rgba(255,47,47,0.56)" : cardKind === "kuchiyose" ? "rgba(29,185,159,0.48)" : `${accent}66`;
   const shadowColor =
     cardKind === "kinjutsu" ? "rgba(255,47,47,0.18)" : cardKind === "kuchiyose" ? "rgba(29,185,159,0.16)" : `${accent}24`;
 
   return (
-    `<div class="hnk-tech hnk-tech--${cardKind}" data-kanji="${kanji}" style="position:relative;max-width:820px;margin:14px 0;padding:18px;overflow:hidden;` +
-    `background:${bg};background-size:${cardKind === "kuchiyose" ? "auto,auto,28px 28px,28px 28px,auto,auto" : "auto"};border:1px solid ${borderColor};` +
-    `border-left:5px solid ${accent};box-shadow:inset 0 1px 0 rgba(255,255,255,0.04),inset 5px 0 0 ${accent}cc,0 0 26px ${shadowColor};` +
-    `color:#e8e2da;font-family:Arial,Helvetica,sans-serif;">` +
-    `<div aria-hidden="true" style="position:absolute;right:12px;bottom:-20px;color:${accent}24;font:900 118px/0.8 'Noto Serif JP','Yu Mincho','Hiragino Mincho ProN',Georgia,serif;">${kanji}</div>` +
-    `<div style="position:relative;z-index:1;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;">` +
-    `<div style="min-width:0;color:#fff;font:900 21px/1.15 'Noto Serif JP','Yu Mincho','Hiragino Mincho ProN',Georgia,serif;letter-spacing:0;text-transform:uppercase;word-break:break-word;text-shadow:0 0 18px ${accent}38;">${escapeHtml(t.nom)}</div>` +
+    `<div style="position:relative;max-width:820px;margin:14px 0;padding:18px;overflow:hidden;background:${bg};` +
+    `${cardKind === "kuchiyose" ? "background-size:28px 28px,28px 28px,auto,auto;" : ""}border:1px solid ${borderColor};` +
+    `border-left:5px solid ${accent};box-shadow:inset 5px 0 0 ${accent}cc,0 0 26px ${shadowColor};` +
+    `color:#e8e2da;font-family:Arial,sans-serif">` +
+    `<i style="position:absolute;right:22px;bottom:14px;color:${accent}20;font:900 84px/1 'Noto Serif JP','Yu Mincho',serif;font-style:normal">${kanji}</i>` +
+    `<div style="position:relative">` +
+    `<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">` +
+    `<div style="min-width:0;color:#fff;font:900 21px/1.15 'Noto Serif JP','Yu Mincho',serif;text-transform:uppercase;word-break:break-word;text-shadow:0 0 18px ${accent}38">${escapeHtml(t.nom)}</div>` +
     (status
-      ? `<div style="flex:none;color:${statusColor};font:800 10px/1 Arial,Helvetica,sans-serif;letter-spacing:2px;text-transform:uppercase;">${escapeHtml(status)}</div>`
+      ? `<div style="flex:none;color:${statusColor};font:800 10px/1 Arial,sans-serif;letter-spacing:2px;text-transform:uppercase">${escapeHtml(status)}</div>`
       : "") +
     `</div>` +
-    `<div style="position:relative;z-index:1;margin-top:14px;">${chips.join("")}</div>` +
-    `<div style="position:relative;z-index:1;margin-top:10px;color:#d8d2cc;font:14px/1.65 Arial,Helvetica,sans-serif;text-align:justify;white-space:pre-line;">${desc}</div>` +
-    `<div style="position:relative;z-index:1;margin-top:14px;color:#8f9aa8;font:12px/1 Arial,Helvetica,sans-serif;">${t.coutXp} XP</div>` +
-    `<div style="position:absolute;inset:0;pointer-events:none;background-image:repeating-linear-gradient(135deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 8px);"></div>` +
+    `<div style="margin-top:14px;font:800 11px/1.3 Arial,sans-serif;letter-spacing:1px;text-transform:uppercase">${chips.join("")}</div>` +
+    `<div style="margin-top:10px;color:#d8d2cc;font:14px/1.65 Arial,sans-serif;text-align:justify;white-space:pre-line">${desc}</div>` +
+    `<div style="margin-top:14px;color:#8f9aa8;font:12px/1 Arial,sans-serif">${t.coutXp} XP</div>` +
+    `</div>` +
     `</div>`
   );
 }
