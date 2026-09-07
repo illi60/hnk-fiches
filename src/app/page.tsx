@@ -1,5 +1,6 @@
 import Link from "next/link";
 import GeneratorNav from "@/components/GeneratorNav";
+import ExternalHubLink from "@/components/ExternalHubLink";
 
 interface Tool {
   key: string;
@@ -10,6 +11,7 @@ interface Tool {
   href: string;
   image: string;
   external?: boolean;
+  externalNotice?: string;
 }
 
 const TOOLS: Tool[] = [
@@ -49,6 +51,17 @@ const TOOLS: Tool[] = [
     href: "https://hinokuni.forumactif.com/h4-regles-1",
     image: "https://i.imgur.com/fgxvUJm.png",
     external: true,
+  },
+  {
+    key: "kataribe",
+    title: "KATARIBE - Wiki des Lorediggers",
+    kanji: "語",
+    accent: "#E6B86A",
+    desc: "Les extras offerts par la communauté, pour la communauté : un wiki de passionnés qui fouille le lore, rassemble les trouvailles et partage le travail proprement pour que tout le monde en profite.",
+    href: "https://kataribe-two.vercel.app/",
+    image: "https://i.pinimg.com/736x/2e/df/05/2edf05b2e10e3925fbf559a6f708da5d.jpg",
+    external: true,
+    externalNotice: "Vous quittez HNK pour ouvrir un fan-site externe de la communauté.",
   },
 ];
 
@@ -101,6 +114,19 @@ function ToolCard({ tool }: { tool: Tool }) {
       </div>
     </>
   );
+
+  if (tool.externalNotice) {
+    return (
+      <ExternalHubLink
+        href={tool.href}
+        className={cardClass}
+        style={cardStyle}
+        notice={tool.externalNotice}
+      >
+        {content}
+      </ExternalHubLink>
+    );
+  }
 
   return tool.external ? (
     <a
