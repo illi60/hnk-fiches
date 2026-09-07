@@ -55,6 +55,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       if (!inv) return NextResponse.json({ ok: false, error: "INVOCATION_INVALIDE" }, { status: 400 });
       invocationId = inv.id;
     }
+    const isKuchiyose = invocationId != null;
+    const isKinjutsu = !isKuchiyose && d.nature === "KINJUTSU";
+    const effectiveKinjutsuScope = isKuchiyose ? null : kinjutsuScope;
 
     // Slug unique auto-généré.
     const base =
@@ -80,17 +83,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         slug: slugVal,
         nom: d.nom,
         description: d.description,
-        art: d.nature === "KINJUTSU" ? null : d.art ?? null,
-        spec: d.nature === "KINJUTSU" ? null : d.spec ?? null,
-        secondaryArt: d.nature !== "KINJUTSU" && d.actionType === "COMBINEE" ? d.secondaryArt ?? null : null,
-        secondarySpec: d.nature !== "KINJUTSU" && d.actionType === "COMBINEE" ? d.secondarySpec ?? null : null,
+        art: isKinjutsu ? null : d.art ?? null,
+        spec: isKinjutsu ? null : d.spec ?? null,
+        secondaryArt: !isKinjutsu && d.actionType === "COMBINEE" ? d.secondaryArt ?? null : null,
+        secondarySpec: !isKinjutsu && d.actionType === "COMBINEE" ? d.secondarySpec ?? null : null,
         actionType: d.actionType ?? null,
-        element: d.nature === "KINJUTSU" ? null : d.element ?? null,
-        kekkeiGenkai: d.nature === "KINJUTSU" ? null : d.kekkeiGenkai ?? null,
-        nature: invocationId ? null : d.nature ?? null,
-        kinjutsuScope,
+        element: isKinjutsu ? null : d.element ?? null,
+        kekkeiGenkai: isKinjutsu || isKuchiyose ? null : d.kekkeiGenkai ?? null,
+        nature: isKuchiyose ? null : d.nature ?? null,
+        kinjutsuScope: effectiveKinjutsuScope,
         clan:
-          d.nature === "COLLECTIVE" || (d.nature === "KINJUTSU" && kinjutsuScope === "CLAN")
+          !isKuchiyose &&
+          (d.nature === "COLLECTIVE" || (d.nature === "KINJUTSU" && effectiveKinjutsuScope === "CLAN"))
             ? d.clan ?? target.clan ?? null
             : null,
         invocationId,

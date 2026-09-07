@@ -140,6 +140,13 @@ export default async function AdminUserDetail({
 
         <AdminUserPanel
           user={user}
+          invocations={invocations.map((inv) => ({
+            id: inv.id,
+            nom: inv.nom,
+            espece: inv.espece,
+            artShinobi: inv.artShinobi,
+            invocationRank: hasInvRank ? (inv as any).invocationRank ?? null : null,
+          }))}
           currentUserId={me.id}
           canManageAdmins={me.canManageAdmins}
           kgNames={kgNames}

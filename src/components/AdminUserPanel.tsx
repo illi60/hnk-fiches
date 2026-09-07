@@ -53,13 +53,23 @@ export interface AdminUser {
   forumLastSyncError: string | null;
 }
 
+export interface AdminInvocationOption {
+  id: string;
+  nom: string;
+  espece: string | null;
+  artShinobi: string | null;
+  invocationRank: string | null;
+}
+
 export default function AdminUserPanel({
   user,
+  invocations,
   currentUserId,
   canManageAdmins,
   kgNames = KG_NAMES,
 }: {
   user: AdminUser;
+  invocations: AdminInvocationOption[];
   currentUserId: string;
   canManageAdmins: boolean;
   kgNames?: string[];
@@ -82,6 +92,7 @@ export default function AdminUserPanel({
         artsState={(user.artsState ?? {}) as ArtsState}
         artsRank={user.rang}
         kgNames={kgNames}
+        invocations={invocations}
       />
       <AdminArtsForm userId={user.id} artsState={(user.artsState ?? {}) as ArtsState} />
       <AdminQuintForm
@@ -749,6 +760,7 @@ function AddTechniqueForm({
   artsState,
   artsRank,
   kgNames,
+  invocations,
 }: {
   userId: string;
   userClan: string | null;
@@ -757,6 +769,7 @@ function AddTechniqueForm({
   artsState: ArtsState;
   artsRank: string | null;
   kgNames: string[];
+  invocations: AdminInvocationOption[];
 }) {
   const router = useRouter();
   const userUnitScope = unitKinjutsuScope(userUnit);
@@ -771,6 +784,7 @@ function AddTechniqueForm({
     nature: "",
     clan: userClan ?? "",
     kinjutsuScope: userUnitScope ?? "PLAYER",
+    invocationId: "",
     coutXp: "0",
   });
   const [msg, setMsg] = useState<string | null>(null);
@@ -786,6 +800,8 @@ function AddTechniqueForm({
     ? v.art.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
     : null;
   const artDef = artKey ? ARTS_ALL.find((a) => a.key === artKey) : null;
+  const selectedInvocation = invocations.find((inv) => inv.id === v.invocationId) ?? null;
+  const isKuchiyose = !!selectedInvocation;
   const noPlayableClan = isNoClan(userClan);
   const natureOptions = noPlayableClan ? ["PERSONNELLE", "KINJUTSU"] : ["PERSONNELLE", "COLLECTIVE", "KINJUTSU"];
   const kinjutsuScopeOptions = [
@@ -824,13 +840,15 @@ function AddTechniqueForm({
       spec: v.nature === "KINJUTSU" ? null : v.spec || null,
       actionType: v.actionType || null,
       element: v.nature === "KINJUTSU" ? null : v.element || null,
-      kekkeiGenkai: v.nature === "KINJUTSU" ? null : v.kekkeiGenkai || null,
-      nature: v.nature || null,
+      kekkeiGenkai: v.nature === "KINJUTSU" || isKuchiyose ? null : v.kekkeiGenkai || null,
+      nature: isKuchiyose ? null : v.nature || null,
       clan:
-        v.nature === "COLLECTIVE" || (v.nature === "KINJUTSU" && v.kinjutsuScope === "CLAN")
+        !isKuchiyose &&
+        (v.nature === "COLLECTIVE" || (v.nature === "KINJUTSU" && v.kinjutsuScope === "CLAN"))
           ? v.clan.trim() || null
           : null,
-      kinjutsuScope: v.nature === "KINJUTSU" ? v.kinjutsuScope : null,
+      kinjutsuScope: !isKuchiyose && v.nature === "KINJUTSU" ? v.kinjutsuScope : null,
+      invocationId: selectedInvocation?.id ?? null,
       coutXp: parseInt(v.coutXp, 10) || 0,
     };
     start(async () => {
@@ -841,10 +859,24 @@ function AddTechniqueForm({
       });
       const j = await res.json().catch(() => ({}));
       if (!res.ok || !j.ok) {
-        setMsg("Erreur lors de l'ajout.");
+        setMsg(
+          j.error === "INVOCATION_INVALIDE"
+            ? "Invocation introuvable ou non liée à ce membre."
+            : j.error === "INVALID"
+            ? "Champs invalides."
+            : "Erreur lors de l'ajout."
+        );
         return;
       }
-      setV((s) => ({ ...s, nom: "", description: "", kekkeiGenkai: "", element: "", spec: "" }));
+      setV((s) => ({
+        ...s,
+        nom: "",
+        description: "",
+        kekkeiGenkai: "",
+        element: "",
+        spec: "",
+        invocationId: "",
+      }));
       setMsg("Technique ajoutée (validée).");
       router.refresh();
     });
@@ -916,11 +948,47 @@ function AddTechniqueForm({
         <Sel
           label="Nature"
           v={v.nature}
-          on={(x) => up("nature", x)}
+          on={(x) => {
+            setV((s) => ({ ...s, nature: x, invocationId: "" }));
+            setMsg(null);
+          }}
           options={natureOptions}
         />
+        {invocations.length > 0 && (
+          <Sel
+            label="Invocation Kuchiyose"
+            v={v.invocationId}
+            on={(x) => {
+              const inv = invocations.find((item) => item.id === x);
+              setV((s) => ({
+                ...s,
+                invocationId: x,
+                nature: x ? "" : s.nature,
+                kekkeiGenkai: x ? "" : s.kekkeiGenkai,
+                kinjutsuScope: x ? "PLAYER" : s.kinjutsuScope,
+                art: x && inv?.artShinobi ? inv.artShinobi : s.art,
+                spec: x ? "" : s.spec,
+              }));
+              setMsg(null);
+            }}
+            options={invocations.map((inv) => inv.id)}
+            labels={Object.fromEntries(
+              invocations.map((inv) => [
+                inv.id,
+                [
+                  inv.nom,
+                  inv.espece ? `Espèce ${inv.espece}` : null,
+                  inv.artShinobi ? `Art ${inv.artShinobi}` : null,
+                  inv.invocationRank ? `Rang ${inv.invocationRank}` : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · "),
+              ])
+            )}
+          />
+        )}
         {v.nature === "COLLECTIVE" && <Inp label="Clan" v={v.clan} on={(x) => up("clan", x)} />}
-        {v.nature === "KINJUTSU" && (
+        {!isKuchiyose && v.nature === "KINJUTSU" && (
           <Sel
             label="Portée Kinjutsu"
             v={v.kinjutsuScope}
