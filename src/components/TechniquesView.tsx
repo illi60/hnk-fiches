@@ -196,11 +196,12 @@ function TechniqueCard({
   variant: "default" | "kuchy";
 }) {
   const kind = techniqueKind(t);
+  const isPremiumPersonal = t.nature === "PERSONNELLE";
   return (
     <div
       className={`hnk-tech-card hnk-tech-card--${kind} ${
         variant === "kuchy" ? "hnk-tech-card--wide" : ""
-      }`}
+      } ${isPremiumPersonal ? "hnk-tech-card--premium" : ""}`}
       data-kanji={kind === "kinjutsu" ? "禁" : kind === "kuchiyose" ? "口" : "技"}
       style={buildCardStyle(t.kekkeiGenkai, kgColors, kind)}
     >
@@ -273,6 +274,7 @@ function TechniqueCard({
             KG · {t.secondaryKekkeiGenkai}
           </span>
         )}
+        {isPremiumPersonal && <span className="hnk-tech-chip hnk-tech-chip--premium">Signature +10 XP</span>}
         {t.invocationNom && (
           <span className="hnk-tech-chip">
             口 {t.invocationEspece ? `${t.invocationEspece} · ` : ""}

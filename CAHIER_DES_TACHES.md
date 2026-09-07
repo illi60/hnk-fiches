@@ -17,6 +17,12 @@
 - Retirer les badges decoratifs juges superflus sur les pages Kuchiyose et techniques.
 - Ajouter un bouton FT dans l'editor RP pour inserer directement des cartes de techniques exportees depuis la fiche technique.
 - Charger aussi les styles des techniques dans l'apercu RP afin que les cartes FT s'affichent correctement dans le code a droite.
+- Separer l'affichage de `Mes techniques` en onglets dedies pour les techniques classiques, Kuchiyose et Kinjutsu.
+- Restaurer la visibilite et la copie des techniques Kuchiyose rattachees aux invocations, y compris depuis les fiches membre et admin.
+- Autoriser la creation manuelle de techniques Kuchiyose cote admin sans blocage personnage ni erreur serveur.
+- Uniformiser la DA des cartes de techniques : titre en police japonaise, filigrane kanji recadre, variantes visuelles Technique / Kuchiyose / Kinjutsu, et conservation de la couleur propre de chaque KG pour les techniques classiques.
+- Aligner et compacter l'export forum des fiches techniques avec le rendu du site, en conservant les informations utiles : statut, type, art/specialisation, KG, invocation et cout XP.
+- Ajouter un effet premium aux techniques personnelles avec surcharge `+10 XP`, sans remplacer la couleur propre du KG.
 
 ## Boutique / Inventaire - en cours
 - Ajouter une boutique connectee accessible depuis l'espace `Technique`, sans lien public dans le hub.

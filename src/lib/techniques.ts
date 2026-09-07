@@ -194,6 +194,7 @@ export function techniqueForumHtml(t: TechniqueExportData): string {
       .replace(/[\u0300-\u036f]/g, "")
       .toLowerCase() === "kuchiyose";
   const isKinjutsu = t.nature === "KINJUTSU";
+  const isPremiumPersonal = t.nature === "PERSONNELLE";
   const cardKind = isKinjutsu ? "kinjutsu" : isKuchyTechnique ? "kuchiyose" : "standard";
 
   const chip = (txt: string, options: { color?: string; strong?: boolean } = {}) => {
@@ -219,6 +220,7 @@ export function techniqueForumHtml(t: TechniqueExportData): string {
   if (isKinjutsu) chips.push(chip(natureLabel(t.nature, t.kinjutsuScope, t.clan), { color: "#ff8a4c", strong: true }));
   if (isKuchyTechnique) chips.push(chip("Kuchiyose", { color: "#d9fff6" }));
   if (!isKinjutsu && !isKuchyTechnique) chips.push(chip("Technique", { strong: true }));
+  if (isPremiumPersonal) chips.push(chip("Signature +10 XP", { color: "#ffd66b", strong: true }));
   const artLabel = techniqueArtChipLabel({
     art: t.art,
     spec: t.spec ?? null,
@@ -272,16 +274,17 @@ export function techniqueForumHtml(t: TechniqueExportData): string {
     cardKind === "kinjutsu" ? "rgba(255,47,47,0.56)" : cardKind === "kuchiyose" ? "rgba(29,185,159,0.48)" : `${accent}66`;
   const shadowColor =
     cardKind === "kinjutsu" ? "rgba(255,47,47,0.18)" : cardKind === "kuchiyose" ? "rgba(29,185,159,0.16)" : `${accent}24`;
+  const premiumStyle = isPremiumPersonal ? "outline:1px solid #ffd66b6b;outline-offset:-6px;" : "";
 
   return (
     `<div style="position:relative;max-width:820px;margin:14px 0;padding:18px;overflow:hidden;background:${bg};` +
     `${cardKind === "kuchiyose" ? "background-size:28px 28px,28px 28px,auto,auto;" : ""}border:1px solid ${borderColor};` +
-    `border-left:5px solid ${accent};box-shadow:inset 5px 0 0 ${accent}cc,0 0 26px ${shadowColor};` +
+    `border-left:5px solid ${accent};${premiumStyle}box-shadow:inset 5px 0 0 ${accent}cc,0 0 26px ${shadowColor};` +
     `color:#e8e2da;font-family:Arial,sans-serif">` +
     `<i style="position:absolute;right:22px;bottom:14px;color:${accent}20;font:900 84px/1 'Noto Serif JP','Yu Mincho',serif;font-style:normal">${kanji}</i>` +
     `<div style="position:relative">` +
     `<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">` +
-    `<div style="min-width:0;color:#fff;font:900 21px/1.15 'Noto Serif JP','Yu Mincho',serif;text-transform:uppercase;word-break:break-word;text-shadow:0 0 18px ${accent}38">${escapeHtml(t.nom)}</div>` +
+    `<div style="min-width:0;color:#fff;font:900 21px/1.15 'Noto Serif JP','Yu Mincho',serif;text-transform:uppercase;word-break:break-word;text-shadow:0 0 18px ${accent}38${isPremiumPersonal ? ",0 0 14px #ffd66b3d" : ""}">${escapeHtml(t.nom)}</div>` +
     (status
       ? `<div style="flex:none;color:${statusColor};font:800 10px/1 Arial,sans-serif;letter-spacing:2px;text-transform:uppercase">${escapeHtml(status)}</div>`
       : "") +

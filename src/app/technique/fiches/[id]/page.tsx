@@ -121,6 +121,7 @@ export default async function FicheDetailPage({
   const specIdx = artDef && resolvedSpec ? (artDef.specs as string[]).indexOf(resolvedSpec) : -1;
   const isKuchy = fiche.invocationId != null;
   const isKinjutsu = fiche.nature === "KINJUTSU";
+  const isPremiumPersonal = fiche.nature === "PERSONNELLE";
   const techniqueCardKind = isKinjutsu ? "kinjutsu" : isKuchy ? "kuchiyose" : "standard";
 
   const secondaryArtKey = fiche.secondaryArt
@@ -176,7 +177,9 @@ export default async function FicheDetailPage({
         <>
           {/* Affichage fige (lecture seule) : telle que soumise puis validee. */}
           <article
-            className={`hnk-tech-card hnk-tech-card--${techniqueCardKind}`}
+            className={`hnk-tech-card hnk-tech-card--${techniqueCardKind} ${
+              isPremiumPersonal ? "hnk-tech-card--premium" : ""
+            }`}
             data-kanji={isKinjutsu ? "禁" : isKuchy ? "口" : "技"}
             style={buildCardStyle(fiche.kekkeiGenkai, kgColors, techniqueCardKind)}
           >
@@ -251,6 +254,7 @@ export default async function FicheDetailPage({
                   KG · {fiche.secondaryKekkeiGenkai}
                 </span>
               )}
+              {isPremiumPersonal && <span className="hnk-tech-chip hnk-tech-chip--premium">Signature +10 XP</span>}
               {fiche.nature && (
                 <span className="hnk-tech-chip">
                   {natureLabel(fiche.nature, fiche.kinjutsuScope, fiche.clan)}
