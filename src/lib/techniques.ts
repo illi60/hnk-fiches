@@ -278,12 +278,12 @@ export function techniqueForumHtml(t: TechniqueExportData): string {
     cardKind === "kinjutsu" ? "rgba(255,47,47,0.18)" : cardKind === "kuchiyose" ? "rgba(29,185,159,0.16)" : `${accent}24`;
   const premiumFrame = isPremiumPersonal ? "outline:1px solid #ffd66b6b;outline-offset:-6px;" : "";
   const premiumDust = isPremiumPersonal
-    ? "radial-gradient(circle at 12% 18%,#ffd66b29,#0000 24%),radial-gradient(circle at 70% 85%,#ffd66b1c,#0000 22%),repeating-radial-gradient(circle at 20% 20%,#ffe89629 0 1px,#0000 1px 7px),"
+    ? "linear-gradient(118deg,#0000 0 16%,#ffd66b24 16.1%,#0000 17.1% 40%,#ffd66b18 40.1%,#0000 41.1%),"
     : "";
   const backgroundSize = isPremiumPersonal
     ? cardKind === "kuchiyose"
-      ? "background-size:auto,auto,auto,28px 28px,28px 28px,auto;"
-      : "background-size:auto,auto,auto,auto,auto;"
+      ? "background-size:auto,28px 28px,28px 28px,auto;"
+      : "background-size:auto,auto,auto;"
     : cardKind === "kuchiyose"
     ? "background-size:28px 28px,28px 28px,auto;"
     : "";
