@@ -254,9 +254,8 @@ export default async function FicheDetailPage({
                   KG · {fiche.secondaryKekkeiGenkai}
                 </span>
               )}
-              {isPremiumPersonal && <span className="hnk-tech-chip hnk-tech-chip--premium">Signature +10 XP</span>}
               {fiche.nature && (
-                <span className="hnk-tech-chip">
+                <span className={`hnk-tech-chip ${isPremiumPersonal ? "hnk-tech-chip--premium" : ""}`}>
                   {natureLabel(fiche.nature, fiche.kinjutsuScope, fiche.clan)}
                 </span>
               )}

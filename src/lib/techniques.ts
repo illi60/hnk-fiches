@@ -220,7 +220,6 @@ export function techniqueForumHtml(t: TechniqueExportData): string {
   if (isKinjutsu) chips.push(chip(natureLabel(t.nature, t.kinjutsuScope, t.clan), { color: "#ff8a4c", strong: true }));
   if (isKuchyTechnique) chips.push(chip("Kuchiyose", { color: "#d9fff6" }));
   if (!isKinjutsu && !isKuchyTechnique) chips.push(chip("Technique", { strong: true }));
-  if (isPremiumPersonal) chips.push(chip("Signature +10 XP", { color: "#ffd66b", strong: true }));
   const artLabel = techniqueArtChipLabel({
     art: t.art,
     spec: t.spec ?? null,
@@ -258,7 +257,9 @@ export function techniqueForumHtml(t: TechniqueExportData): string {
       )
     );
   }
-  if (t.nature && !isKinjutsu) chips.push(chip(natureLabel(t.nature, t.kinjutsuScope, t.clan)));
+  if (t.nature && !isKinjutsu) {
+    chips.push(chip(natureLabel(t.nature, t.kinjutsuScope, t.clan), isPremiumPersonal ? { color: "#ffd66b", strong: true } : {}));
+  }
 
   const status = t.status ? STATUS_LABEL[t.status] ?? t.status : null;
   const statusColor = t.status ? STATUS_COLOR[t.status] ?? "#9ca3af" : "#9ca3af";
@@ -274,12 +275,22 @@ export function techniqueForumHtml(t: TechniqueExportData): string {
     cardKind === "kinjutsu" ? "rgba(255,47,47,0.56)" : cardKind === "kuchiyose" ? "rgba(29,185,159,0.48)" : `${accent}66`;
   const shadowColor =
     cardKind === "kinjutsu" ? "rgba(255,47,47,0.18)" : cardKind === "kuchiyose" ? "rgba(29,185,159,0.16)" : `${accent}24`;
-  const premiumStyle = isPremiumPersonal ? "outline:1px solid #ffd66b6b;outline-offset:-6px;" : "";
+  const premiumFrame = isPremiumPersonal ? "outline:1px solid #ffd66b6b;outline-offset:-6px;" : "";
+  const premiumDust = isPremiumPersonal
+    ? "radial-gradient(circle,#ffe89645 0 1px,#0000 1px),radial-gradient(circle,#ffd66b2e 0 1px,#0000 1px),"
+    : "";
+  const backgroundSize = isPremiumPersonal
+    ? cardKind === "kuchiyose"
+      ? "background-size:44px 44px,68px 68px,28px 28px,28px 28px,auto;"
+      : "background-size:44px 44px,68px 68px,auto,auto;"
+    : cardKind === "kuchiyose"
+    ? "background-size:28px 28px,28px 28px,auto;"
+    : "";
 
   return (
-    `<div style="position:relative;max-width:820px;margin:14px 0;padding:18px;overflow:hidden;background:${bg};` +
-    `${cardKind === "kuchiyose" ? "background-size:28px 28px,28px 28px,auto,auto;" : ""}border:1px solid ${borderColor};` +
-    `border-left:5px solid ${accent};${premiumStyle}box-shadow:inset 5px 0 0 ${accent}cc,0 0 26px ${shadowColor};` +
+    `<div style="position:relative;max-width:820px;margin:14px 0;padding:18px;overflow:hidden;background:${premiumDust}${bg};` +
+    `${backgroundSize}border:1px solid ${borderColor};` +
+    `border-left:5px solid ${accent};${premiumFrame}box-shadow:inset 5px 0 0 ${accent}cc,0 0 26px ${shadowColor};` +
     `color:#e8e2da;font-family:Arial,sans-serif">` +
     `<i style="position:absolute;right:22px;bottom:14px;color:${accent}20;font:900 84px/1 'Noto Serif JP','Yu Mincho',serif;font-style:normal">${kanji}</i>` +
     `<div style="position:relative">` +

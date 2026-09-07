@@ -274,7 +274,7 @@ function TechniqueCard({
             KG · {t.secondaryKekkeiGenkai}
           </span>
         )}
-        {isPremiumPersonal && <span className="hnk-tech-chip hnk-tech-chip--premium">Signature +10 XP</span>}
+        {isPremiumPersonal && <span className="hnk-tech-chip hnk-tech-chip--premium">Technique personnelle</span>}
         {t.invocationNom && (
           <span className="hnk-tech-chip">
             口 {t.invocationEspece ? `${t.invocationEspece} · ` : ""}
