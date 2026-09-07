@@ -178,9 +178,9 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 function cardAccent(t: TechniqueExportData) {
-  if (t.nature === "KINJUTSU") return "#ff5722";
+  if (t.nature === "KINJUTSU") return "#ff2f2f";
   if (t.espece || t.invocationNom) return "#1db99f";
-  return t.kgColorHex ?? (t.kekkeiGenkai ? kgColor(t.kekkeiGenkai) : "#ff5722");
+  return t.kgColorHex ?? (t.kekkeiGenkai ? kgColor(t.kekkeiGenkai) : "#5ba8d4");
 }
 
 // HTML autonome : le forum garde la carte lisible même si sa CSS globale change.
@@ -194,14 +194,23 @@ export function techniqueForumHtml(t: TechniqueExportData): string {
       .replace(/[\u0300-\u036f]/g, "")
       .toLowerCase() === "kuchiyose";
   const isKinjutsu = t.nature === "KINJUTSU";
+  const cardKind = isKinjutsu ? "kinjutsu" : isKuchyTechnique ? "kuchiyose" : "standard";
 
   const chip = (txt: string, options: { color?: string; strong?: boolean } = {}) => {
-    const color = options.color ?? (isKinjutsu ? "#ff8a4c" : isKuchyTechnique ? "#d9fff6" : "#e8e2da");
-    const border = options.color ?? (isKuchyTechnique ? "rgba(29,185,159,0.58)" : "rgba(255,255,255,0.28)");
-    const bg = options.strong ? "rgba(255,87,34,0.13)" : isKuchyTechnique ? "rgba(29,185,159,0.08)" : "rgba(255,255,255,0.03)";
+    const familyColor =
+      options.color ?? (cardKind === "kinjutsu" ? "#ffb4a8" : cardKind === "kuchiyose" ? "#d9fff6" : accent);
+    const border =
+      options.color ?? (cardKind === "kuchiyose" ? "rgba(29,185,159,0.58)" : `${accent}78`);
+    const bg = options.strong
+      ? cardKind === "kinjutsu"
+        ? "rgba(255,47,47,0.13)"
+        : `${accent}24`
+      : cardKind === "kuchiyose"
+      ? "rgba(29,185,159,0.08)"
+      : `${accent}16`;
     return (
       `<span style="display:inline-block;margin:0 7px 7px 0;padding:5px 10px;` +
-      `border:1px solid ${border};background:${bg};color:${color};` +
+      `border:1px solid ${border};background:${bg};color:${familyColor};` +
       `font:800 11px/1.35 Arial,Helvetica,sans-serif;letter-spacing:1.1px;` +
       `text-transform:uppercase;border-radius:2px;">${escapeHtml(txt)}</span>`
     );
@@ -210,6 +219,7 @@ export function techniqueForumHtml(t: TechniqueExportData): string {
   const chips: string[] = [];
   if (isKinjutsu) chips.push(chip(natureLabel(t.nature, t.kinjutsuScope, t.clan), { color: "#ff8a4c", strong: true }));
   if (isKuchyTechnique) chips.push(chip("Kuchiyose", { color: "#d9fff6" }));
+  if (!isKinjutsu && !isKuchyTechnique) chips.push(chip("Technique", { strong: true }));
   const artLabel = techniqueArtChipLabel({
     art: t.art,
     spec: t.spec ?? null,
@@ -254,20 +264,24 @@ export function techniqueForumHtml(t: TechniqueExportData): string {
   const desc = escapeHtml(t.description).replace(/\n/g, "<br>");
   const kanji = isKinjutsu ? "禁" : isKuchyTechnique ? "口" : "技";
   const bg =
-    isKinjutsu
-      ? "linear-gradient(135deg, rgba(255,87,34,0.22) 0%, rgba(255,184,77,0.08) 42%, rgba(0,0,0,0) 76%), linear-gradient(160deg, rgba(18,20,27,0.98), rgba(10,11,14,0.96))"
-      : isKuchyTechnique
-      ? "linear-gradient(135deg, rgba(29,185,159,0.18) 0%, rgba(255,184,77,0.08) 44%, rgba(0,0,0,0) 76%), linear-gradient(160deg, rgba(18,20,27,0.98), rgba(10,11,14,0.96))"
-      : `linear-gradient(135deg, ${accent}2e 0%, ${accent}14 38%, rgba(0,0,0,0) 72%), linear-gradient(160deg, rgba(18,20,27,0.98), rgba(10,11,14,0.96))`;
+    cardKind === "kinjutsu"
+      ? "radial-gradient(circle at 84% 16%, rgba(255,47,47,0.20), transparent 26%), repeating-linear-gradient(110deg, rgba(255,47,47,0.14) 0 2px, transparent 2px 18px), linear-gradient(135deg, rgba(255,47,47,0.22) 0%, rgba(255,184,77,0.07) 42%, rgba(0,0,0,0) 76%), linear-gradient(160deg, rgba(23,10,12,0.99), rgba(9,8,10,0.99))"
+      : cardKind === "kuchiyose"
+      ? "radial-gradient(circle at 82% 18%, rgba(29,185,159,0.18), transparent 28%), radial-gradient(circle at 12% 92%, rgba(255,184,77,0.09), transparent 32%), linear-gradient(90deg, rgba(29,185,159,0.13) 0 1px, transparent 1px), linear-gradient(0deg, rgba(29,185,159,0.08) 0 1px, transparent 1px), linear-gradient(135deg, rgba(29,185,159,0.18) 0%, rgba(255,184,77,0.08) 44%, rgba(0,0,0,0) 76%), linear-gradient(160deg, rgba(13,22,23,0.99), rgba(8,12,14,0.99))"
+      : `linear-gradient(90deg, ${accent}24, rgba(0,0,0,0) 34%), linear-gradient(135deg, ${accent}2e 0%, ${accent}14 38%, rgba(0,0,0,0) 72%), linear-gradient(160deg, rgba(16,20,25,0.98), rgba(9,11,14,0.98))`;
+  const borderColor =
+    cardKind === "kinjutsu" ? "rgba(255,47,47,0.56)" : cardKind === "kuchiyose" ? "rgba(29,185,159,0.48)" : `${accent}66`;
+  const shadowColor =
+    cardKind === "kinjutsu" ? "rgba(255,47,47,0.18)" : cardKind === "kuchiyose" ? "rgba(29,185,159,0.16)" : `${accent}24`;
 
   return (
-    `<div class="hnk-tech${isKuchyTechnique ? " hnk-tech--kuchy" : ""}" data-kanji="${kanji}" style="position:relative;max-width:820px;margin:14px 0;padding:18px;overflow:hidden;` +
-    `background:${bg};border:1px solid ${isKinjutsu ? "rgba(255,87,34,0.55)" : isKuchyTechnique ? "rgba(29,185,159,0.48)" : `${accent}66`};` +
-    `border-left:5px solid ${accent};box-shadow:inset 0 1px 0 rgba(255,255,255,0.04),0 0 24px rgba(0,0,0,0.22);` +
+    `<div class="hnk-tech hnk-tech--${cardKind}" data-kanji="${kanji}" style="position:relative;max-width:820px;margin:14px 0;padding:18px;overflow:hidden;` +
+    `background:${bg};background-size:${cardKind === "kuchiyose" ? "auto,auto,28px 28px,28px 28px,auto,auto" : "auto"};border:1px solid ${borderColor};` +
+    `border-left:5px solid ${accent};box-shadow:inset 0 1px 0 rgba(255,255,255,0.04),inset 5px 0 0 ${accent}cc,0 0 26px ${shadowColor};` +
     `color:#e8e2da;font-family:Arial,Helvetica,sans-serif;">` +
-    `<div aria-hidden="true" style="position:absolute;right:22px;top:10px;color:rgba(255,255,255,0.035);font:900 86px/1 Georgia,serif;">${kanji}</div>` +
+    `<div aria-hidden="true" style="position:absolute;right:12px;bottom:-20px;color:${accent}24;font:900 118px/0.8 'Noto Serif JP','Yu Mincho','Hiragino Mincho ProN',Georgia,serif;">${kanji}</div>` +
     `<div style="position:relative;z-index:1;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;">` +
-    `<div style="min-width:0;color:#fff;font:900 20px/1.2 Georgia,'Times New Roman',serif;letter-spacing:1.2px;text-transform:uppercase;word-break:break-word;">${escapeHtml(t.nom)}</div>` +
+    `<div style="min-width:0;color:#fff;font:900 21px/1.15 'Noto Serif JP','Yu Mincho','Hiragino Mincho ProN',Georgia,serif;letter-spacing:0;text-transform:uppercase;word-break:break-word;text-shadow:0 0 18px ${accent}38;">${escapeHtml(t.nom)}</div>` +
     (status
       ? `<div style="flex:none;color:${statusColor};font:800 10px/1 Arial,Helvetica,sans-serif;letter-spacing:2px;text-transform:uppercase;">${escapeHtml(status)}</div>`
       : "") +

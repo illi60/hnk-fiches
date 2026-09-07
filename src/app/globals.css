@@ -1729,46 +1729,160 @@ textarea.hnk-input {
   color: var(--urg-fg) !important;
 }
 
-/* ---------- Carte Technique (export forum) ---------- */
+/* ---------- Cartes de techniques ---------- */
+.hnk-tech-card,
 .hnk-tech {
-  margin: 18px 0;
-  background: linear-gradient(160deg, #14171c, #0e1116 60%, #0b0d11);
-  border: 1px solid rgba(255, 87, 34, 0.35);
-  border-left: 3px solid #ff5722;
-  padding: 18px 20px;
-  color: #dbdee2;
-  font-family: Inter, Arial, Helvetica, sans-serif;
-}
-.hnk-tech--kuchy {
+  --tech-accent: #5ba8d4;
+  position: relative;
+  padding: 18px;
+  overflow: hidden;
+  color: var(--bone);
+  border: 1px solid rgba(91, 168, 212, 0.34);
+  border-left: 5px solid var(--tech-accent);
   background:
-    radial-gradient(circle at 84% 14%, rgba(255, 122, 60, 0.14), transparent 24%),
-    linear-gradient(160deg, rgba(23, 18, 18, 0.98), rgba(12, 11, 13, 0.98) 60%, rgba(8, 9, 11, 0.99));
-  border-color: rgba(255, 122, 60, 0.42);
-  border-left-color: #ff7a3c;
-  box-shadow: inset 0 0 0 1px rgba(255, 122, 60, 0.08), 0 0 24px rgba(255, 122, 60, 0.12);
+    linear-gradient(135deg, color-mix(in srgb, var(--tech-accent) 17%, transparent) 0%, color-mix(in srgb, var(--tech-accent) 7%, transparent) 38%, transparent 72%),
+    linear-gradient(160deg, rgba(16, 20, 25, 0.98), rgba(9, 11, 14, 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    inset 5px 0 0 color-mix(in srgb, var(--tech-accent) 72%, transparent),
+    0 0 22px color-mix(in srgb, var(--tech-accent) 14%, transparent);
+  clip-path: var(--bevel);
+}
+.hnk-tech-card::before,
+.hnk-tech::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.024) 0 1px, transparent 1px 8px);
+}
+.hnk-tech-card[data-kanji]::after,
+.hnk-tech[data-kanji]::after {
+  content: attr(data-kanji);
+  position: absolute;
+  right: 12px;
+  bottom: -24px;
+  z-index: 0;
+  font-family: var(--jp);
+  font-size: 132px;
+  font-weight: 900;
+  line-height: 0.8;
+  color: color-mix(in srgb, var(--tech-accent) 14%, transparent);
+  pointer-events: none;
+}
+.hnk-tech-card--standard {
+  --tech-accent: #5ba8d4;
+}
+.hnk-tech-card--standard::before {
+  background-image:
+    linear-gradient(90deg, color-mix(in srgb, var(--tech-accent) 38%, transparent), transparent 34%),
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.024) 0 1px, transparent 1px 8px);
+}
+.hnk-tech-card--kuchiyose,
+.hnk-tech--kuchy {
+  --tech-accent: #1db99f;
+  border-color: rgba(29, 185, 159, 0.48);
+  background:
+    radial-gradient(circle at 82% 18%, rgba(29, 185, 159, 0.18), transparent 28%),
+    radial-gradient(circle at 12% 92%, rgba(255, 184, 77, 0.09), transparent 32%),
+    linear-gradient(135deg, rgba(29, 185, 159, 0.18) 0%, rgba(255, 184, 77, 0.08) 44%, transparent 76%),
+    linear-gradient(160deg, rgba(13, 22, 23, 0.99), rgba(8, 12, 14, 0.99));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    inset 5px 0 0 rgba(29, 185, 159, 0.86),
+    0 0 26px rgba(29, 185, 159, 0.16);
+}
+.hnk-tech-card--kuchiyose::before,
+.hnk-tech--kuchy::before {
+  background-image:
+    linear-gradient(90deg, rgba(29, 185, 159, 0.22) 0 1px, transparent 1px),
+    linear-gradient(0deg, rgba(29, 185, 159, 0.14) 0 1px, transparent 1px),
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.022) 0 1px, transparent 1px 9px);
+  background-size: 28px 28px, 28px 28px, auto;
+}
+.hnk-tech-card--kinjutsu {
+  --tech-accent: #ff2f2f;
+  border-color: rgba(255, 47, 47, 0.56);
+  background:
+    radial-gradient(circle at 84% 16%, rgba(255, 47, 47, 0.2), transparent 26%),
+    linear-gradient(110deg, rgba(255, 47, 47, 0.16) 0 2px, transparent 2px 18px),
+    linear-gradient(135deg, rgba(255, 47, 47, 0.22) 0%, rgba(255, 184, 77, 0.07) 42%, transparent 74%),
+    linear-gradient(160deg, rgba(23, 10, 12, 0.99), rgba(9, 8, 10, 0.99));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    inset 5px 0 0 rgba(255, 47, 47, 0.9),
+    0 0 30px rgba(255, 47, 47, 0.18);
+}
+.hnk-tech-card--kinjutsu::before {
+  background-image:
+    repeating-linear-gradient(45deg, rgba(255, 47, 47, 0.12) 0 1px, transparent 1px 11px),
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.018) 0 1px, transparent 1px 8px);
+}
+.hnk-tech-card-title,
+.hnk-tech-name {
+  position: relative;
+  z-index: 1;
+  font-family: var(--jp);
+  font-size: 21px;
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: var(--white);
+  text-shadow: 0 0 18px color-mix(in srgb, var(--tech-accent) 22%, transparent);
+}
+.hnk-tech-card-title:hover {
+  color: color-mix(in srgb, var(--tech-accent) 70%, white 30%);
+}
+.hnk-tech-card-desc,
+.hnk-tech-desc {
+  position: relative;
+  z-index: 1;
+  margin-top: 12px;
+  color: rgba(219, 222, 226, 0.86);
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: justify;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.hnk-tech-card-footer {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 14px;
+}
+.hnk-tech-card-cost {
+  color: var(--smoke);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
 }
 .hnk-tech-meta {
+  position: relative;
+  z-index: 1;
   font: 700 10px/1 Inter, Arial, sans-serif;
-  letter-spacing: 0.3em;
+  letter-spacing: 0.24em;
   text-transform: uppercase;
   color: #6c7079;
+  margin-bottom: 8px;
 }
-.hnk-tech--kuchy .hnk-tech-meta {
-  color: #ff8f68;
+.hnk-tech-card--kuchiyose .hnk-tech-chip,
+.hnk-tech--kuchy .hnk-tech-chip {
+  border-color: rgba(29, 185, 159, 0.5);
+  color: #d9fff6;
+  background: rgba(29, 185, 159, 0.08);
 }
-.hnk-tech-name {
-  margin: 6px 0 12px;
-  font: 800 24px/1.1 Oswald, "Trebuchet MS", sans-serif;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #f5f1ea;
-  text-shadow: 0 0 16px rgba(255, 87, 34, 0.25);
-}
-.hnk-tech--kuchy .hnk-tech-name {
-  color: #fff6ee;
-  text-shadow: 0 0 18px rgba(255, 122, 60, 0.22);
+.hnk-tech-card--kinjutsu .hnk-tech-chip {
+  border-color: rgba(255, 47, 47, 0.52);
+  color: #ffb4a8;
+  background: rgba(255, 47, 47, 0.1);
 }
 .hnk-tech-chips {
+  position: relative;
+  z-index: 1;
   margin-bottom: 12px;
 }
 .hnk-tech-badges {
@@ -1782,16 +1896,16 @@ textarea.hnk-input {
   align-items: center;
   gap: 6px;
   padding: 4px 10px;
-  border: 1px solid rgba(255, 122, 60, 0.36);
-  background: rgba(255, 87, 34, 0.08);
-  color: #ff8f68;
+  border: 1px solid color-mix(in srgb, var(--tech-accent) 46%, transparent);
+  background: color-mix(in srgb, var(--tech-accent) 10%, transparent);
+  color: color-mix(in srgb, var(--tech-accent) 62%, white 38%);
   font: 800 9px/1 var(--ui);
   letter-spacing: 0.22em;
   text-transform: uppercase;
 }
 .hnk-tech-badge--alt {
-  background: rgba(255, 122, 60, 0.14);
-  color: #ffd8bd;
+  background: color-mix(in srgb, var(--tech-accent) 16%, transparent);
+  color: color-mix(in srgb, var(--tech-accent) 50%, white 50%);
 }
 .hnk-tech-chip {
   display: inline-block;
@@ -1800,18 +1914,8 @@ textarea.hnk-input {
   font: 800 11px/1.4 Inter, Arial, sans-serif;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #ff8a4c;
-  border: 1px solid rgba(255, 87, 34, 0.4);
-  background: rgba(255, 87, 34, 0.08);
+  color: color-mix(in srgb, var(--tech-accent) 58%, white 42%);
+  border: 1px solid color-mix(in srgb, var(--tech-accent) 44%, transparent);
+  background: color-mix(in srgb, var(--tech-accent) 9%, transparent);
   border-radius: 2px;
-}
-.hnk-tech--kuchy .hnk-tech-chip {
-  border-color: rgba(255, 122, 60, 0.42);
-  color: #ffd7c0;
-  background: rgba(255, 122, 60, 0.05);
-}
-.hnk-tech-desc {
-  font-size: 14px;
-  line-height: 1.6;
-  color: #dbdee2;
 }

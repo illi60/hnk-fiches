@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import type { CSSProperties } from "react";
 import Link from "next/link";
 
 import { actionLabel, natureLabel, techniqueArtChipLabel } from "@/lib/techniques";
@@ -58,12 +59,20 @@ const STATUS_COLOR: Record<string, string> = {
   REJECTED: "text-red-400",
 };
 
+type TechniqueKind = "standard" | "kuchiyose" | "kinjutsu";
+
 function groupKey(t: MyTech, by: GroupBy): string {
   if (by === "status") return STATUS_LABEL[t.status] ?? t.status;
   if (by === "actionType") return t.actionType ? actionLabel(t.actionType) : "Sans type";
   if (by === "art") return t.art ?? "Sans art";
   if (by === "kekkeiGenkai") return t.kekkeiGenkai ?? "Sans Kekkei Genkai";
   return "Toutes";
+}
+
+function techniqueKind(t: MyTech): TechniqueKind {
+  if (t.nature === "KINJUTSU") return "kinjutsu";
+  if (t.invocationId) return "kuchiyose";
+  return "standard";
 }
 
 export default function TechniquesView({
@@ -186,23 +195,19 @@ function TechniqueCard({
   kgColors?: Record<string, string>;
   variant: "default" | "kuchy";
 }) {
+  const kind = techniqueKind(t);
   return (
     <div
-      className={
-        variant === "kuchy"
-          ? "hnk-kuchy-panel hnk-kuchy-panel--frame hnk-kuchy-panel--kuchy"
-          : "hnk-panel"
-      }
-      data-kanji={t.nature === "KINJUTSU" ? "禁" : t.invocationId ? "口" : "技"}
-      style={buildCardStyle(t.kekkeiGenkai, kgColors, {
-        kinjutsu: t.nature === "KINJUTSU",
-        kuchiyose: !!t.invocationId,
-      })}
+      className={`hnk-tech-card hnk-tech-card--${kind} ${
+        variant === "kuchy" ? "hnk-tech-card--wide" : ""
+      }`}
+      data-kanji={kind === "kinjutsu" ? "禁" : kind === "kuchiyose" ? "口" : "技"}
+      style={buildCardStyle(t.kekkeiGenkai, kgColors, kind)}
     >
       <div className="flex items-start justify-between gap-2">
         <Link
           href={`/technique/fiches/${t.id}`}
-          className="font-display uppercase tracking-wider text-lg text-white hover:text-ember min-w-0 break-words"
+          className="hnk-tech-card-title min-w-0 break-words"
         >
           {t.nom}
         </Link>
@@ -278,12 +283,12 @@ function TechniqueCard({
         {!t.mine && <span className="hnk-tech-chip">Tag Team (partenaire)</span>}
       </div>
       {t.description && (
-        <p className="text-sm text-bone/80 mt-3 whitespace-pre-line break-words text-justify line-clamp-3">
+        <p className="hnk-tech-card-desc line-clamp-3">
           {t.description}
         </p>
       )}
-      <div className="flex items-center justify-between gap-2 mt-3">
-        <span className="text-xs text-smoke tabular-nums">{t.coutXp} XP</span>
+      <div className="hnk-tech-card-footer">
+        <span className="hnk-tech-card-cost">{t.coutXp} XP</span>
         <div className="flex items-center gap-2">
           <Link
             href={`/technique/fiches/${t.id}`}
@@ -335,27 +340,15 @@ function resolveKgColor(name: string, kgColors?: Record<string, string>) {
 function buildCardStyle(
   name: string | null,
   kgColors?: Record<string, string>,
-  options: { kinjutsu?: boolean; kuchiyose?: boolean } = {}
-) {
-  if (options.kinjutsu) {
-    return {
-      backgroundImage: "linear-gradient(135deg, rgba(255,87,34,0.22) 0%, rgba(255,184,77,0.08) 42%, rgba(0,0,0,0) 76%)",
-      borderColor: "rgba(255,87,34,0.55)",
-      boxShadow: "inset 4px 0 0 #ff5722, 0 0 24px rgba(255,87,34,0.16)",
-    };
-  }
-  if (options.kuchiyose) {
-    return {
-      backgroundImage: "linear-gradient(135deg, rgba(29,185,159,0.18) 0%, rgba(255,184,77,0.08) 44%, rgba(0,0,0,0) 76%)",
-      borderColor: "rgba(29,185,159,0.48)",
-      boxShadow: "inset 4px 0 0 #1db99f, 0 0 22px rgba(29,185,159,0.14)",
-    };
-  }
-  if (!name) return {};
-  const c = resolveKgColor(name, kgColors);
-  return {
-    backgroundImage: `linear-gradient(135deg, ${c}2e 0%, ${c}14 38%, rgba(0,0,0,0) 72%)`,
-    borderColor: `${c}66`,
-    boxShadow: `inset 4px 0 0 ${c}, 0 0 22px ${c}1f`,
-  };
+  kind: TechniqueKind = "standard"
+): CSSProperties {
+  const c =
+    kind === "kinjutsu"
+      ? "#ff2f2f"
+      : kind === "kuchiyose"
+      ? "#1db99f"
+      : name
+      ? resolveKgColor(name, kgColors)
+      : "#5ba8d4";
+  return { "--tech-accent": c } as CSSProperties;
 }

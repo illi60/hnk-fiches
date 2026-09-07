@@ -120,6 +120,8 @@ export default async function FicheDetailPage({
   const resolvedSpec = fiche.spec ?? (fiche.nature === "COLLECTIVE" ? artDef?.specs[0] ?? null : null);
   const specIdx = artDef && resolvedSpec ? (artDef.specs as string[]).indexOf(resolvedSpec) : -1;
   const isKuchy = fiche.invocationId != null;
+  const isKinjutsu = fiche.nature === "KINJUTSU";
+  const techniqueCardKind = isKinjutsu ? "kinjutsu" : isKuchy ? "kuchiyose" : "standard";
 
   const secondaryArtKey = fiche.secondaryArt
     ? fiche.secondaryArt.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
@@ -174,8 +176,9 @@ export default async function FicheDetailPage({
         <>
           {/* Affichage fige (lecture seule) : telle que soumise puis validee. */}
           <article
-            className={`hnk-tech${isKuchy ? " hnk-tech--kuchy" : ""}`}
-            style={isKuchy ? undefined : buildCardStyle(fiche.kekkeiGenkai, kgColors)}
+            className={`hnk-tech-card hnk-tech-card--${techniqueCardKind}`}
+            data-kanji={isKinjutsu ? "禁" : isKuchy ? "口" : "技"}
+            style={buildCardStyle(fiche.kekkeiGenkai, kgColors, techniqueCardKind)}
           >
             <div className="hnk-tech-meta">
               Technique{fiche.coutXp ? ` · ${fiche.coutXp} XP` : ""}
@@ -254,7 +257,7 @@ export default async function FicheDetailPage({
                 </span>
               )}
             </div>
-            <div className="hnk-tech-desc" style={{ whiteSpace: "pre-line", textAlign: "justify" }}>
+            <div className="hnk-tech-desc">
               {fiche.description}
             </div>
           </article>
@@ -336,12 +339,18 @@ function resolveKgColor(name: string, kgColors?: Record<string, string>) {
   return kgColors?.[name] ?? kgColor(name);
 }
 
-function buildCardStyle(name: string | null, kgColors?: Record<string, string>) {
-  if (!name) return {};
-  const c = resolveKgColor(name, kgColors);
-  return {
-    backgroundImage: `linear-gradient(135deg, ${c}2e 0%, ${c}14 38%, rgba(0,0,0,0) 72%)`,
-    borderColor: `${c}66`,
-    boxShadow: `inset 4px 0 0 ${c}, 0 0 22px ${c}1f`,
-  };
+function buildCardStyle(
+  name: string | null,
+  kgColors?: Record<string, string>,
+  kind: "standard" | "kuchiyose" | "kinjutsu" = "standard"
+) {
+  const c =
+    kind === "kinjutsu"
+      ? "#ff2f2f"
+      : kind === "kuchiyose"
+      ? "#1db99f"
+      : name
+      ? resolveKgColor(name, kgColors)
+      : "#5ba8d4";
+  return { "--tech-accent": c } as import("react").CSSProperties;
 }
