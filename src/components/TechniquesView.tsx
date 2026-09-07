@@ -314,8 +314,11 @@ function TechniqueCard({
                 kinjutsuScope: t.kinjutsuScope,
                 clan: t.clan,
                 espece: t.invocationEspece ?? null,
+                invocationNom: t.invocationNom ?? null,
+                invocationRank: t.invocationRank ?? null,
                 description: t.description ?? "",
                 coutXp: t.coutXp,
+                status: t.status,
               }}
             />
           )}

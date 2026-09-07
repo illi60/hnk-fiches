@@ -148,8 +148,11 @@ export interface TechniqueExportData {
   secondaryElement?: string | null; // 2e affinité (COMBINEE)
   secondaryKekkeiGenkai?: string | null; // 2e KG (COMBINEE)
   secondaryKgColorHex?: string | null;
+  invocationNom?: string | null;
+  invocationRank?: string | null;
   description: string;
   coutXp: number;
+  status?: string | null;
 }
 
 function escapeHtml(s: string): string {
@@ -160,22 +163,53 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
-// Code COURT : s'appuie sur la feuille hébergée (public/forum/hnk-tech.css,
-// importée une fois dans la CSS du forum). Seule la couleur du KG est passée
-// en variable inline `--kg` → la carte se teinte sans alourdir le message.
+const STATUS_LABEL: Record<string, string> = {
+  DRAFT: "Brouillon",
+  PENDING: "En attente",
+  VALIDATED: "Validée",
+  REJECTED: "Refusée",
+};
+
+const STATUS_COLOR: Record<string, string> = {
+  DRAFT: "#9ca3af",
+  PENDING: "#ffb84d",
+  VALIDATED: "#34d399",
+  REJECTED: "#f87171",
+};
+
+function cardAccent(t: TechniqueExportData) {
+  if (t.nature === "KINJUTSU") return "#ff5722";
+  if (t.espece || t.invocationNom) return "#1db99f";
+  return t.kgColorHex ?? (t.kekkeiGenkai ? kgColor(t.kekkeiGenkai) : "#ff5722");
+}
+
+// HTML autonome : le forum garde la carte lisible même si sa CSS globale change.
 export function techniqueForumHtml(t: TechniqueExportData): string {
-  const accent = t.kgColorHex ?? (t.kekkeiGenkai ? kgColor(t.kekkeiGenkai) : "#ff8a4c");
+  const accent = cardAccent(t);
   const isKuchyTechnique =
     !!t.espece ||
+    !!t.invocationNom ||
     (t.art ?? "")
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
       .toLowerCase() === "kuchiyose";
+  const isKinjutsu = t.nature === "KINJUTSU";
 
-  const chip = (txt: string, kg = false) =>
-    `<span class="hnk-tech-chip${kg ? " hnk-tech-chip--kg" : ""}">${escapeHtml(txt)}</span>`;
+  const chip = (txt: string, options: { color?: string; strong?: boolean } = {}) => {
+    const color = options.color ?? (isKinjutsu ? "#ff8a4c" : isKuchyTechnique ? "#d9fff6" : "#e8e2da");
+    const border = options.color ?? (isKuchyTechnique ? "rgba(29,185,159,0.58)" : "rgba(255,255,255,0.28)");
+    const bg = options.strong ? "rgba(255,87,34,0.13)" : isKuchyTechnique ? "rgba(29,185,159,0.08)" : "rgba(255,255,255,0.03)";
+    return (
+      `<span style="display:inline-block;margin:0 7px 7px 0;padding:5px 10px;` +
+      `border:1px solid ${border};background:${bg};color:${color};` +
+      `font:800 11px/1.35 Arial,Helvetica,sans-serif;letter-spacing:1.1px;` +
+      `text-transform:uppercase;border-radius:2px;">${escapeHtml(txt)}</span>`
+    );
+  };
 
   const chips: string[] = [];
+  if (isKinjutsu) chips.push(chip(natureLabel(t.nature, t.kinjutsuScope, t.clan), { color: "#ff8a4c", strong: true }));
+  if (isKuchyTechnique) chips.push(chip("Kuchiyose", { color: "#d9fff6" }));
   const artLabel = techniqueArtChipLabel({
     art: t.art,
     spec: t.spec ?? null,
@@ -189,24 +223,59 @@ export function techniqueForumHtml(t: TechniqueExportData): string {
     specRank: t.secondarySpecRank ?? null,
     nature: t.nature,
   });
-  if (secondaryLabel && t.secondaryArt) chips.push(chip(secondaryLabel));
-  if (t.espece) chips.push(chip(`口 ${t.espece}`));
+  if (secondaryLabel && t.secondaryArt) chips.push(chip(`+ ${secondaryLabel}`));
   if (t.actionType) chips.push(chip(actionLabel(t.actionType)));
   if (t.element) chips.push(chip(t.element));
   if (t.secondaryElement) chips.push(chip(t.secondaryElement));
-  if (t.kekkeiGenkai) chips.push(chip(`KG · ${t.kekkeiGenkai}`, true));
-  if (t.secondaryKekkeiGenkai) chips.push(chip(`KG · ${t.secondaryKekkeiGenkai}`, true));
-  if (t.nature) chips.push(chip(natureLabel(t.nature, t.kinjutsuScope, t.clan)));
+  if (t.kekkeiGenkai) chips.push(chip(`KG · ${t.kekkeiGenkai}`, { color: t.kgColorHex ?? kgColor(t.kekkeiGenkai) }));
+  if (t.secondaryKekkeiGenkai) {
+    chips.push(chip(`KG · ${t.secondaryKekkeiGenkai}`, {
+      color: t.secondaryKgColorHex ?? kgColor(t.secondaryKekkeiGenkai),
+    }));
+  }
+  if (t.invocationNom || t.espece || t.invocationRank) {
+    chips.push(
+      chip(
+        [
+          "口",
+          t.espece,
+          t.invocationNom,
+          t.invocationRank ? `Rang ${t.invocationRank}` : null,
+        ]
+          .filter(Boolean)
+          .join(" · ")
+      )
+    );
+  }
+  if (t.nature && !isKinjutsu) chips.push(chip(natureLabel(t.nature, t.kinjutsuScope, t.clan)));
 
-  const meta = `Technique${t.coutXp ? ` &middot; ${t.coutXp} XP` : ""}`;
+  const status = t.status ? STATUS_LABEL[t.status] ?? t.status : null;
+  const statusColor = t.status ? STATUS_COLOR[t.status] ?? "#9ca3af" : "#9ca3af";
   const desc = escapeHtml(t.description).replace(/\n/g, "<br>");
+  const kanji = isKinjutsu ? "禁" : isKuchyTechnique ? "口" : "技";
+  const bg =
+    isKinjutsu
+      ? "linear-gradient(135deg, rgba(255,87,34,0.22) 0%, rgba(255,184,77,0.08) 42%, rgba(0,0,0,0) 76%), linear-gradient(160deg, rgba(18,20,27,0.98), rgba(10,11,14,0.96))"
+      : isKuchyTechnique
+      ? "linear-gradient(135deg, rgba(29,185,159,0.18) 0%, rgba(255,184,77,0.08) 44%, rgba(0,0,0,0) 76%), linear-gradient(160deg, rgba(18,20,27,0.98), rgba(10,11,14,0.96))"
+      : `linear-gradient(135deg, ${accent}2e 0%, ${accent}14 38%, rgba(0,0,0,0) 72%), linear-gradient(160deg, rgba(18,20,27,0.98), rgba(10,11,14,0.96))`;
 
   return (
-    `<div class="hnk-tech${isKuchyTechnique ? " hnk-tech--kuchy" : ""}" style="--kg:${accent}">` +
-    `<div class="hnk-tech-meta">${meta}</div>` +
-    `<div class="hnk-tech-name">${escapeHtml(t.nom)}</div>` +
-    `<div class="hnk-tech-chips">${chips.join("")}</div>` +
-    `<div class="hnk-tech-desc">${desc}</div>` +
+    `<div class="hnk-tech${isKuchyTechnique ? " hnk-tech--kuchy" : ""}" data-kanji="${kanji}" style="position:relative;max-width:820px;margin:14px 0;padding:18px;overflow:hidden;` +
+    `background:${bg};border:1px solid ${isKinjutsu ? "rgba(255,87,34,0.55)" : isKuchyTechnique ? "rgba(29,185,159,0.48)" : `${accent}66`};` +
+    `border-left:5px solid ${accent};box-shadow:inset 0 1px 0 rgba(255,255,255,0.04),0 0 24px rgba(0,0,0,0.22);` +
+    `color:#e8e2da;font-family:Arial,Helvetica,sans-serif;">` +
+    `<div aria-hidden="true" style="position:absolute;right:22px;top:10px;color:rgba(255,255,255,0.035);font:900 86px/1 Georgia,serif;">${kanji}</div>` +
+    `<div style="position:relative;z-index:1;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;">` +
+    `<div style="min-width:0;color:#fff;font:900 20px/1.2 Georgia,'Times New Roman',serif;letter-spacing:1.2px;text-transform:uppercase;word-break:break-word;">${escapeHtml(t.nom)}</div>` +
+    (status
+      ? `<div style="flex:none;color:${statusColor};font:800 10px/1 Arial,Helvetica,sans-serif;letter-spacing:2px;text-transform:uppercase;">${escapeHtml(status)}</div>`
+      : "") +
+    `</div>` +
+    `<div style="position:relative;z-index:1;margin-top:14px;">${chips.join("")}</div>` +
+    `<div style="position:relative;z-index:1;margin-top:10px;color:#d8d2cc;font:14px/1.65 Arial,Helvetica,sans-serif;text-align:justify;white-space:pre-line;">${desc}</div>` +
+    `<div style="position:relative;z-index:1;margin-top:14px;color:#8f9aa8;font:12px/1 Arial,Helvetica,sans-serif;">${t.coutXp} XP</div>` +
+    `<div style="position:absolute;inset:0;pointer-events:none;background-image:repeating-linear-gradient(135deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 8px);"></div>` +
     `</div>`
   );
 }

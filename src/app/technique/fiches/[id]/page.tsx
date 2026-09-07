@@ -288,8 +288,11 @@ export default async function FicheDetailPage({
                 kinjutsuScope: fiche.kinjutsuScope,
                 clan: fiche.clan,
                 espece: fiche.invocation?.espece ?? null,
+                invocationNom: fiche.invocation?.nom ?? null,
+                invocationRank: hasInvRank ? (fiche.invocation as any)?.invocationRank ?? null : null,
                 description: fiche.description,
                 coutXp: fiche.coutXp,
+                status: fiche.status,
               }}
             />
           )}
