@@ -37,6 +37,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         nature: true,
         element: true,
         kekkeiGenkai: true,
+        invocationId: true,
         isActive: true,
       },
     });
@@ -48,7 +49,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     // Le coût dérive du type d'action (+ surcharge personnelle) — recalculé serveur.
     const newActionType =
       parsed.data.actionType !== undefined ? parsed.data.actionType : fiche.actionType;
-    const newNature = parsed.data.nature !== undefined ? parsed.data.nature : fiche.nature;
+    const isKuchy = fiche.invocationId != null;
+    const newNature = isKuchy
+      ? null
+      : parsed.data.nature !== undefined
+      ? parsed.data.nature
+      : fiche.nature;
     const costUser =
       newNature === "PERSONNELLE"
         ? await prisma.user.findUnique({ where: { id: me.id }, select: { clan: true } })
@@ -64,7 +70,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       parsed.data.nature !== undefined ||
       parsed.data.element !== undefined ||
       parsed.data.kekkeiGenkai !== undefined;
-    if (collectiveFieldsChanged) {
+    if (!isKuchy && collectiveFieldsChanged) {
       if (newNature === "COLLECTIVE") {
         const u = await prisma.user.findUnique({
           where: { id: me.id },
@@ -119,7 +125,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       const combinee = newActionType === "COMBINEE";
       secondaryManifUpdate = {
         secondaryElement: combinee ? parsed.data.secondaryElement ?? null : null,
-        secondaryKekkeiGenkai: combinee ? parsed.data.secondaryKekkeiGenkai ?? null : null,
+        secondaryKekkeiGenkai:
+          !isKuchy && combinee ? parsed.data.secondaryKekkeiGenkai ?? null : null,
       };
     }
 
@@ -148,9 +155,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         ...secondaryManifUpdate,
         ...(parsed.data.actionType !== undefined && { actionType: parsed.data.actionType ?? null }),
         ...(parsed.data.element !== undefined && { element: parsed.data.element ?? null }),
-        ...(parsed.data.kekkeiGenkai !== undefined && { kekkeiGenkai: parsed.data.kekkeiGenkai ?? null }),
-        ...(parsed.data.nature !== undefined && { nature: parsed.data.nature ?? null }),
-        ...(parsed.data.kinjutsuScope !== undefined && { kinjutsuScope: parsed.data.kinjutsuScope ?? null }),
+        ...(parsed.data.kekkeiGenkai !== undefined && { kekkeiGenkai: isKuchy ? null : parsed.data.kekkeiGenkai ?? null }),
+        ...(isKuchy ? { nature: null, kinjutsuScope: null, clan: null } : {}),
+        ...(!isKuchy && parsed.data.nature !== undefined && { nature: parsed.data.nature ?? null }),
+        ...(!isKuchy && parsed.data.kinjutsuScope !== undefined && { kinjutsuScope: parsed.data.kinjutsuScope ?? null }),
         ...clanUpdate,
         ...collaboratorsUpdate,
         ...(parsed.data.comment !== undefined && { comment: parsed.data.comment ?? null }),

@@ -116,7 +116,7 @@ export async function POST(req: Request) {
       invocationId = inv.id;
     }
 
-    // Kuchy : ni nature ni KG (donc pas de surcharge +10 XP).
+    // Kuchy : ni nature, ni clan, ni KG/kinjutsu (donc pas de surcharge +10 XP).
     const isKuchy = !!invocationId;
     const natureEff = isKuchy ? null : parsed.data.nature ?? null;
     let kekkeiGenkaiEff = isKuchy ? null : parsed.data.kekkeiGenkai ?? null;
@@ -196,7 +196,7 @@ export async function POST(req: Request) {
             ? parsed.data.secondaryKekkeiGenkai ?? null
             : null,
         nature: natureEff,
-        kinjutsuScope: parsed.data.kinjutsuScope ?? null,
+        kinjutsuScope: isKuchy ? null : parsed.data.kinjutsuScope ?? null,
         clan,
         invocationId,
         collaborators,

@@ -244,6 +244,22 @@ export default function FicheForm({
     };
   }
 
+  async function ficheErrorMessage(res: Response) {
+    const data = await res.json().catch(() => ({}));
+    const code = typeof data?.error === "string" ? data.error : "";
+    if (res.status === 401) return "Session expirée : reconnecte-toi avant de réessayer.";
+    if (code === "CHARACTER_FROZEN") return "Ce personnage ne peut plus créer ou modifier de technique.";
+    if (code === "INVOCATION_INVALIDE") return "Invocation introuvable ou non liée à ton compte.";
+    if (code === "CLAN_REQUIS") return "Clan requis pour cette technique.";
+    if (code === "CLAN_LIBRARY_REQUIS") return "Cette manifestation n'est pas autorisée par la bibliothèque du clan.";
+    if (code === "INVALID") return "Champs invalides.";
+    if (res.status === 409) return "Cette technique ne peut pas être modifiée dans son état actuel.";
+    if (res.status === 400) return "Champs invalides.";
+    if (res.status === 403) return "Action non autorisée.";
+    if (res.status === 429) return "Trop d'actions, attends un peu.";
+    return "Erreur serveur.";
+  }
+
   function saveDraft(e: React.MouseEvent<HTMLButtonElement> | React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
@@ -257,10 +273,7 @@ export default function FicheForm({
         body: JSON.stringify(payload),
       });
       if (!res.ok) {
-        if (res.status === 409) setError("Slug déjà utilisé.");
-        else if (res.status === 400) setError("Champs invalides.");
-        else if (res.status === 429) setError("Trop de créations, attends un peu.");
-        else setError("Erreur serveur.");
+        setError(await ficheErrorMessage(res));
         return;
       }
       const json = await res.json();
@@ -286,19 +299,13 @@ export default function FicheForm({
         body: JSON.stringify(payload),
       });
       if (!saveRes.ok) {
-        if (saveRes.status === 409) setError("Slug déjà utilisé.");
-        else if (saveRes.status === 400) setError("Champs invalides.");
-        else if (saveRes.status === 429) setError("Trop de créations, attends un peu.");
-        else setError("Erreur serveur.");
+        setError(await ficheErrorMessage(saveRes));
         return;
       }
 
       const submitRes = await fetch(`/api/fiches/${ficheId}/submit`, { method: "POST" });
       if (!submitRes.ok) {
-        if (submitRes.status === 409) setError("Cette technique ne peut plus être soumise.");
-        else if (submitRes.status === 400) setError("Champs invalides.");
-        else if (submitRes.status === 429) setError("Trop de soumissions, attends un peu.");
-        else setError("Erreur serveur.");
+        setError(await ficheErrorMessage(submitRes));
         return;
       }
 

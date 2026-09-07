@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 import { ART_OPTIONS, ELEMENTS } from "@/lib/techniques";
 import FicheForm from "@/components/FicheForm";
@@ -322,7 +323,12 @@ function InvocationCard({
             {inv.fiches.map((t) => (
               <li key={t.id} className="hnk-kuchy-tech">
                 <div className="flex justify-between gap-2 items-start">
-                  <span className="title">{t.nom}</span>
+                  <Link
+                    href={`/technique/fiches/${t.id}`}
+                    className="title hover:text-ember"
+                  >
+                    {t.nom}
+                  </Link>
                   <span className="text-[10px] text-smoke uppercase tracking-wider flex-none">
                     {STATUS_LABEL[t.status] ?? t.status}
                     {t.coutXp ? ` · ${t.coutXp} XP` : ""}

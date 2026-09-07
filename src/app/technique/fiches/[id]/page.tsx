@@ -52,17 +52,14 @@ export default async function FicheDetailPage({
       authorId: true,
       author: { select: { role: true } },
       isActive: true,
-      ...(hasInvRank
-        ? {
-            invocation: {
-              select: {
-                nom: true,
-                espece: true,
-                invocationRank: true,
-              },
-            },
-          }
-        : {}),
+      invocationId: true,
+      invocation: {
+        select: {
+          nom: true,
+          espece: true,
+          ...(hasInvRank ? { invocationRank: true } : {}),
+        },
+      },
     },
   });
 
@@ -122,7 +119,7 @@ export default async function FicheDetailPage({
   const artDef = artKey ? ARTS_ALL.find((a) => a.key === artKey) : null;
   const resolvedSpec = fiche.spec ?? (fiche.nature === "COLLECTIVE" ? artDef?.specs[0] ?? null : null);
   const specIdx = artDef && resolvedSpec ? (artDef.specs as string[]).indexOf(resolvedSpec) : -1;
-  const isKuchy = fiche.invocation != null;
+  const isKuchy = fiche.invocationId != null;
 
   const secondaryArtKey = fiche.secondaryArt
     ? fiche.secondaryArt.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
@@ -141,7 +138,7 @@ export default async function FicheDetailPage({
       secondaryArtKey,
       secondarySpecIdx,
       nature: fiche.nature,
-      invocationId: fiche.invocation ? "present" : null,
+      invocationId: fiche.invocationId,
       invocationRank: hasInvRank ? (fiche.invocation as any)?.invocationRank ?? null : null,
       viewerArtsState: viewerArts,
       viewerRank: viewer?.rang ?? null,

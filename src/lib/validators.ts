@@ -73,7 +73,7 @@ export const ficheCreateSchema = z.object({
   // Type d'action COLLECTIVE → pseudos exacts des partenaires (1 ou 2).
   collaborators: z.array(z.string().min(1).max(24)).max(2).optional(),
   // Technique de Kuchiyose → rattachée à une invocation du joueur.
-  invocationId: z.string().cuid().optional().nullable(),
+  invocationId: z.string().min(1).max(80).optional().nullable(),
   // Commentaire temporaire du joueur (visible par le modérateur, effacé à la décision).
   comment: z.string().max(1000).optional().nullable(),
   // legacy (gardés optionnels pour compat)
@@ -489,7 +489,7 @@ export const adminFicheCreateSchema = z.object({
   nature: z.enum(["PERSONNELLE", "COLLECTIVE", "KINJUTSU"]).optional().nullable(),
   clan: z.string().max(60).optional().nullable(),
   kinjutsuScope: z.string().max(80).optional().nullable(),
-  invocationId: z.string().cuid().optional().nullable(),
+  invocationId: z.string().min(1).max(80).optional().nullable(),
   coutXp: z.number().int().min(0).max(100_000).optional(),
 });
 export type AdminFicheCreateInput = z.infer<typeof adminFicheCreateSchema>;

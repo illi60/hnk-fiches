@@ -28,13 +28,14 @@ export interface MyTech {
   coutXp: number;
   status: string;
   mine: boolean;
+  invocationId?: string | null;
   invocationNom?: string | null;
   invocationEspece?: string | null;
   invocationRank?: string | null;
 }
 
 type GroupBy = "status" | "actionType" | "art" | "kekkeiGenkai" | "nom";
-type TechniqueTab = "standard" | "kinjutsu";
+type TechniqueTab = "standard" | "kuchiyose" | "kinjutsu";
 
 const GROUP_OPTIONS: { key: GroupBy; label: string }[] = [
   { key: "status", label: "Statut" },
@@ -76,9 +77,15 @@ export default function TechniquesView({
 }) {
   const [by, setBy] = useState<GroupBy>("status");
   const [tab, setTab] = useState<TechniqueTab>("standard");
+  const kuchiyoseTechniques = techniques.filter((t) => !!t.invocationId);
   const kinjutsuTechniques = techniques.filter((t) => t.nature === "KINJUTSU");
-  const standardTechniques = techniques.filter((t) => t.nature !== "KINJUTSU");
-  const visibleTechniques = tab === "kinjutsu" ? kinjutsuTechniques : standardTechniques;
+  const standardTechniques = techniques.filter((t) => t.nature !== "KINJUTSU" && !t.invocationId);
+  const visibleTechniques =
+    tab === "kinjutsu"
+      ? kinjutsuTechniques
+      : tab === "kuchiyose"
+      ? kuchiyoseTechniques
+      : standardTechniques;
 
   const groups = useMemo(() => {
     const map = new Map<string, MyTech[]>();
@@ -110,6 +117,15 @@ export default function TechniquesView({
         </button>
         <button
           type="button"
+          onClick={() => setTab("kuchiyose")}
+          className={`px-3 py-1.5 border text-[10px] tracking-[0.2em] uppercase ${
+            tab === "kuchiyose" ? "border-ember text-ember" : "border-white/10 text-smoke hover:text-bone"
+          }`}
+        >
+          Kuchiyose · {kuchiyoseTechniques.length}
+        </button>
+        <button
+          type="button"
           onClick={() => setTab("kinjutsu")}
           className={`px-3 py-1.5 border text-[10px] tracking-[0.2em] uppercase ${
             tab === "kinjutsu" ? "border-ember text-ember" : "border-white/10 text-smoke hover:text-bone"
@@ -123,6 +139,8 @@ export default function TechniquesView({
         <p className="text-sm text-smoke italic">
           {tab === "kinjutsu"
             ? "Aucun Kinjutsu débloqué pour l'instant."
+            : tab === "kuchiyose"
+            ? "Aucune technique Kuchiyose pour l'instant."
             : "Aucune technique classique pour l'instant."}
         </p>
       )}
@@ -175,8 +193,11 @@ function TechniqueCard({
           ? "hnk-kuchy-panel hnk-kuchy-panel--frame hnk-kuchy-panel--kuchy"
           : "hnk-panel"
       }
-      data-kanji={t.nature === "KINJUTSU" ? "禁" : "技"}
-      style={buildCardStyle(t.kekkeiGenkai, kgColors, t.nature === "KINJUTSU")}
+      data-kanji={t.nature === "KINJUTSU" ? "禁" : t.invocationId ? "口" : "技"}
+      style={buildCardStyle(t.kekkeiGenkai, kgColors, {
+        kinjutsu: t.nature === "KINJUTSU",
+        kuchiyose: !!t.invocationId,
+      })}
     >
       <div className="flex items-start justify-between gap-2">
         <Link
@@ -199,6 +220,7 @@ function TechniqueCard({
             {natureLabel(t.nature, t.kinjutsuScope, t.clan)}
           </span>
         )}
+        {t.invocationId && <span className="hnk-tech-chip">Kuchiyose</span>}
         {techniqueArtChipLabel({
           art: t.art,
           spec: t.spec ?? null,
@@ -307,12 +329,23 @@ function resolveKgColor(name: string, kgColors?: Record<string, string>) {
   return kgColors?.[name] ?? kgColor(name);
 }
 
-function buildCardStyle(name: string | null, kgColors?: Record<string, string>, kinjutsu = false) {
-  if (kinjutsu) {
+function buildCardStyle(
+  name: string | null,
+  kgColors?: Record<string, string>,
+  options: { kinjutsu?: boolean; kuchiyose?: boolean } = {}
+) {
+  if (options.kinjutsu) {
     return {
       backgroundImage: "linear-gradient(135deg, rgba(255,87,34,0.22) 0%, rgba(255,184,77,0.08) 42%, rgba(0,0,0,0) 76%)",
       borderColor: "rgba(255,87,34,0.55)",
       boxShadow: "inset 4px 0 0 #ff5722, 0 0 24px rgba(255,87,34,0.16)",
+    };
+  }
+  if (options.kuchiyose) {
+    return {
+      backgroundImage: "linear-gradient(135deg, rgba(29,185,159,0.18) 0%, rgba(255,184,77,0.08) 44%, rgba(0,0,0,0) 76%)",
+      borderColor: "rgba(29,185,159,0.48)",
+      boxShadow: "inset 4px 0 0 #1db99f, 0 0 22px rgba(29,185,159,0.14)",
     };
   }
   if (!name) return {};

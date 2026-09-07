@@ -33,7 +33,10 @@ export default async function MyFichesPage() {
     where: {
       isActive: true,
       OR: [
-        { authorId: meId, NOT: { nature: "KINJUTSU" } },
+        {
+          authorId: meId,
+          OR: [{ nature: { not: "KINJUTSU" } }, { nature: null }],
+        },
         { collaboratorIds: { has: meId } },
         { authorId: meId, nature: "KINJUTSU", kinjutsuScope: "PLAYER" },
         ...(me?.clan
@@ -70,17 +73,14 @@ export default async function MyFichesPage() {
       coutXp: true,
       status: true,
       authorId: true,
-      ...(hasInvRank
-        ? {
-            invocation: {
-              select: {
-                nom: true,
-                espece: true,
-                invocationRank: true,
-              },
-            },
-          }
-        : {}),
+      invocationId: true,
+      invocation: {
+        select: {
+          nom: true,
+          espece: true,
+          ...(hasInvRank ? { invocationRank: true } : {}),
+        },
+      },
     },
   });
 
@@ -105,7 +105,7 @@ export default async function MyFichesPage() {
         secondaryArtKey: secArtKey,
         secondarySpecIdx: secSpecIdx,
         nature: f.nature,
-        invocationId: f.invocation ? "present" : null,
+        invocationId: f.invocationId,
         invocationRank: hasInvRank ? (f.invocation as any)?.invocationRank ?? null : null,
         viewerArtsState: meArts,
         viewerRank: meArtsRank,
@@ -133,6 +133,7 @@ export default async function MyFichesPage() {
     coutXp: f.coutXp,
     status: f.status,
     mine: f.authorId === meId,
+    invocationId: f.invocationId,
     invocationNom: f.invocation?.nom ?? null,
     invocationEspece: f.invocation?.espece ?? null,
     invocationRank: hasInvRank ? (f.invocation as any)?.invocationRank ?? null : null,
