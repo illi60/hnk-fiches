@@ -1874,11 +1874,12 @@ a.hnk-cb-ev .lab,
   gap: 10px;
   margin: 10px 0;
   padding: 7px 14px 7px 9px;
-  background: rgba(7, 8, 10, 0.42) !important;
+  background: rgba(7, 8, 10, 0.55) !important;
   border: 1px solid var(--line-strong);
-  border-left: 2px solid var(--mission);
-  color: var(--bone);
+  border-left: 2px solid var(--staff, var(--mission));
   text-decoration: none;
+  cursor: pointer;
+  user-select: none;
 }
 .hnkf.hnkf .hnk-rp-player-btn {
   width: 22px;
@@ -1886,8 +1887,8 @@ a.hnk-cb-ev .lab,
   display: inline-grid;
   place-items: center;
   border-radius: 50%;
-  border: 1px solid color-mix(in srgb, var(--mission) 55%, transparent);
-  color: var(--mission);
+  border: 1px solid color-mix(in srgb, var(--staff, var(--mission)) 55%, transparent);
+  color: var(--staff, var(--mission));
 }
 .hnkf.hnkf .hnk-rp-player-btn::before {
   content: "▶";
@@ -1895,12 +1896,37 @@ a.hnk-cb-ev .lab,
   line-height: 1;
   transform: translateX(1px);
 }
+.hnkf.hnkf .hnk-rp-player--on .hnk-rp-player-btn::before {
+  content: "❚❚";
+  font-size: 8px;
+  letter-spacing: -1px;
+  transform: none;
+}
 .hnkf.hnkf .hnk-rp-player-lab {
   font: 700 10px/1 var(--ui) !important;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--smoke);
 }
+.hnkf.hnkf .hnk-rp-player--on .hnk-rp-player-lab { color: var(--staff, var(--mission)); }
+.hnkf.hnkf .hnk-rp-player-eq {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 12px;
+}
+.hnkf.hnkf .hnk-rp-player-eq i {
+  width: 2px;
+  height: 4px;
+  background: var(--staff, var(--mission)) !important;
+  opacity: 0.35;
+}
+.hnkf.hnkf .hnk-rp-player--on .hnk-rp-player-eq i {
+  opacity: 1;
+  animation: hnk-eq 0.9s ease-in-out infinite;
+}
+.hnkf.hnkf .hnk-rp-player--on .hnk-rp-player-eq i:nth-child(2) { animation-delay: 0.18s; }
+.hnkf.hnkf .hnk-rp-player--on .hnk-rp-player-eq i:nth-child(3) { animation-delay: 0.36s; }
 .hnkf-ms-content > h2 {
   margin: 0 0 28px;
   font-family: var(--display);
