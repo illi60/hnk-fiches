@@ -120,13 +120,13 @@ function splitBodySegments(html: string): Array<{ kind: "body" | "tech"; html: s
     }
 
     const el = node as Element;
-    if (el.classList.contains("hnk-tech")) {
+    if (el.classList.contains("hnk-tech") || el.classList.contains("hnk-tech-embed")) {
       flushBody();
       pieces.push({ kind: "tech", html: el.outerHTML });
       return;
     }
 
-    if (el.querySelector(".hnk-tech")) {
+    if (el.querySelector(".hnk-tech, .hnk-tech-embed")) {
       el.childNodes.forEach(collectNode);
       return;
     }
@@ -322,7 +322,7 @@ export function parseRpForumHtml(html: string): RpPostData | null {
       if (child.classList.contains("hnk-rp-content")) {
         return [nodeInnerHtml(child.querySelector(".hnk-rp-body"))];
       }
-      if (child.classList.contains("hnk-tech")) {
+      if (child.classList.contains("hnk-tech") || child.classList.contains("hnk-tech-embed")) {
         return [child.outerHTML];
       }
       return [];

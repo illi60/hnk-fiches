@@ -28,6 +28,7 @@ const ALLOWED_CLASSES = new Set([
   "hnk-rp-player-btn",
   "hnk-rp-player-lab",
   "hnk-rp-player-eq",
+  "hnk-tech-embed",
   "hnk-tech",
   "hnk-tech--kuchy",
   "hnk-tech-badges",
@@ -81,6 +82,8 @@ function sanitizeHtml(raw: string): string {
     const cls = (el.getAttribute("class") ?? "")
       .split(/\s+/)
       .filter((c) => ALLOWED_CLASSES.has(c));
+    const keepTechniqueStyle =
+      cls.includes("hnk-tech-embed") || Boolean(el.closest(".hnk-tech-embed"));
     const src = tag === "img" ? el.getAttribute("src") : null;
     const alt = tag === "img" ? el.getAttribute("alt") : null;
     const href = tag === "a" ? el.getAttribute("href") : null;
@@ -89,6 +92,7 @@ function sanitizeHtml(raw: string): string {
     [...el.attributes].forEach((a) => el.removeAttribute(a.name));
     if (align) (el as HTMLElement).style.textAlign = align;
     if (color) (el as HTMLElement).style.color = color;
+    if (keepTechniqueStyle && styleAttr) el.setAttribute("style", styleAttr);
     if (cls.includes("hnk-tech")) {
       const kgMatch = styleAttr.match(/--kg\s*:\s*([^;]+)\s*;?/i);
       if (kgMatch?.[1]) {
@@ -482,7 +486,10 @@ export function RichEditor({
     const html = dlgUrl.trim();
     if (!html) return;
     restoreRange();
-    document.execCommand("insertHTML", false, sanitizeHtml(html) + "<div><br></div>");
+    const wrapped = /class=["'][^"']*\bhnk-tech(?:-embed)?\b/i.test(html)
+      ? html
+      : `<div class="hnk-tech-embed">${html}</div>`;
+    document.execCommand("insertHTML", false, sanitizeHtml(wrapped) + "<div><br></div>");
     emit();
     setDialog(null);
     setDlgUrl("");

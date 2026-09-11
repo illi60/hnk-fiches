@@ -69,6 +69,7 @@ export default function StaffMessageGenerator() {
       `<meta name="viewport" content="width=device-width, initial-scale=1">` +
       `<base target="_blank">` +
       `<link rel="stylesheet" href="${CSS_HREF}">` +
+      `<script src="/forum/hnk-player.js" defer></script>` +
       `<style>html,body{margin:0;background:#050608}body{padding:24px 16px}</style>` +
       `</head><body><div id="hnk-root"></div></body></html>`,
     []
