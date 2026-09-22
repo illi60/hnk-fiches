@@ -47,6 +47,7 @@ export default async function ClanLibraryPage() {
       nature: "COLLECTIVE",
       status: "VALIDATED",
       isActive: true,
+      NOT: { retiredParticipantIds: { has: session.user.id } },
     },
     orderBy: { nom: "asc" },
     select: {

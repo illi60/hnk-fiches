@@ -21,6 +21,7 @@ import { compare } from "bcryptjs";
 
 import authConfig from "@/auth.config";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rate-limit";
 import { loginSchema } from "@/lib/validators";
 
 // Hash fictif pour timing attack (compare contre lui si user introuvable).
@@ -39,6 +40,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async authorize(credentials) {
         const parsed = loginSchema.safeParse(credentials);
         if (!parsed.success) return null;
+
+        const loginKey = parsed.data.username.trim().toLowerCase();
+        const limited = rateLimit(`login:${loginKey}`, 10, 5 * 60_000);
+        if (!limited.ok) return null;
 
         const user = await prisma.user.findFirst({
           where: { username: { equals: parsed.data.username, mode: "insensitive" } },

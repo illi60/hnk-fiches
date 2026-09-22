@@ -1,5 +1,7 @@
 "use client";
 
+import { economyErrorMessage } from "@/lib/economy-errors";
+
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
@@ -54,6 +56,7 @@ type UnlockModalState = {
   error: string | null;
 } | null;
 type RerollModalState = {
+  operationId: string;
   item: ShopItem;
   costXp: number;
   resetTechnique: boolean;
@@ -74,7 +77,14 @@ type ShopEntry =
 const CATEGORY_ORDER: ShopCategory[] = [...SHOP_CATEGORIES];
 
 function humanError(error?: string): string {
+  const budgetError = economyErrorMessage(error);
+  if (budgetError) return budgetError;
   switch (error) {
+    case "FORUM_UNAVAILABLE": return "Le forum est indisponible. Aucun achat n'a été effectué.";
+    case "FORUM_LINK_REQUIRED": return "Un profil forum vérifié est nécessaire.";
+    case "FORUM_REFRESH_REQUIRED": return "Le relevé forum a expiré. Réessaie pour le vérifier.";
+    case "XP_BUDGET_EXCEEDED": return "Ton budget dépasse les XP du forum et des échanges. Les dépenses sont bloquées jusqu'à régularisation.";
+    case "XP_HISTORY_REVIEW_REQUIRED": return "L'historique des remboursements nécessite une vérification du staff.";
     case "INSUFFICIENT_XP":
       return "XP insuffisant.";
     case "DUPLICATE":
@@ -97,6 +107,7 @@ export default function ShopInventory({
   inventory,
   globallyOwnedItemKeys = [],
   xpAvailable,
+  rerollPurchases = 0,
   villageRank,
   grade,
 }: {
@@ -104,6 +115,7 @@ export default function ShopInventory({
   inventory: InventoryView[];
   globallyOwnedItemKeys?: string[];
   xpAvailable: number;
+  rerollPurchases?: number;
   villageRank?: string | null;
   grade?: string | null;
 }) {
@@ -195,7 +207,7 @@ export default function ShopInventory({
   const cartLines = Object.entries(cart)
     .map(([key, quantity]) => {
       const item = itemByKey.get(key);
-      const previousPurchases = item ? ownedByKey.get(item.key)?.quantity ?? 0 : 0;
+      const previousPurchases = item && isRerollFtItemKey(item.key) ? rerollPurchases : 0;
       const unitCost = item ? shopItemCost(item, hasShopDiscount, previousPurchases) : 0;
       const baseUnitCost = item && isRerollFtItemKey(item.key) ? rerollFtBaseCostForPurchase(item, previousPurchases) : item?.costXp ?? 0;
       return item ? { item, quantity, unitCost, baseUnitCost, subtotal: unitCost * quantity } : null;
@@ -284,8 +296,9 @@ export default function ShopInventory({
     setError(null);
     setSuccess(null);
     setRerollModal({
+      operationId: crypto.randomUUID(),
       item,
-      costXp: shopItemCost(item, hasShopDiscount, ownedByKey.get(item.key)?.quantity ?? 0),
+      costXp: shopItemCost(item, hasShopDiscount, rerollPurchases),
       resetTechnique: false,
       refundAndCharge: false,
       loading: false,
@@ -301,7 +314,7 @@ export default function ShopInventory({
       const res = await fetch("/api/me/shop/reroll-ft", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resetTechnique: true, refundAndCharge: true }),
+        body: JSON.stringify({ operationId: rerollModal.operationId, resetTechnique: true, refundAndCharge: true }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json.ok) {
@@ -418,7 +431,7 @@ export default function ShopInventory({
               const inCart = cart[item.key] ?? 0;
               const uniqueOwned = item.stock === "UNIQUE" && !!owned;
               const globallyOwned = item.stock === "UNIQUE" && globallyOwnedByKey.has(item.key);
-              const previousPurchases = ownedByKey.get(item.key)?.quantity ?? 0;
+              const previousPurchases = isRerollFtItemKey(item.key) ? rerollPurchases : 0;
               const serviceGroup = serviceGroupForItem(item);
               const conditionUnlock = isConditionUnlockItemKey(item.key);
               const rerollFt = isRerollFtItemKey(item.key);
@@ -659,7 +672,7 @@ export default function ShopInventory({
             </div>
 
             <p className="mt-3 text-sm text-smoke leading-relaxed">
-              Cet achat remet uniquement ta partie technique à zéro. Il rembourse les XP techniques déjà dépensés, puis débite le prix du jeton.
+              Cet achat remet uniquement ta partie technique à zéro. Il rembourse uniquement les paiements techniques encore éligibles, puis débite le prix du jeton. Les techniques gratuites ne rendent aucun XP. Un éventuel déficit est absorbé en priorité.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               <span className="hnk-chip">{rerollModal.costXp} XP</span>
@@ -694,7 +707,7 @@ export default function ShopInventory({
                   disabled={rerollModal.loading}
                   onChange={(e) => setRerollModal((current) => current ? { ...current, refundAndCharge: e.target.checked, error: null } : current)}
                 />
-                <span>Je comprends que les XP techniques seront remboursés avant le débit du jeton.</span>
+                <span>Je comprends que seuls les paiements non encore remboursés seront déduits de mes dépenses, dans la limite du budget forum et échanges, avant le débit du jeton.</span>
               </label>
             </div>
 

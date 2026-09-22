@@ -81,6 +81,10 @@ export function jsonError(e: unknown): NextResponse {
   }
   if (e instanceof Error) {
     const known = new Set([
+      "FORUM_LINK_REQUIRED", "FORUM_UNAVAILABLE", "FORUM_REFRESH_REQUIRED", "FORUM_XP_ONLY",
+      "XP_BUDGET_EXCEEDED", "XP_HISTORY_REVIEW_REQUIRED", "RESET_CONFLICT",
+      "XP_ACCOUNT_HAS_HISTORY",
+      "CHARACTER_FROZEN",
       "INSUFFICIENT_XP",
       "CONFLICT",
       "NOT_FOUND",
@@ -104,9 +108,14 @@ export function jsonError(e: unknown): NextResponse {
       "TRADE_ITEM_NOT_TRADEABLE",
       "TRADE_SCHEMA_NOT_READY",
       "TRADE_EMPTY",
+      "INVENTORY_RESERVED",
     ]);
     if (known.has(e.message)) {
       const statusMap: Record<string, number> = {
+        FORUM_LINK_REQUIRED: 409, FORUM_UNAVAILABLE: 503, FORUM_REFRESH_REQUIRED: 409, FORUM_XP_ONLY: 403,
+        XP_BUDGET_EXCEEDED: 409, XP_HISTORY_REVIEW_REQUIRED: 409, RESET_CONFLICT: 409,
+        XP_ACCOUNT_HAS_HISTORY: 409,
+        CHARACTER_FROZEN: 403,
         INSUFFICIENT_XP: 402,
         CONFLICT: 409,
         NOT_FOUND: 404,
@@ -130,6 +139,7 @@ export function jsonError(e: unknown): NextResponse {
         TRADE_ITEM_NOT_TRADEABLE: 409,
         TRADE_SCHEMA_NOT_READY: 503,
         TRADE_EMPTY: 400,
+        INVENTORY_RESERVED: 409,
       };
       return NextResponse.json({ error: e.message }, { status: statusMap[e.message] ?? 400 });
     }

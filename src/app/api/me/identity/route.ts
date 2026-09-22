@@ -19,7 +19,7 @@ export async function POST(req: Request) {
 
     const user = await prisma.user.findUnique({
       where: { id: me.id },
-      select: { primaryKg: true, primaryAffinity: true, rang: true, affinites: true },
+      select: { version: true, primaryKg: true, primaryAffinity: true, rang: true, affinites: true },
     });
     if (!user) return NextResponse.json({ ok: false, error: "NOT_FOUND" }, { status: 404 });
 
@@ -37,7 +37,8 @@ export async function POST(req: Request) {
         return NextResponse.json({ ok: false, error: "DEUXIEME_DEJA_CHOISIE" }, { status: 409 });
       if (current.some((a) => a!.toLowerCase() === el.toLowerCase()))
         return NextResponse.json({ ok: false, error: "AFFINITE_DOUBLON" }, { status: 400 });
-      await prisma.user.update({ where: { id: me.id }, data: { affinites: { push: el } } });
+      const changed = await prisma.user.updateMany({ where: { id: me.id, version: user.version }, data: { affinites: { push: el }, version: { increment: 1 } } });
+      if (!changed.count) throw new Error("CONFLICT");
       return NextResponse.json({ ok: true });
     }
 
@@ -58,7 +59,8 @@ export async function POST(req: Request) {
     if (Object.keys(data).length === 0)
       return NextResponse.json({ ok: false, error: "RIEN_A_FAIRE" }, { status: 400 });
 
-    await prisma.user.update({ where: { id: me.id }, data });
+    const changed = await prisma.user.updateMany({ where: { id: me.id, version: user.version }, data: { ...data, version: { increment: 1 } } });
+    if (!changed.count) throw new Error("CONFLICT");
     return NextResponse.json({ ok: true });
   } catch (e) {
     return jsonError(e);

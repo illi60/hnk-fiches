@@ -27,6 +27,7 @@ export default async function AdminUserDetail({
         id: true,
         username: true,
         role: true,
+        xpBudgetExempt: true,
         canManageAdmins: true,
         xpAvailable: true,
         xpTotalEarned: true,
@@ -105,7 +106,12 @@ export default async function AdminUserDetail({
   if (!user) notFound();
   const reasonSums: XpReasonSums = {};
   for (const row of auditRows) reasonSums[row.reason] = row._sum.amount ?? 0;
+  const [entries, trades] = await Promise.all([
+    prisma.xPTransaction.findMany({where:{userId:id},select:{id:true,amount:true,reason:true,metadata:true,createdAt:true}}),
+    prisma.trade.findMany({where:{OR:[{initiatorId:id},{recipientId:id}]},select:{status:true,initiatorId:true,recipientId:true,initiatorXpOffered:true,recipientXpOffered:true}}),
+  ]);
   const audit = xpAudit({
+    userId: id, entries, trades,
     xpAvailable: user.xpAvailable,
     xpTotalEarned: user.xpTotalEarned,
     forumLastXp: user.forumLastXp,
@@ -124,18 +130,26 @@ export default async function AdminUserDetail({
         </p>
       </div>
 
-      {audit.hasAlert && (
+      {user.characterStatus === "ACTIVE" && audit.hasAlert && (
         <section className="border border-red-400/50 bg-red-500/10 p-4">
           <p className="text-[10px] tracking-[0.28em] uppercase text-red-300 font-bold">
             Alerte XP
           </p>
           <p className="text-sm text-bone mt-2">
-            Total contrôlé supérieur à la source : +{audit.extraXp} XP. Réserve attendue après
-            dépenses et ajustements staff : {audit.expectedAvailable} XP.
+            {audit.deficit > 0
+              ? `Les dépenses conservées dépassent le budget forum et échanges de ${audit.deficit} XP.`
+              : audit.extraXp > 0
+                ? `Le solde enregistré dépasse le solde autorisé de ${audit.extraXp} XP.`
+                : "L’historique des remboursements nécessite une vérification."}
           </p>
         </section>
       )}
 
+        {user.characterStatus === "ACTIVE" ? (
+          <p className="text-sm text-smoke">Budget forum et échanges : {audit.sourceXp} XP · Échanges nets : {audit.tradeNet} XP · Réserves : {audit.reserved} XP · Déficit : {audit.deficit} XP · Solde autorisé : {audit.expectedAvailable} XP.</p>
+        ) : (
+          <p className="text-sm text-smoke">Personnage mort ou disparu : XP gelée. La synchronisation forum et les alertes de budget sont suspendues.</p>
+        )}
         <LiveMemberView user={user} audit={audit} />
 
         <AdminUserPanel
@@ -262,6 +276,7 @@ function LiveMemberView({
   user: {
     username: string;
     role: "USER" | "ADMIN" | "TECH_MOD" | "FORUM_MOD";
+    xpBudgetExempt: boolean;
     characterStatus: string;
     canManageAdmins: boolean;
     xpAvailable: number;
@@ -284,7 +299,8 @@ function LiveMemberView({
   };
   audit: XpAudit;
 }) {
-  const totalXp = user.forumLastXp ?? user.xpTotalEarned;
+  const showXpAlert = user.characterStatus === "ACTIVE" && user.role === "USER" && !user.xpBudgetExempt && audit.hasAlert;
+  const totalXp = user.forumLastXp ?? 0;
   const xpPct =
     totalXp > 0 ? Math.min(100, Math.round((user.xpAvailable / totalXp) * 100)) : 0;
   const level = levelProgress(user.xpTotalEarned);
@@ -340,14 +356,18 @@ function LiveMemberView({
 
       <div
         className={`mt-5 border p-4 ${
-          audit.hasAlert ? "border-red-400/50 bg-red-500/10" : "border-white/5 bg-ink-900/60"
+          showXpAlert ? "border-red-400/50 bg-red-500/10" : "border-white/5 bg-ink-900/60"
         }`}
       >
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-[10px] tracking-[0.28em] uppercase text-smoke">Audit XP staff</p>
-          {audit.hasAlert ? (
+          {user.characterStatus === "DEAD_MISSING" ? (
+            <span className="text-[10px] tracking-[0.22em] uppercase text-smoke">Gelé</span>
+          ) : user.role !== "USER" || user.xpBudgetExempt ? (
+            <span className="text-[10px] tracking-[0.22em] uppercase text-smoke">Compte staff / test</span>
+          ) : showXpAlert ? (
             <span className="text-[10px] tracking-[0.22em] uppercase text-red-300 font-bold">
-              Alerte +{audit.extraXp} XP
+              {audit.deficit > 0 ? `Déficit ${audit.deficit} XP` : audit.extraXp > 0 ? `Solde +${audit.extraXp} XP` : "Historique à vérifier"}
             </span>
           ) : (
             <span className="text-[10px] tracking-[0.22em] uppercase text-emerald-400">
@@ -356,16 +376,21 @@ function LiveMemberView({
           )}
         </div>
         <div className="grid sm:grid-cols-5 gap-3 mt-3">
-          <AuditStat label={audit.sourceLabel === "forum" ? "Source forum" : "Source corrigée"} value={audit.sourceXp} />
+          <AuditStat label="Budget forum + échanges" value={audit.sourceXp} />
           <AuditStat label="Réserve" value={user.xpAvailable} />
           <AuditStat label="Dépenses méca" value={audit.xpSpentTotal} />
           <AuditStat label="Ajust. staff" value={audit.staffNet} signed />
           <AuditStat label="Contrôle" value={audit.controlledTotal} />
         </div>
         <p className="text-[10px] text-smoke mt-3 leading-relaxed">
-          Contrôle = réserve + dépenses mécaniques - ajustements staff. Les crédits, rendus et
-          retraits staff ne comptent pas comme XP générée.
-          {audit.missingXp > 0 && ` Écart négatif observé : ${audit.missingXp} XP.`}
+          {user.characterStatus === "DEAD_MISSING"
+            ? "Le contrôle est suspendu : les valeurs sont conservées à titre historique et ne génèrent aucune alerte."
+            : user.role !== "USER" || user.xpBudgetExempt
+              ? "Le compte staff ou test est exclu du blocage automatique des dépenses XP."
+            : <>Le budget autorisé correspond à l’XP du forum, augmentée des échanges reçus et diminuée
+              des échanges envoyés. Les anciens crédits staff ne créent aucun budget. Seuls les
+              remboursements rattachés à une dépense réelle réduisent les dépenses comptabilisées.
+              {audit.missingXp > 0 && ` Écart négatif observé : ${audit.missingXp} XP.`}</>}
         </p>
       </div>
 

@@ -81,7 +81,12 @@ export default function AdminUserPanel({
         currentUserId={currentUserId}
         canManageAdmins={canManageAdmins}
       />
-      <XpForm userId={user.id} />
+      {user.characterStatus === "DEAD_MISSING" ? (
+        <section className="border border-white/5 bg-ink-700 p-4">
+          <h3 className="text-sm font-semibold">XP du forum et reset technique</h3>
+          <p className="mt-2 text-sm text-smoke">Personnage mort ou disparu : XP gelée, synchronisation et reset économique suspendus.</p>
+        </section>
+      ) : <XpForm userId={user.id} />}
       <ProfilForm user={user} kgNames={kgNames} />
       <PactAffinityAdminForm userId={user.id} current={user.pactAffinities ?? []} />
       <AddTechniqueForm
@@ -453,77 +458,35 @@ function RoleForm({
 
 function XpForm({ userId }: { userId: string }) {
   const router = useRouter();
-  const [amount, setAmount] = useState("");
-  const [note, setNote] = useState("");
+  const [confirmed, setConfirmed] = useState(false);
+  const [operationId, setOperationId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [pending, start] = useTransition();
-
-  function submit() {
-    const n = parseInt(amount, 10);
-    if (!Number.isFinite(n) || n === 0) {
-      setError("Montant invalide.");
-      return;
-    }
+  function reset() {
+    if (!confirmed || pending) return;
+    const id = operationId ?? crypto.randomUUID();
+    setOperationId(id);
     setError("");
     start(async () => {
-      const res = await fetch("/api/admin/xp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, amount: n, note: note || undefined }),
-      });
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        setError(
-          j.error === "INSUFFICIENT_XP"
-            ? "Le joueur n'a pas assez d'XP pour ce retrait."
-            : j.error === "CONFLICT"
-            ? "Conflit (autre mutation simultanée). Recharge."
-            : "Erreur."
-        );
-        return;
-      }
-      setAmount("");
-      setNote("");
-      router.refresh();
+      try {
+        const response = await fetch('/api/admin/users/' + userId + '/reset-techniques', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({operationId: id, resetTechnique: true, refundAndCharge: true}),
+        });
+        const data = await response.json();
+        if (!response.ok) { setError(data.error === 'FORUM_UNAVAILABLE' ? 'Forum indisponible. Réessayez plus tard.' : 'Reset refusé : ' + data.error); return; }
+        setConfirmed(false); setOperationId(null); router.refresh();
+      } catch { setError('Connexion interrompue. Réessayez : une même opération ne sera pas appliquée deux fois.'); }
     });
   }
-
-  return (
-    <section className="border border-ember/20 bg-ink-700 p-4">
-      <h3 className="text-[10px] tracking-[0.28em] uppercase text-ember mb-3">
-        Mouvement d&apos;XP
-      </h3>
-      <div className="flex flex-wrap items-end gap-3">
-        <label className="block">
-          <span className="block text-[10px] uppercase text-smoke mb-1">Montant (±)</span>
-          <input
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="w-32 bg-ink-900 border border-white/10 px-3 py-2 text-bone tabular-nums"
-          />
-        </label>
-        <label className="block flex-1 min-w-[200px]">
-          <span className="block text-[10px] uppercase text-smoke mb-1">Note (audit)</span>
-          <input
-            type="text"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            maxLength={280}
-            className="w-full bg-ink-900 border border-white/10 px-3 py-2 text-bone"
-          />
-        </label>
-        <button
-          onClick={submit}
-          disabled={pending}
-          className="px-5 py-2 bg-ember text-black font-bold tracking-[0.2em] uppercase text-xs hover:bg-ember-hot disabled:opacity-50"
-        >
-          {pending ? "…" : "Appliquer"}
-        </button>
-      </div>
-      {error && <p className="text-sm text-ember-hot mt-2">{error}</p>}
-    </section>
-  );
+  return <section className="border border-ember/20 bg-ink-700 p-4 space-y-3">
+    <h3 className="text-sm font-semibold">XP du forum et reset technique</h3>
+    <p className="text-sm text-smoke">Le forum fixe le budget XP. Seuls les échanges finalisés peuvent le modifier sur le site. Les dons et retraits manuels sont désactivés.</p>
+    <label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={confirmed} disabled={pending} onChange={e => setConfirmed(e.target.checked)} />
+      Réinitialiser les techniques, arts, invocations et affinités de ce joueur, en remboursant uniquement ses paiements encore éligibles. Ce reset staff ne facture pas de jeton et conserve les rangs et achats.</label>
+    <button className="hnk-btn-primary" disabled={!confirmed || pending} onClick={reset}>{pending ? 'Vérification…' : 'Effectuer le reset audité'}</button>
+    {error && <p role="alert" className="text-sm text-ember-hot">{error}</p>}
+  </section>;
 }
 
 // ===== Profil RP =====

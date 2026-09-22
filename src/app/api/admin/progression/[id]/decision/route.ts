@@ -1,19 +1,19 @@
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
-import { requireFicheModerator, jsonError } from "@/lib/permissions";
+import { requireAdmin, jsonError } from "@/lib/permissions";
 import { progressionDecisionSchema } from "@/lib/validators";
 import { recomputeRanks, clanMemberIds } from "@/lib/progression-server";
 
 // POST /api/admin/progression/[id]/decision
-// Staff (ADMIN ou TECH_MOD) : valide ou refuse une soumission de condition.
+// Staff ADMIN : valide ou refuse une soumission de condition.
 // Pas de mouvement d'XP ici : une condition de progression ne coûte pas d'XP
 // (le raccourci « Dépenser X XP pour monter » est une voie distincte, gérée
 // par le staff via le panneau joueur). La promotion effective du rang
 // (rangVillage/rangClan/rangHistoire) reste une action staff côté admin.
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const me = await requireFicheModerator();
+    const me = await requireAdmin();
     const { id } = await params;
 
     const body = await req.json().catch(() => null);

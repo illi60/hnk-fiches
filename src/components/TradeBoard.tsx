@@ -1,5 +1,7 @@
 "use client";
 
+import { economyErrorMessage } from "@/lib/economy-errors";
+
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
@@ -60,6 +62,8 @@ const ACTIVE_TRADE_STATUSES = new Set<TradeView["status"]>(["REQUESTED", "NEGOTI
 const HISTORY_PAGE_SIZE = 6;
 
 function humanError(error?: string): string {
+  const budgetError = economyErrorMessage(error);
+  if (budgetError) return budgetError;
   switch (error) {
     case "INSUFFICIENT_XP":
       return "XP insuffisant.";

@@ -1,3 +1,4 @@
+import { refreshForumEconomy, economyTransaction } from "@/lib/economy-server";
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 
@@ -28,6 +29,7 @@ export async function POST(req: Request) {
     if (!parsed.success) return NextResponse.json({ error: "INVALID" }, { status: 400 });
     const track = parsed.data.track as ProgTrack;
 
+    await refreshForumEconomy(me.id);
     const user = await prisma.user.findUnique({
       where: { id: me.id },
       select: {
@@ -90,7 +92,7 @@ export async function POST(req: Request) {
       track === "HISTOIRE" ? nextRank : user.rangHistoire
     );
 
-    await prisma.$transaction(async (tx) => {
+    await economyTransaction([me.id], async (tx) => {
       const upd = await tx.user.updateMany({
         // Garde DB anti-sur-dépense : le solde doit toujours couvrir le coût.
         where: { id: user.id, version: user.version, xpAvailable: { gte: cost } },

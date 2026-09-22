@@ -27,7 +27,11 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
       if (managers <= 1) throw new Error("LAST_ADMIN_MANAGER");
     }
 
-    await prisma.user.delete({ where: { id } });
+    await prisma.$transaction(async tx => {
+      await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${id} FOR UPDATE`;
+      if (await tx.xPTransaction.count({ where: { userId: id } }) || await tx.trade.count({where:{OR:[{initiatorId:id},{recipientId:id}]}})) throw new Error("XP_ACCOUNT_HAS_HISTORY");
+      await tx.user.delete({ where: { id } });
+    });
 
     return NextResponse.json({ ok: true });
   } catch (e) {

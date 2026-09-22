@@ -35,6 +35,7 @@ export default async function AdminUsersPage({
       id: true,
       username: true,
       role: true,
+      xpBudgetExempt: true,
       canManageAdmins: true,
       characterStatus: true,
       xpAvailable: true,
@@ -47,6 +48,11 @@ export default async function AdminUsersPage({
     },
   });
 
+  const ids = users.map(u => u.id);
+  const [entries, trades] = await Promise.all([
+    prisma.xPTransaction.findMany({where:{userId:{in:ids}},select:{id:true,userId:true,amount:true,reason:true,metadata:true,createdAt:true}}),
+    prisma.trade.findMany({where:{OR:[{initiatorId:{in:ids}},{recipientId:{in:ids}}]},select:{status:true,initiatorId:true,recipientId:true,initiatorXpOffered:true,recipientXpOffered:true}}),
+  ]);
   const auditRows =
     users.length > 0
       ? await prisma.xPTransaction.groupBy({
@@ -94,18 +100,25 @@ export default async function AdminUsersPage({
       <ul className="divide-y divide-white/5 border border-white/5 bg-ink-700">
         {users.map((u) => {
           const audit = xpAudit({
+            userId: u.id, entries: entries.filter(e=>e.userId===u.id), trades: trades.filter(t=>t.initiatorId===u.id || t.recipientId===u.id),
             xpAvailable: u.xpAvailable,
             xpTotalEarned: u.xpTotalEarned,
             forumLastXp: u.forumLastXp,
             reasonSums: sumsByUser.get(u.id) ?? {},
           });
+          const showXpAlert = u.characterStatus === "ACTIVE" && u.role === "USER" && !u.xpBudgetExempt && audit.hasAlert;
+          const alertLabel = audit.deficit > 0
+            ? `DÉFICIT ${audit.deficit} XP`
+            : audit.extraXp > 0
+              ? `SOLDE +${audit.extraXp} XP`
+              : "HISTORIQUE XP";
 
           return (
             <li key={u.id}>
               <Link
                 href={`/admin/users/${u.id}`}
                 className={`flex items-center justify-between px-4 py-3 transition ${
-                  audit.hasAlert ? "bg-red-500/10 hover:bg-red-500/15" : "hover:bg-ember/5"
+                  showXpAlert ? "bg-red-500/10 hover:bg-red-500/15" : "hover:bg-ember/5"
                 }`}
               >
                 <div>
@@ -116,6 +129,7 @@ export default async function AdminUsersPage({
                         admin{u.canManageAdmins ? " maître" : ""}
                       </span>
                     )}
+                    {u.xpBudgetExempt && <span className="ml-2 text-[10px] tracking-[0.24em] uppercase text-smoke">test XP</span>}
                     {u.role === "TECH_MOD" && (
                       <span className="ml-2 text-[10px] tracking-[0.24em] uppercase text-amber-400">
                         mod technique
@@ -135,11 +149,12 @@ export default async function AdminUsersPage({
                   <p className="text-xs text-smoke">
                     {u.clan ?? "Sans clan"}
                     {u.rang && ` · Rang ${u.rang}`}
-                    {audit.hasAlert && (
+                    {showXpAlert && (
                       <span className="ml-2 text-red-300 font-bold">
-                        ALERTE XP +{audit.extraXp}
+                        {alertLabel}
                       </span>
                     )}
+                    {u.characterStatus === "DEAD_MISSING" && <span className="ml-2 text-smoke">XP gelée</span>}
                   </p>
                 </div>
                 <div className="text-right">

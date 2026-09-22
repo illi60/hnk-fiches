@@ -31,7 +31,7 @@ import {
 
 // XP « total » d'un membre — cohérent avec le tableau de bord (forum prioritaire).
 function userXp(u: { forumLastXp: number | null; xpTotalEarned: number }): number {
-  return u.forumLastXp ?? u.xpTotalEarned ?? 0;
+  return u.forumLastXp ?? 0;
 }
 
 // Rang général d'un personnage = le plus haut de ses rangs (cf. « non cumul »).
@@ -237,7 +237,7 @@ export async function recomputeRanks(userIds: string[] | "all"): Promise<number>
     const clanKey = clanScopeKey(u.clan);
     const up: UserProgress = {
       countByCond: byUser.get(u.id) ?? {},
-      xpSelf: u.forumLastXp ?? u.xpTotalEarned ?? 0,
+      xpSelf: u.forumLastXp ?? 0,
     };
     const curV = (u.rangVillage ?? "E") as Rank;
     const curC = (u.rangClan ?? "E") as Rank;

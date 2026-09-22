@@ -1,3 +1,4 @@
+import { refreshForumEconomy, economyTransaction } from "@/lib/economy-server";
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 
@@ -23,6 +24,7 @@ export async function POST(req: Request) {
     if (!parsed.success) return NextResponse.json({ ok: false, error: "INVALID" }, { status: 400 });
     const action = parsed.data as ArtAction;
 
+    await refreshForumEconomy(me.id);
     const user = await prisma.user.findUnique({
       where: { id: me.id },
       select: {
@@ -43,10 +45,11 @@ export async function POST(req: Request) {
       if (getArtState(state, action.art).primarySpec !== undefined)
         return NextResponse.json({ ok: false, error: "DEJA_CHOISIE" }, { status: 409 });
       const newState = applyAction(action, state, user.rang);
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { artsState: newState as unknown as Prisma.InputJsonValue },
+      const updated = await prisma.user.updateMany({
+        where: { id: user.id, version: user.version },
+        data: { artsState: newState as unknown as Prisma.InputJsonValue, version: { increment: 1 } },
       });
+      if (!updated.count) throw new Error("CONFLICT");
       return NextResponse.json({ ok: true });
     }
 
@@ -60,10 +63,11 @@ export async function POST(req: Request) {
       });
       if (!q.ok) return NextResponse.json({ ok: false, error: q.error }, { status: 400 });
       const newState = applyAction(action, state, user.rang);
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { artsState: newState as unknown as Prisma.InputJsonValue },
+      const updated = await prisma.user.updateMany({
+        where: { id: user.id, version: user.version },
+        data: { artsState: newState as unknown as Prisma.InputJsonValue, version: { increment: 1 } },
       });
+      if (!updated.count) throw new Error("CONFLICT");
       return NextResponse.json({ ok: true });
     }
 
@@ -79,7 +83,7 @@ export async function POST(req: Request) {
 
     const newState = applyAction(action, state, user.rang);
 
-    await prisma.$transaction(async (tx) => {
+    await economyTransaction([me.id], async (tx) => {
       const upd = await tx.user.updateMany({
         where: { id: user.id, version: user.version },
         data: {

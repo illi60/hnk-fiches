@@ -1,9 +1,17 @@
 import { prisma } from "@/lib/prisma";
-import { SHOP_ITEMS, SHOP_MINOR_CLAN_BANNER_ITEM_KEY, type ShopItem } from "@/lib/shop";
+import { SHOP_ITEMS, type ShopItem } from "@/lib/shop";
+import { Prisma } from "@prisma/client";
 
-const RUNTIME_FALLBACK_KEYS = new Set([
-  SHOP_MINOR_CLAN_BANNER_ITEM_KEY,
-]);
+/** Lock the catalogue through payment; a concurrent deactivation cannot slip past it. */
+export async function assertShopItemsActive(tx: Prisma.TransactionClient, items: ShopItem[]) {
+  for (const item of [...items].sort((a, b) => a.key.localeCompare(b.key))) {
+    const rows = await tx.$queryRaw<Array<{ isActive: boolean; costXp: number; stock: string }>>`
+      SELECT "isActive", "costXp", stock FROM "ShopCatalogItem" WHERE "itemKey" = ${item.key} FOR SHARE`;
+    const row = rows[0];
+    if (!row?.isActive) throw new Error("INELIGIBLE");
+    if (row.costXp !== item.costXp || row.stock !== item.stock) throw new Error("CONFLICT");
+  }
+}
 
 function rowToShopItem(row: {
   itemKey: string;
@@ -59,18 +67,9 @@ export async function loadShopItems(): Promise<ShopItem[]> {
       },
     });
 
-    if (rows.length === 0) return SHOP_ITEMS;
-
-    const items = rows.map(rowToShopItem);
-    const existing = new Set(items.map((item) => item.key));
-    for (const fallback of SHOP_ITEMS) {
-      if (RUNTIME_FALLBACK_KEYS.has(fallback.key) && !existing.has(fallback.key)) {
-        items.push(fallback);
-      }
-    }
-    return items;
+    return rows.map(rowToShopItem);
   } catch (error) {
-    if (isMissingShopCatalogTable(error)) return SHOP_ITEMS;
+    if (isMissingShopCatalogTable(error)) return [];
     throw error;
   }
 }
@@ -132,10 +131,10 @@ export async function loadShopItemByKey(itemKey: string): Promise<ShopItem | und
     });
 
     if (row?.isActive) return rowToShopItem(row);
-    return SHOP_ITEMS.find((item) => item.key === itemKey);
+    return undefined;
   } catch (error) {
     if (isMissingShopCatalogTable(error)) {
-      return SHOP_ITEMS.find((item) => item.key === itemKey);
+      return undefined;
     }
     throw error;
   }

@@ -16,8 +16,9 @@ export default async function AdminHome() {
     prisma.ficheTechnique.count({ where: { status: "PENDING", isActive: true } }),
     prisma.ficheTechnique.count({ where: { status: "VALIDATED", isActive: true } }),
     prisma.progressionSubmission.count({ where: { status: "PENDING" } }),
-    prisma.adminAlert.count({ where: { isRead: false } }),
+    prisma.adminAlert.count({ where: { isRead: false, OR: [{ kind: { not: "XP_BUDGET" } }, { user: { characterStatus: "ACTIVE", role: "USER", xpBudgetExempt: false } }] } }),
     prisma.adminAlert.findMany({
+      where: { OR: [{ kind: { not: "XP_BUDGET" } }, { user: { characterStatus: "ACTIVE", role: "USER", xpBudgetExempt: false } }] },
       orderBy: { createdAt: "desc" },
       take: 6,
       select: {

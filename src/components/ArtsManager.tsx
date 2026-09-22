@@ -1,5 +1,7 @@
 "use client";
 
+import { economyErrorMessage } from "@/lib/economy-errors";
+
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
@@ -20,6 +22,8 @@ import {
 } from "@/lib/arts";
 
 function humanError(e?: string): string {
+  const budgetError = economyErrorMessage(e);
+  if (budgetError) return budgetError;
   switch (e) {
     case "XP_INSUFFISANT":
       return "XP insuffisant.";

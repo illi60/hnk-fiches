@@ -32,6 +32,7 @@ export default async function MyFichesPage() {
   const fiches = await prisma.ficheTechnique.findMany({
     where: {
       isActive: true,
+      NOT: { retiredParticipantIds: { has: meId } },
       OR: [
         {
           authorId: meId,

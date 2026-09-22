@@ -1,10 +1,11 @@
+import { refreshForumEconomy, economyTransaction } from "@/lib/economy-server";
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { requireUser, jsonError } from "@/lib/permissions";
 import { rateLimit } from "@/lib/rate-limit";
-import { loadShopItemByKey } from "@/lib/shop-server";
+import { assertShopItemsActive, loadShopItemByKey } from "@/lib/shop-server";
 import {
   SHOP_DISCOUNT_ITEM_KEY,
   SHOP_PROMOTION_CHUNIN_ITEM_KEY,
@@ -46,7 +47,9 @@ export async function POST(req: Request) {
     }));
     const total = lines.reduce((sum, line) => sum + line.subtotal, 0);
 
-    const result = await prisma.$transaction(async (tx) => {
+    await refreshForumEconomy(me.id);
+    const result = await economyTransaction([me.id], async (tx) => {
+      await assertShopItemsActive(tx, lines.map(line => line.item));
       const user = await tx.user.findUnique({
         where: { id: me.id },
         select: {

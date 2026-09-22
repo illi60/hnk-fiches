@@ -1,3 +1,4 @@
+import { refreshForumEconomy, economyTransaction } from "@/lib/economy-server";
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 
@@ -24,6 +25,7 @@ export async function POST(req: Request) {
     if (!parsed.success) return NextResponse.json({ ok: false, error: "INVALID" }, { status: 400 });
     const action = parsed.data;
 
+    await refreshForumEconomy(me.id);
     const user = await prisma.user.findUnique({
       where: { id: me.id },
       select: {
@@ -59,7 +61,7 @@ export async function POST(req: Request) {
     }
     const next = applyQuintessence(quintAction, state);
 
-    await prisma.$transaction(async (tx) => {
+    await economyTransaction([me.id], async (tx) => {
       const upd = await tx.user.updateMany({
         where: { id: user.id, version: user.version },
         data: {

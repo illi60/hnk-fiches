@@ -143,8 +143,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       }
     }
 
-    const updated = await prisma.ficheTechnique.update({
-      where: { id },
+    const changed = await prisma.ficheTechnique.updateMany({
+      where: { id, authorId: me.id, status: { in: ["DRAFT", "REJECTED", "PENDING"] }, isActive: true, NOT: { retiredParticipantIds: { has: me.id } } },
       data: {
         ...(parsed.data.slug !== undefined && { slug: parsed.data.slug }),
         ...(parsed.data.nom !== undefined && { nom: parsed.data.nom }),
@@ -166,9 +166,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         ...(parsed.data.rangMin !== undefined && { rangMin: parsed.data.rangMin ?? null }),
         coutXp,
       },
-      select: { id: true, slug: true, nom: true, coutXp: true, status: true },
+
     });
 
+    if (!changed.count) throw new Error("CONFLICT");
+    const updated = await prisma.ficheTechnique.findUnique({ where: { id }, select: { id: true, slug: true, nom: true, coutXp: true, status: true } });
     return NextResponse.json({ fiche: updated });
   } catch (e) {
     return jsonError(e);
@@ -197,10 +199,11 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     if (fiche.status !== "DRAFT" && fiche.status !== "REJECTED")
       return NextResponse.json({ error: "INVALID_STATE" }, { status: 409 });
 
-    await prisma.ficheTechnique.update({
-      where: { id },
+    const deleted = await prisma.ficheTechnique.updateMany({
+      where: { id, authorId: me.id, status: { in: ["DRAFT", "REJECTED"] }, isActive: true, NOT: { retiredParticipantIds: { has: me.id } } },
       data: { isActive: false },
     });
+    if (!deleted.count) throw new Error("CONFLICT");
 
     return NextResponse.json({ ok: true });
   } catch (e) {

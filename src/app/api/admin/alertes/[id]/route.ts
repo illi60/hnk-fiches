@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { jsonError, requireFicheModerator } from "@/lib/permissions";
+import { jsonError, requireAdmin } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 
 export async function DELETE(
@@ -8,7 +8,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    await requireFicheModerator();
+    await requireAdmin();
     const { id } = await params;
 
     const deleted = await prisma.adminAlert.deleteMany({

@@ -1,3 +1,4 @@
+import { loadEconomy } from "@/lib/economy-server";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
@@ -58,12 +59,17 @@ export default async function BoutiquePage() {
       })
     : [];
 
+  const [economy, rerollPurchases] = await Promise.all([
+    loadEconomy(prisma,session.user.id),
+    prisma.xPTransaction.count({where:{userId:session.user.id,reason:"SHOP_SPEND",metadata:{path:["source"],equals:"SHOP_REROLL_FT"}}}),
+  ]);
   return (
     <ShopInventory
+      rerollPurchases={rerollPurchases}
       items={items}
       inventory={user.inventoryItems}
       globallyOwnedItemKeys={globallyOwnedRows.map((row) => row.itemKey)}
-      xpAvailable={user.xpAvailable}
+      xpAvailable={economy.available}
       villageRank={user.rangVillage}
       grade={user.grade}
     />

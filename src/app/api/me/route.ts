@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, jsonError } from "@/lib/permissions";
 import { levelProgress, rangFromLevel } from "@/lib/xp";
 import { getOrSyncUser } from "@/lib/forum-sync";
+import { loadEconomy } from "@/lib/economy-server";
 
 export async function GET() {
   try {
@@ -53,12 +54,18 @@ export async function GET() {
       return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
     }
 
+    const account = await loadEconomy(prisma, me.id);
+    user.xpAvailable = account.available;
+    user.xpTotalEarned = account.forumXp;
     // Dérivés serveur — JAMAIS stockés en DB.
     const progress = levelProgress(user.xpTotalEarned);
     const rangDerived = rangFromLevel(progress.level);
 
     return NextResponse.json({
       user,
+      economy: { forumXp: account.forumXp, incoming: account.incoming, outgoing: account.outgoing,
+        spent: account.spent, reserved: account.reserved, available: account.available,
+        deficit: account.deficit, linked: account.linked, needsReview: account.anomalies.length > 0 },
       derived: {
         level: progress.level,
         levelRatio: progress.ratio,

@@ -34,7 +34,7 @@ export async function GET(req: Request) {
   }
 
   const candidates = await prisma.user.findMany({
-    where: { forumUserId: { not: null } },
+    where: { forumUserId: { not: null }, characterStatus: "ACTIVE", role: "USER", xpBudgetExempt: false },
     orderBy: [{ forumLastSyncAt: { sort: "asc", nulls: "first" } }],
     take: BATCH_SIZE,
     select: { id: true },

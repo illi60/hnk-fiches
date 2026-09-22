@@ -1,10 +1,11 @@
+import { refreshForumEconomy, economyTransaction } from "@/lib/economy-server";
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { requireUser, jsonError } from "@/lib/permissions";
 import { rateLimit } from "@/lib/rate-limit";
-import { loadShopItemByKey } from "@/lib/shop-server";
+import { assertShopItemsActive, loadShopItemByKey } from "@/lib/shop-server";
 import { SHOP_DISCOUNT_ITEM_KEY, discountedShopCost, isConditionUnlockItemKey } from "@/lib/shop";
 import { shopConditionUnlockOptions } from "@/lib/shop-condition-unlock-server";
 import { clanMemberIds, recomputeRanks } from "@/lib/progression-server";
@@ -26,6 +27,7 @@ export async function POST(req: Request) {
     const item = await loadShopItemByKey(parsed.data.itemKey);
     if (!item) return NextResponse.json({ ok: false, error: "NOT_FOUND" }, { status: 404 });
 
+    await refreshForumEconomy(me.id);
     const user = await prisma.user.findUnique({
         where: { id: me.id },
         select: {
@@ -71,7 +73,8 @@ export async function POST(req: Request) {
           : await clanMemberIds(scopeKey)
         : [user.id];
 
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await economyTransaction([me.id], async (tx) => {
+      await assertShopItemsActive(tx, [item]);
       const updated = await tx.user.updateMany({
         where: { id: user.id, version: user.version, xpAvailable: { gte: cost } },
         data: {

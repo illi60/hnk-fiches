@@ -1,5 +1,7 @@
 "use client";
 
+import { economyErrorMessage } from "@/lib/economy-errors";
+
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
@@ -99,6 +101,8 @@ function rankClass(rang: string | null | undefined): string {
 }
 
 function humanErr(e?: string): string {
+  const budgetError = economyErrorMessage(e);
+  if (budgetError) return budgetError;
   switch (e) {
     case "DEJA_SOUMISE":
       return "Déjà soumise (en attente).";

@@ -17,7 +17,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const parsed = adminPactAffinitySchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ ok: false, error: "INVALID" }, { status: 400 });
 
-    const target = await prisma.user.findUnique({ where: { id }, select: { id: true } });
+    const target = await prisma.user.findUnique({ where: { id }, select: { id: true, version: true } });
     if (!target) return NextResponse.json({ ok: false, error: "NOT_FOUND" }, { status: 404 });
 
     // Garde les affinités valides (parmi les 5 éléments), sans doublon (casse insensible).
@@ -31,7 +31,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       affinities.push(t);
     }
 
-    await prisma.user.update({ where: { id }, data: { pactAffinities: affinities } });
+    const updated = await prisma.user.updateMany({ where: { id, version: target.version }, data: { pactAffinities: affinities, version: { increment: 1 } } });
+    if (!updated.count) throw new Error("CONFLICT");
     return NextResponse.json({ ok: true, pactAffinities: affinities });
   } catch (e) {
     return jsonError(e);

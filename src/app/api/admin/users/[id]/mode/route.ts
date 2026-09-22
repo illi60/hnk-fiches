@@ -18,7 +18,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     const user = await prisma.user.findUnique({
       where: { id },
-      select: { progressionState: true },
+      select: { progressionState: true, version: true },
     });
     if (!user) return NextResponse.json({ ok: false, error: "NOT_FOUND" }, { status: 404 });
 
@@ -32,10 +32,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       state.mode = { path: path as ModePath, stage: Math.min(3, Math.max(1, Math.round(stage))) };
     }
 
-    await prisma.user.update({
-      where: { id },
-      data: { progressionState: state as unknown as Prisma.InputJsonValue },
+    const changed = await prisma.user.updateMany({
+      where: { id, version: user.version },
+      data: { progressionState: state as unknown as Prisma.InputJsonValue, version: { increment: 1 } },
     });
+    if (!changed.count) throw new Error("CONFLICT");
     return NextResponse.json({ ok: true });
   } catch (e) {
     return jsonError(e);

@@ -26,14 +26,15 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     if (fiche.authorId !== me.id) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
     if (fiche.status !== "PENDING") return NextResponse.json({ error: "INVALID_STATE" }, { status: 409 });
 
-    await prisma.ficheTechnique.update({
-      where: { id },
+    const changed = await prisma.ficheTechnique.updateMany({
+      where: { id, authorId: me.id, status: "PENDING", isActive: true, NOT: { retiredParticipantIds: { has: me.id } } },
       data: {
         status: "DRAFT",
         rejectionReason: null,
       },
     });
 
+    if (!changed.count) throw new Error("CONFLICT");
     return NextResponse.json({ ok: true });
   } catch (e) {
     return jsonError(e);

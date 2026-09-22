@@ -1,4 +1,5 @@
 import type { XPReason } from "@prisma/client";
+import { projectEconomy, type EconomyEntry, type EconomyTrade } from "@/lib/economy";
 
 export const XP_MECHANIC_SPEND_REASONS: XPReason[] = [
   "FICHE_VALIDATED",
@@ -19,6 +20,9 @@ export const XP_AUDIT_REASONS: XPReason[] = [
 export type XpReasonSums = Partial<Record<XPReason, number>>;
 
 export interface XpAuditInput {
+  userId: string;
+  entries: EconomyEntry[];
+  trades: EconomyTrade[];
   xpAvailable: number;
   xpTotalEarned: number;
   forumLastXp?: number | null;
@@ -37,6 +41,9 @@ export interface XpAudit {
   extraXp: number;
   missingXp: number;
   hasAlert: boolean;
+  deficit: number;
+  tradeNet: number;
+  reserved: number;
 }
 
 function positive(n: number | null | undefined): number {
@@ -55,24 +62,23 @@ function sumNegativeAbs(reasonSums: XpReasonSums, reasons: XPReason[]): number {
   return reasons.reduce((total, reason) => total + negativeAbs(reasonSums[reason]), 0);
 }
 
-export function xpAudit({ xpAvailable, xpTotalEarned, forumLastXp, reasonSums }: XpAuditInput): XpAudit {
-  const xpSpentTotal = sumNegativeAbs(reasonSums, XP_MECHANIC_SPEND_REASONS);
+export function xpAudit({ userId, entries, trades, xpAvailable, forumLastXp, reasonSums }: XpAuditInput): XpAudit {
   const staffCredits = sumPositive(reasonSums, XP_STAFF_CREDIT_REASONS);
   const staffRemovals = sumNegativeAbs(reasonSums, XP_STAFF_REMOVE_REASONS);
   const staffNet = staffCredits - staffRemovals;
 
   // ADMIN_GRANT incrémente xpTotalEarned mais ne représente pas de l'XP générée en RP.
-  const internalSource = Math.max(0, xpTotalEarned - positive(reasonSums.ADMIN_GRANT));
-  const sourceXp = forumLastXp ?? internalSource;
-  const sourceLabel = forumLastXp == null ? "internal" : "forum";
-  const controlledTotal = xpAvailable + xpSpentTotal - staffNet;
-  const expectedAvailable = sourceXp + staffNet - xpSpentTotal;
+  const account = projectEconomy(userId, forumLastXp ?? null, entries, trades);
+  const sourceXp = account.budget;
+  const sourceLabel = "forum";
+  const controlledTotal = xpAvailable + account.spent + account.reserved;
+  const expectedAvailable = account.available;
   const diff = controlledTotal - sourceXp;
   const extraXp = Math.max(0, diff);
   const missingXp = Math.max(0, -diff);
 
   return {
-    xpSpentTotal,
+    xpSpentTotal: account.spent,
     staffCredits,
     staffRemovals,
     staffNet,
@@ -82,6 +88,7 @@ export function xpAudit({ xpAvailable, xpTotalEarned, forumLastXp, reasonSums }:
     expectedAvailable,
     extraXp,
     missingXp,
-    hasAlert: extraXp > 0,
+    hasAlert: extraXp > 0 || account.deficit > 0 || account.anomalies.length > 0,
+    deficit: account.deficit, tradeNet: account.incoming - account.outgoing, reserved: account.reserved,
   };
 }

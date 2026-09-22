@@ -82,14 +82,15 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
 
       if (missing.length > 0) {
         // Pseudo erroné → auto-refus.
-        await prisma.ficheTechnique.update({
-          where: { id },
+        const rejected = await prisma.ficheTechnique.updateMany({
+          where: { id, authorId: me.id, status: { in: ["DRAFT", "REJECTED"] }, isActive: true, NOT: { retiredParticipantIds: { has: me.id } } },
           data: {
             status: "REJECTED",
             rejectionReason: `Pseudo(s) participant(s) introuvable(s) : ${missing.join(", ")}.`,
             collaboratorIds: [],
           },
         });
+        if (!rejected.count) throw new Error("CONFLICT");
         return NextResponse.json(
           { ok: false, error: "PSEUDO_INTROUVABLE", missing, autoRejected: true },
           { status: 422 }
@@ -115,7 +116,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
 
       const collaboratorIds = pseudos.map((p) => foundByName.get(p.toLowerCase())!.id);
       const updated = await prisma.ficheTechnique.updateMany({
-        where: { id, authorId: me.id, status: { in: ["DRAFT", "REJECTED"] }, isActive: true },
+        where: { id, authorId: me.id, status: { in: ["DRAFT", "REJECTED"] }, isActive: true, NOT: { retiredParticipantIds: { has: me.id } } },
         data: { status: "PENDING", rejectionReason: null, collaboratorIds },
       });
       if (updated.count === 0) return NextResponse.json({ error: "INVALID_STATE" }, { status: 409 });
@@ -124,7 +125,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
 
     // --- Cas normal ---
     const updated = await prisma.ficheTechnique.updateMany({
-      where: { id, authorId: me.id, status: { in: ["DRAFT", "REJECTED"] }, isActive: true },
+      where: { id, authorId: me.id, status: { in: ["DRAFT", "REJECTED"] }, isActive: true, NOT: { retiredParticipantIds: { has: me.id } } },
       data: { status: "PENDING", rejectionReason: null },
     });
     if (updated.count === 0) return NextResponse.json({ error: "INVALID_STATE" }, { status: 409 });

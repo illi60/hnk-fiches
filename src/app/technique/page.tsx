@@ -1,3 +1,4 @@
+import { loadEconomy } from "@/lib/economy-server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
@@ -74,9 +75,12 @@ export default async function DashboardPage() {
     },
   });
   if (!user) redirect("/login");
+  const economy = await loadEconomy(prisma, user.id);
+  user.xpAvailable = economy.available;
+  user.xpTotalEarned = economy.forumXp;
   const hasClan = !!user.clan && !isNoClan(user.clan);
 
-  const totalXp = user.forumLastXp ?? user.xpTotalEarned;
+  const totalXp = user.forumLastXp ?? 0;
   const xpPct =
     totalXp > 0 ? Math.min(100, Math.round((user.xpAvailable / totalXp) * 100)) : 0;
 

@@ -19,7 +19,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     const current = await prisma.user.findUnique({
       where: { id },
-      select: { rangVillage: true, rangHistoire: true, rangClan: true },
+      select: { version: true, rangVillage: true, rangHistoire: true, rangClan: true },
     });
     if (!current) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
 
@@ -31,9 +31,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const rangHistoire = parsed.data.rangHistoire !== undefined ? parsed.data.rangHistoire : current.rangHistoire;
     const rangClan = parsed.data.rangClan !== undefined ? parsed.data.rangClan : current.rangClan;
 
-    const user = await prisma.user.update({
-      where: { id },
-      data: {
+    const user = await prisma.$transaction(async (tx) => {
+      const updated = await tx.user.update({
+        where: { id, version: current.version },
+        data: {
+        version: { increment: 1 },
         ...(parsed.data.characterStatus !== undefined && { characterStatus: parsed.data.characterStatus }),
         ...(parsed.data.primaryKg !== undefined && { primaryKg: parsed.data.primaryKg }),
         ...(parsed.data.primaryAffinity !== undefined && { primaryAffinity: parsed.data.primaryAffinity }),
@@ -57,7 +59,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         ...(parsed.data.kekkeiGenkai !== undefined && { kekkeiGenkai: parsed.data.kekkeiGenkai }),
         ...(parsed.data.affinites !== undefined && { affinites: parsed.data.affinites }),
       },
-      select: { id: true },
+        select: { id: true },
+      });
+      if (parsed.data.characterStatus === "DEAD_MISSING") {
+        await tx.adminAlert.updateMany({
+          where: { userId: id, kind: "XP_BUDGET", isRead: false },
+          data: { isRead: true, title: "Budget XP gelé", body: "Personnage mort ou disparu : le contrôle XP est suspendu et le solde reste gelé." },
+        });
+      }
+      return updated;
     });
 
     return NextResponse.json({ user });

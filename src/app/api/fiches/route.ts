@@ -25,6 +25,7 @@ export async function GET(req: Request) {
       scope === "mine"
         ? {
             isActive: true,
+            NOT: { retiredParticipantIds: { has: me.id } },
             // Mes fiches + celles où je suis participant (type d'action COLLECTIVE).
             OR: [{ authorId: me.id }, { collaboratorIds: { has: me.id } }],
           }

@@ -225,6 +225,7 @@ export const shopConditionUnlockSchema = z.object({
 export type ShopConditionUnlockInput = z.infer<typeof shopConditionUnlockSchema>;
 
 export const shopRerollFtSchema = z.object({
+  operationId: z.string().uuid(),
   resetTechnique: z.literal(true),
   refundAndCharge: z.literal(true),
 });

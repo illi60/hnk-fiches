@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "test:xp": "node --import tsx --test tests/economy.test.ts",
+    "test:xp:integration": "prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script --output tests/.economy-test-schema.sql && node --import tsx tests/economy.integration.ts",
+    "reconcile:xp": "node --import tsx scripts/reconcile-forum-budget.ts",
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",

@@ -116,11 +116,12 @@ model User {
   passwordHash  String
   role          Role     @default(USER)
   canManageAdmins Boolean @default(false)
+  xpBudgetExempt Boolean @default(false) // comptes de test explicitement autorisés
 
   // Économie XP — voir lib/xp.ts pour les dérivés (niveau).
   // Le niveau N'EST JAMAIS stocké : il est recalculé à la volée.
   xpAvailable   Int      @default(0) // monnaie dépensable
-  xpTotalEarned Int      @default(0) // lifetime → drive le niveau
+  xpTotalEarned Int      @default(0) // miroir du total forum vérifié, sans crédits staff ni échanges
   version       Int      @default(0) // optimistic lock (cf. PLAYBOOK §2.3)
 
   // === Profil RP ===
@@ -149,10 +150,10 @@ model User {
 
   // === Sync forum Hi no Kuni ===
   forumProfileUrl    String?   // ex: https://hinokuni.forumactif.com/u1
-  forumUserId        Int?      // ID numérique parsé de l'URL
+  forumUserId        Int? @unique // une source forum ne finance qu'un seul compte
   forumPseudo        String?   // dernier pseudo connu sur le forum
   forumAvatar        String?   // URL de l'avatar forum (CDN 2img.net)
-  forumLastXp        Int?      // dernière valeur XP lue (pour calcul delta)
+  forumLastXp        Int?      // source du budget XP, y compris en cas de baisse
   forumLastRang      String?   // dernier rang lu (pour audit)
   forumPresentationUrl String?
   forumCarnetUrl     String?
@@ -234,6 +235,7 @@ model FicheTechnique {
   // Type d'action COLLECTIVE (jouée à 2-3) : participants co-payeurs
   collaborators   String[]    @default([]) // pseudos saisis (audit / affichage)
   collaboratorIds String[]    @default([]) // IDs résolus (partage du coût + affichage croisé)
+  retiredParticipantIds String[] @default([]) // droits retirés par un reset ; auteur conservé pour l'audit
 
   coutXp          Int         @default(0)
 

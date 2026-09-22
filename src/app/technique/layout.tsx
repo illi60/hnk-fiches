@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getArtState, type ArtsState } from "@/lib/arts";
 import LogoutButton from "@/components/LogoutButton";
+import { loadEconomy } from "@/lib/economy-server";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -20,6 +21,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const artsState = ((dbUser?.artsState ?? {}) as unknown) as ArtsState;
   const hasKuchiyose = !!getArtState(artsState, "kuchiyose").unlocked;
   const hasClan = !!dbUser?.clan;
+  const economy = await loadEconomy(prisma, session.user.id);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -59,7 +61,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <LogoutButton className="hnk-btn-ghost !py-2 !px-4 !text-[10px]" />
         </div>
       </header>
-      <main className="flex-1 max-w-6xl w-full mx-auto px-6 py-10">{children}</main>
+      <main className="flex-1 max-w-6xl w-full mx-auto px-6 py-10">
+        {(economy.deficit > 0 || economy.anomalies.length > 0 || !economy.linked) && <div role="alert" className="mb-6 rounded border border-ember/40 bg-ink-700 p-4 text-sm">
+          {!economy.linked ? "Un profil forum vérifié est nécessaire pour dépenser des XP." : `Budget XP à régulariser : ${economy.deficit} XP de déficit. Les nouvelles dépenses sont bloquées ; le staff a accès au détail. Les gains forum futurs et les échanges reçus sont pris en compte automatiquement.`}
+        </div>}
+        {children}
+      </main>
     </div>
   );
 }

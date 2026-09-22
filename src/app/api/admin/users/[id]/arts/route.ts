@@ -16,7 +16,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     await prisma.user.update({
       where: { id },
-      data: { artsState: parsed.data.artsState as unknown as Prisma.InputJsonValue },
+      data: { artsState: parsed.data.artsState as unknown as Prisma.InputJsonValue, version: { increment: 1 } },
     });
     return NextResponse.json({ ok: true });
   } catch (e) {

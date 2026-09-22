@@ -3,14 +3,14 @@ import { notFound } from "next/navigation";
 
 import { adminAlertKindLabel, repairAdminAlertText } from "@/lib/admin-alerts";
 import { prisma } from "@/lib/prisma";
-import { requireFicheModerator } from "@/lib/permissions";
+import { requireAdmin } from "@/lib/permissions";
 
 export default async function AdminAlertDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const me = await requireFicheModerator();
+  await requireAdmin();
   const { id } = await params;
 
   const alert = await prisma.adminAlert.findUnique({
@@ -77,11 +77,9 @@ export default async function AdminAlertDetailPage({
               <Link href="/admin/alertes" className="hnk-btn-ghost !py-2 !px-4 !text-[10px]">
                 Retour aux alertes
               </Link>
-              {me.role === "ADMIN" && (
-                <Link href={`/admin/users/${alert.user.id}`} className="hnk-btn-ghost !py-2 !px-4 !text-[10px]">
-                  Voir le joueur
-                </Link>
-              )}
+              <Link href={`/admin/users/${alert.user.id}`} className="hnk-btn-ghost !py-2 !px-4 !text-[10px]">
+                Voir le joueur
+              </Link>
             </div>
           </div>
 

@@ -56,7 +56,7 @@ export default async function ProgressionPage() {
   if (!user) redirect("/login");
 
   const clanKey = clanScopeKey(user.clan);
-  const xpSelf = user.forumLastXp ?? user.xpTotalEarned ?? 0;
+  const xpSelf = user.forumLastXp ?? 0;
 
   const subSelect = {
     id: true,

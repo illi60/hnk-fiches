@@ -3,6 +3,16 @@ import { Prisma, type TradeSide } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { loadShopItemsByKeys } from "@/lib/shop-server";
 import { isTradeableShopItem, type ShopItem } from "@/lib/shop";
+import { economyTransaction, loadEconomy, refreshForumEconomy } from "@/lib/economy-server";
+
+async function tradeEconomyTransaction<T>(userId: string, tradeId: string, action: (tx: Prisma.TransactionClient) => Promise<T>, recovery = false) {
+  const trade = await prisma.trade.findUnique({ where: { id: tradeId } });
+  if (!trade) throw new Error("TRADE_NOT_FOUND");
+  sideForUser(trade, userId);
+  const ids = [trade.initiatorId, trade.recipientId].sort();
+  if (!recovery) for (const id of ids) await refreshForumEconomy(id);
+  return economyTransaction(ids, action, { allowDeficit: true, recovery });
+}
 
 export type TradeLineInput = {
   itemKey: string;
@@ -311,7 +321,7 @@ export async function createTrade({
 
 export async function acceptTradeStep(userId: string, tradeId: string) {
   const include = await tradeInclude();
-  const trade = await prisma.$transaction(async (tx) => {
+  const trade = await tradeEconomyTransaction(userId, tradeId, async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`hnk_trade_${tradeId}`}))`;
     const trade = await tx.trade.findUnique({ where: { id: tradeId }, include: { items: true } });
     if (!trade) throw new Error("TRADE_NOT_FOUND");
@@ -328,6 +338,10 @@ export async function acceptTradeStep(userId: string, tradeId: string) {
     }
 
     if (trade.status !== "FINAL_PENDING") throw new Error("TRADE_INVALID_STATE");
+    // A forum decrease after reservation must not let unfunded XP leave the account.
+    for (const [id, offered] of [[trade.initiatorId, trade.initiatorXpOffered], [trade.recipientId, trade.recipientXpOffered]] as const) {
+      if (offered > 0 && (await loadEconomy(tx, id)).deficit > 0) throw new Error("XP_BUDGET_EXCEEDED");
+    }
     const data = { [finalField(side)]: true };
     const initiatorAccepted = side === "INITIATOR" ? true : trade.initiatorFinalAccepted;
     const recipientAccepted = side === "RECIPIENT" ? true : trade.recipientFinalAccepted;
@@ -358,7 +372,7 @@ export async function submitTradeOffer(userId: string, tradeId: string, input: {
   const catalogByKey = await loadTradeableCatalog(lines.map((line) => line.itemKey));
   const include = await tradeInclude();
 
-  const trade = await prisma.$transaction(async (tx) => {
+  const trade = await tradeEconomyTransaction(userId, tradeId, async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`hnk_trade_${tradeId}`}))`;
     const trade = await tx.trade.findUnique({ where: { id: tradeId }, include: { items: true } });
     if (!trade) throw new Error("TRADE_NOT_FOUND");
@@ -425,7 +439,7 @@ async function releaseTradeReservations(tx: Prisma.TransactionClient, trade: Pri
 
 export async function cancelTrade(userId: string, tradeId: string) {
   const include = await tradeInclude();
-  const trade = await prisma.$transaction(async (tx) => {
+  const trade = await tradeEconomyTransaction(userId, tradeId, async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`hnk_trade_${tradeId}`}))`;
     const trade = await tx.trade.findUnique({ where: { id: tradeId }, include: { items: true } });
     if (!trade) throw new Error("TRADE_NOT_FOUND");
@@ -437,13 +451,13 @@ export async function cancelTrade(userId: string, tradeId: string) {
       data: { status: "CANCELLED", cancelledAt: new Date() },
       include,
     });
-  });
+  }, true);
   return withMessages(trade);
 }
 
 export async function declineTrade(userId: string, tradeId: string) {
   const include = await tradeInclude();
-  const trade = await prisma.$transaction(async (tx) => {
+  const trade = await tradeEconomyTransaction(userId, tradeId, async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`hnk_trade_${tradeId}`}))`;
     const trade = await tx.trade.findUnique({ where: { id: tradeId }, include: { items: true } });
     if (!trade) throw new Error("TRADE_NOT_FOUND");
@@ -455,13 +469,13 @@ export async function declineTrade(userId: string, tradeId: string) {
       data: { status: "DECLINED", declinedAt: new Date() },
       include,
     });
-  });
+  }, true);
   return withMessages(trade);
 }
 
 export async function renegotiateTrade(userId: string, tradeId: string) {
   const include = await tradeInclude();
-  const trade = await prisma.$transaction(async (tx) => {
+  const trade = await tradeEconomyTransaction(userId, tradeId, async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`hnk_trade_${tradeId}`}))`;
     const trade = await tx.trade.findUnique({ where: { id: tradeId }, include: { items: true } });
     if (!trade) throw new Error("TRADE_NOT_FOUND");
@@ -484,7 +498,7 @@ export async function renegotiateTrade(userId: string, tradeId: string) {
       },
       include,
     });
-  });
+  }, true);
   return withMessages(trade);
 }
 

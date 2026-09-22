@@ -127,7 +127,7 @@ export async function loadLadder(): Promise<LadderData> {
   }
 
   const players: LadderPlayer[] = users.map((u) => {
-    const xp = u.forumLastXp ?? u.xpTotalEarned ?? 0;
+    const xp = u.forumLastXp ?? 0;
     return {
       id: u.id,
       name: (u.forumPseudo ?? u.username) || u.username,

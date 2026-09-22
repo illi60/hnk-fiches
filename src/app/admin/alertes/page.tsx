@@ -1,11 +1,12 @@
 import AdminAlertCards, { type AdminAlertCardView } from "@/components/AdminAlertCards";
 import { prisma } from "@/lib/prisma";
-import { requireFicheModerator } from "@/lib/permissions";
+import { requireAdmin } from "@/lib/permissions";
 
 export default async function AdminAlertsPage() {
-  await requireFicheModerator();
+  await requireAdmin();
 
   const rows = await prisma.adminAlert.findMany({
+    where: { OR: [{ kind: { not: "XP_BUDGET" } }, { user: { characterStatus: "ACTIVE", role: "USER", xpBudgetExempt: false } }] },
     orderBy: [{ isRead: "asc" }, { createdAt: "desc" }],
     take: 80,
     select: {

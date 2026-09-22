@@ -16,16 +16,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const parsed = adminQuintSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ ok: false, error: "INVALID" }, { status: 400 });
 
-    const user = await prisma.user.findUnique({ where: { id }, select: { progressionState: true } });
+    const user = await prisma.user.findUnique({ where: { id }, select: { progressionState: true, version: true } });
     if (!user) return NextResponse.json({ ok: false, error: "NOT_FOUND" }, { status: 404 });
 
     const state = ((user.progressionState ?? {}) as unknown) as ProgressionState;
     state.quintessences = parsed.data.quintessences;
 
-    await prisma.user.update({
-      where: { id },
-      data: { progressionState: state as unknown as Prisma.InputJsonValue },
+    const changed = await prisma.user.updateMany({
+      where: { id, version: user.version },
+      data: { progressionState: state as unknown as Prisma.InputJsonValue, version: { increment: 1 } },
     });
+    if (!changed.count) throw new Error("CONFLICT");
     return NextResponse.json({ ok: true });
   } catch (e) {
     return jsonError(e);

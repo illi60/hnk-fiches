@@ -151,7 +151,7 @@ export default async function AdminProgressionPage() {
       allUsers.map((u) => {
         const up: UserProgress = {
           countByCond: countsByUser.get(u.id) ?? {},
-          xpSelf: u.forumLastXp ?? u.xpTotalEarned ?? 0,
+          xpSelf: u.forumLastXp ?? 0,
         };
         return [
           u.id,

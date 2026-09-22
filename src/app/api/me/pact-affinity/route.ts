@@ -23,7 +23,7 @@ export async function POST(req: Request) {
 
     const user = await prisma.user.findUnique({
       where: { id: me.id },
-      select: { pactAffinities: true, progressionState: true, pactSpecies: true },
+      select: { version: true, pactAffinities: true, progressionState: true, pactSpecies: true },
     });
     if (!user) return NextResponse.json({ ok: false, error: "NOT_FOUND" }, { status: 404 });
 
@@ -49,13 +49,15 @@ export async function POST(req: Request) {
         ? parsed.data.species.trim()
         : undefined;
 
-    await prisma.user.update({
-      where: { id: me.id },
+    const changed = await prisma.user.updateMany({
+      where: { id: me.id, version: user.version },
       data: {
         pactAffinities: { push: el },
+        version: { increment: 1 },
         ...(speciesToSet ? { pactSpecies: speciesToSet } : {}),
       },
     });
+    if (!changed.count) throw new Error("CONFLICT");
     return NextResponse.json({ ok: true });
   } catch (e) {
     return jsonError(e);

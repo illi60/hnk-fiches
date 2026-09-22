@@ -50,6 +50,8 @@ export default async function FicheDetailPage({
       status: true,
       rejectionReason: true,
       authorId: true,
+      collaboratorIds: true,
+      retiredParticipantIds: true,
       author: { select: { role: true } },
       isActive: true,
       invocationId: true,
@@ -64,6 +66,7 @@ export default async function FicheDetailPage({
   });
 
   if (!fiche || !fiche.isActive) notFound();
+  if (fiche.retiredParticipantIds.includes(session.user.id) && session.user.role !== "ADMIN") notFound();
 
   // Profil du lecteur courant : les techniques collectives affichent leurs spés
   // selon celui qui les copie, pas selon l'auteur.
@@ -80,7 +83,7 @@ export default async function FicheDetailPage({
     !canViewSharedKinjutsu
   )
     notFound();
-  if (fiche.authorId !== session.user.id && session.user.role !== "ADMIN" && !canViewSharedKinjutsu)
+  if (fiche.authorId !== session.user.id && !fiche.collaboratorIds.includes(session.user.id) && session.user.role !== "ADMIN" && !canViewSharedKinjutsu)
     notFound();
 
   // Seule la version validée est figée. Une fiche en attente peut encore être corrigée.

@@ -39,6 +39,7 @@ export async function GET() {
         nature: "COLLECTIVE",
         status: "VALIDATED",
         isActive: true,
+        NOT: { retiredParticipantIds: { has: me.id } },
         author: { characterStatus: "ACTIVE" },
       },
       orderBy: { nom: "asc" },

@@ -67,7 +67,7 @@ async function scopeProgress(track: ProgTrack, user: ShopUnlockUser): Promise<{ 
 async function userProgress(user: ShopUnlockUser): Promise<UserProgress> {
   return {
     countByCond: await loadUserCounts(user.id),
-    xpSelf: user.forumLastXp ?? user.xpTotalEarned ?? 0,
+    xpSelf: user.forumLastXp ?? 0,
   };
 }
 
