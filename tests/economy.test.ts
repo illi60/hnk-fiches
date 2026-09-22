@@ -100,6 +100,13 @@ test('reconciliation records never feed back into expenditure or source', () => 
   const entries = [e('p', -20, 'ARTS_SPEND'), e('fix', -500, 'FORUM_SYNC', 2, {source: 'FORUM_BUDGET_RECONCILIATION'})];
   assert.equal(projectEconomy('u', 100, entries, []).available, 80);
 });
+test('pre-push restoration preserves a legacy balance while forum XP remains authoritative', () => {
+  const entries = [e('spent', -80, 'SHOP_SPEND'), e('restore', 0, 'FORUM_SYNC', 2, {source: 'XP_PRE_PUSH_BALANCE_RESTORE', adjustment: 30})];
+  const account = projectEconomy('u', 100, entries, []);
+  assert.equal(account.available, 50);
+  assert.equal(account.legacyAdjustment, 30);
+  assert.equal(projectEconomy('u', 110, entries, []).available, 60);
+});
 test('conservation holds across all combinations of forum, payments and trades', () => {
   for (let forum = 0; forum <= 100; forum += 10) for (let paid = 0; paid <= 150; paid += 10) for (let incoming = 0; incoming <= 50; incoming += 10) {
     const account = projectEconomy('u', forum, [e('p', -paid, 'FICHE_VALIDATED')], [trade('ACCEPTED', 20, incoming)]);
