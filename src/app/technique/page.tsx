@@ -77,7 +77,6 @@ export default async function DashboardPage() {
   if (!user) redirect("/login");
   const economy = await loadEconomy(prisma, user.id);
   user.xpAvailable = economy.available;
-  user.xpTotalEarned = economy.forumXp;
   const hasClan = !!user.clan && !isNoClan(user.clan);
 
   const totalXp = user.forumLastXp ?? 0;

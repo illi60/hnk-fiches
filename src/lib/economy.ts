@@ -7,6 +7,7 @@ export type EconomyTrade = {
 export const TECHNICAL_REASONS = new Set(['FICHE_VALIDATED', 'ARTS_SPEND']);
 const COST_REASONS = new Set([...TECHNICAL_REASONS, 'QUINTESSENCE_SPEND', 'PROGRESSION_SPEND', 'SHOP_SPEND', 'ADMIN_REMOVE']);
 export const ECONOMY_BASELINE_SOURCE = 'XP_BUDGET_BASELINE';
+export const ECONOMY_PRE_PUSH_RESTORE_SOURCE = 'XP_PRE_PUSH_BALANCE_RESTORE';
 export function metadataObject(value: unknown): Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
 }
@@ -88,12 +89,18 @@ export function projectEconomy(userId: string, forumXp: number | null, entries: 
     if (trade.status === 'ACCEPTED') { incoming += received; outgoing += sent; }
     else if (['REQUESTED', 'NEGOTIATING', 'FINAL_PENDING'].includes(trade.status)) reserved += sent;
   }
+  const legacyAdjustment = ordered.reduce((sum, entry) => {
+    const meta = metadataObject(entry.metadata);
+    if (entry.reason !== 'FORUM_SYNC' || meta.source !== ECONOMY_PRE_PUSH_RESTORE_SOURCE) return sum;
+    const adjustment = meta.adjustment;
+    return typeof adjustment === 'number' && Number.isSafeInteger(adjustment) ? sum + adjustment : sum;
+  }, 0);
   const spent = [...remaining.values()].reduce((sum, debit) => sum + debit.amount, 0);
   const source = Math.max(0, forumXp ?? 0);
-  const budget = source + incoming - outgoing;
+  const budget = source + incoming - outgoing + legacyAdjustment;
   const rawAvailable = budget - spent - reserved;
   return {
-    forumXp: source, linked: forumXp !== null, budget, incoming, outgoing, reserved, spent, refunds,
+    forumXp: source, linked: forumXp !== null, budget, incoming, outgoing, reserved, spent, refunds, legacyAdjustment,
     available: Math.max(0, rawAvailable), deficit: Math.max(0, -rawAvailable), anomalies,
     baselineApplied: baselineIndex >= 0,
     outstanding: [...remaining.values()].filter(debit => debit.amount > 0),
