@@ -4,11 +4,13 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/permissions";
 import AdminUserPanel from "@/components/AdminUserPanel";
+import AdminUserInventory from "@/components/AdminUserInventory";
 import { AdminDeleteFicheButton, AdminDeleteInvocationButton } from "@/components/AdminDeleteButtons";
 import { levelProgress } from "@/lib/xp";
 import { loadKgNames } from "@/lib/kekkei-server";
 import { hasInvocationRankColumn } from "@/lib/invocation-schema";
 import { XP_AUDIT_REASONS, xpAudit, type XpAudit, type XpReasonSums } from "@/lib/xp-audit";
+import { loadShopItems, loadShopItemsByKeys } from "@/lib/shop-server";
 
 export default async function AdminUserDetail({
   params,
@@ -20,7 +22,7 @@ export default async function AdminUserDetail({
   const kgNames = await loadKgNames();
   const hasInvRank = await hasInvocationRankColumn();
 
-  const [user, history, fiches, invocations, auditRows] = await Promise.all([
+  const [user, history, fiches, invocations, inventory, auditRows] = await Promise.all([
     prisma.user.findUnique({
       where: { id },
       select: {
@@ -96,6 +98,19 @@ export default async function AdminUserDetail({
         ...(hasInvRank ? { invocationRank: true } : {}),
       },
     }),
+    prisma.inventoryItem.findMany({
+      where: { userId: id },
+      orderBy: [{ itemName: "asc" }, { createdAt: "asc" }],
+      select: {
+        id: true,
+        itemKey: true,
+        itemName: true,
+        costXp: true,
+        quantity: true,
+        reservedQuantity: true,
+        createdAt: true,
+      },
+    }),
     prisma.xPTransaction.groupBy({
       by: ["reason"],
       where: { userId: id, reason: { in: XP_AUDIT_REASONS } },
@@ -104,6 +119,10 @@ export default async function AdminUserDetail({
   ]);
 
   if (!user) notFound();
+  const [inventoryCatalog, availableCatalog] = await Promise.all([
+    loadShopItemsByKeys(inventory.map((item) => item.itemKey)),
+    loadShopItems(),
+  ]);
   const reasonSums: XpReasonSums = {};
   for (const row of auditRows) reasonSums[row.reason] = row._sum.amount ?? 0;
   const [entries, trades] = await Promise.all([
@@ -164,6 +183,17 @@ export default async function AdminUserDetail({
           currentUserId={me.id}
           canManageAdmins={me.canManageAdmins}
           kgNames={kgNames}
+        />
+
+        <AdminUserInventory
+          userId={user.id}
+          username={user.username}
+          inventory={inventory.map((item) => ({
+            ...item,
+            createdAt: item.createdAt.toISOString(),
+          }))}
+          catalog={inventoryCatalog}
+          availableCatalog={availableCatalog}
         />
 
       <section>
