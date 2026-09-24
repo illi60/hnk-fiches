@@ -33,6 +33,16 @@ test('administrative grants, registration bonuses and old forum credits cannot f
   const account = projectEconomy('u', 100, [e('gift', 1000, 'ADMIN_GRANT'), e('bonus', 500, 'REGISTRATION_BONUS'), e('sync', 2000, 'FORUM_SYNC')], []);
   assert.equal(account.available, 100); assert.equal(account.budget, 100);
 });
+test('audited staff adjustments survive forum sync and cannot refund removals', () => {
+  const metadata = { source: 'XP_ADMIN_ADJUSTMENT' };
+  const entries = [e('credit', 60, 'ADMIN_GRANT', 1, metadata), e('remove', -20, 'ADMIN_REMOVE', 2, metadata)];
+  assert.equal(projectEconomy('u', 100, entries, []).available, 140);
+  assert.equal(projectEconomy('u', 110, entries, []).available, 150);
+  assert.equal(projectEconomy('u', 100, entries, [trade('REQUESTED', 30)]).available, 110);
+  const refund = e('refund', 20, 'FICHE_REJECTED_REFUND', 3, { allocations: [{ debitId: 'remove', amount: 20 }] });
+  assert.equal(projectEconomy('u', 100, [...entries, refund], []).available, 140);
+});
+
 test('a forum decrease and subsequent recovery do not mint XP', () => {
   const entries = [e('paid', -30, 'ARTS_SPEND'), e('oldsync', 100, 'FORUM_SYNC')];
   assert.equal(projectEconomy('u', 100, entries, []).available, 70);

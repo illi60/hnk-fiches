@@ -1,4 +1,4 @@
-/** Authoritative XP accounting. Balances and grants are never sources of funds. */
+/** Authoritative XP accounting, including explicitly audited staff adjustments. */
 export type EconomyEntry = { id: string; amount: number; reason: string; metadata: unknown; createdAt: Date };
 export type EconomyTrade = {
   status: string; initiatorId: string; recipientId: string;
@@ -8,6 +8,7 @@ export const TECHNICAL_REASONS = new Set(['FICHE_VALIDATED', 'ARTS_SPEND']);
 const COST_REASONS = new Set([...TECHNICAL_REASONS, 'QUINTESSENCE_SPEND', 'PROGRESSION_SPEND', 'SHOP_SPEND', 'ADMIN_REMOVE']);
 export const ECONOMY_BASELINE_SOURCE = 'XP_BUDGET_BASELINE';
 export const ECONOMY_PRE_PUSH_RESTORE_SOURCE = 'XP_PRE_PUSH_BALANCE_RESTORE';
+export const ECONOMY_ADMIN_ADJUSTMENT_SOURCE = 'XP_ADMIN_ADJUSTMENT';
 export function metadataObject(value: unknown): Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
 }
@@ -97,7 +98,11 @@ export function projectEconomy(userId: string, forumXp: number | null, entries: 
   }, 0);
   const spent = [...remaining.values()].reduce((sum, debit) => sum + debit.amount, 0);
   const source = Math.max(0, forumXp ?? 0);
-  const budget = source + incoming - outgoing + legacyAdjustment;
+  // Legacy grants remain excluded; removals already count in COST_REASONS.
+  const staffGranted = ordered.reduce((sum, entry) =>
+    entry.reason === 'ADMIN_GRANT' && entry.amount > 0 && metadataObject(entry.metadata).source === ECONOMY_ADMIN_ADJUSTMENT_SOURCE
+      ? sum + entry.amount : sum, 0);
+  const budget = source + incoming - outgoing + legacyAdjustment + staffGranted;
   const rawAvailable = budget - spent - reserved;
   return {
     forumXp: source, linked: forumXp !== null, budget, incoming, outgoing, reserved, spent, refunds, legacyAdjustment,

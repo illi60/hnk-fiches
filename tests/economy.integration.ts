@@ -39,6 +39,7 @@ async function main() {
     const {getOrSyncUser} = await import('../src/lib/forum-sync');
     const {resetTechniques} = await import('../src/lib/technical-reset-server');
     const {validateFiche} = await import('../src/lib/fiche-validation-server');
+    const {adjustAdminXp} = await import('../src/lib/admin-xp-server');
     const {createTrade,acceptTradeStep,submitTradeOffer,cancelTrade} = await import('../src/lib/trades-server');
     const {loadShopItemByKey,loadShopItems,assertShopItemsActive} = await import('../src/lib/shop-server');
     let forumId = 900000;
@@ -56,6 +57,20 @@ async function main() {
       });
     }
     async function check(name:string,fn:()=>Promise<void>) {await fn();outcomes.push({name,ok:true});console.log('PASS '+name);}
+
+    await check('manual XP adjustments persist, deduplicate and reject overdrafts',async()=>{
+      const u=await user();
+      const input={userId:u.id,amount:60,note:'Correction staff',operationId:randomUUID()};
+      await Promise.all([adjustAdminXp(u.id,input),adjustAdminXp(u.id,input)]);
+      assert.equal((await refreshForumEconomy(u.id)).available,160);
+      assert.equal(await db.xPTransaction.count({where:{userId:u.id,reason:'ADMIN_GRANT'}}),1);
+      await adjustAdminXp(u.id,{...input,amount:-40,operationId:randomUUID()});
+      assert.equal((await refreshForumEconomy(u.id)).available,120);
+      await assert.rejects(adjustAdminXp(u.id,{...input,amount:-121,operationId:randomUUID()}),/INSUFFICIENT_XP/);
+      assert.equal((await loadEconomy(db,u.id)).available,120);
+      await db.user.update({where:{id:u.id},data:{characterStatus:'DEAD_MISSING'}});
+      await assert.rejects(adjustAdminXp(u.id,{...input,operationId:randomUUID()}),/CHARACTER_FROZEN/);
+    });
 
     await check('two simultaneous purchases cannot spend the same funds',async()=>{
       const u=await user(); const results=await Promise.allSettled([spend(u.id,80),spend(u.id,80)]);

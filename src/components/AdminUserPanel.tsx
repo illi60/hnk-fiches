@@ -81,6 +81,7 @@ export default function AdminUserPanel({
         currentUserId={currentUserId}
         canManageAdmins={canManageAdmins}
       />
+      {user.characterStatus !== "DEAD_MISSING" && <ManualXpForm key={`xp-${user.id}`} userId={user.id} />}
       {user.characterStatus === "DEAD_MISSING" ? (
         <section className="border border-white/5 bg-ink-700 p-4">
           <h3 className="text-sm font-semibold">XP du forum et reset technique</h3>
@@ -456,6 +457,65 @@ function RoleForm({
 
 // ===== XP =====
 
+function ManualXpForm({ userId }: { userId: string }) {
+  const router = useRouter();
+  const [amount, setAmount] = useState("");
+  const [note, setNote] = useState("");
+  const [message, setMessage] = useState("");
+  const [retry, setRetry] = useState<{ operationId: string; amount: number; note: string } | null>(null);
+  const [pending, start] = useTransition();
+  const value = Number(amount);
+  const valid = Number.isInteger(value) && value > 0 && value <= 2147483647 && note.trim().length > 0;
+
+  function submit(direction: 1 | -1) {
+    if (pending || (!retry && !valid)) return;
+    const operation = retry ?? { operationId: crypto.randomUUID(), amount: direction * value, note: note.trim() };
+    setRetry(operation);
+    setMessage("");
+    start(async () => {
+      try {
+        const response = await fetch('/api/admin/xp', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, ...operation }),
+        });
+        const data = await response.json();
+        if (!response.ok || !data.ok) {
+          if (response.status < 500) setRetry(null);
+          setMessage(data.error === 'INSUFFICIENT_XP' ? 'Solde insuffisant pour ce retrait.'
+            : data.error === 'CHARACTER_FROZEN' ? 'Les XP de ce personnage sont gelés.'
+            : 'Ajustement refusé. Réessayez ou vérifiez le compte.');
+          return;
+        }
+        setRetry(null); setAmount(""); setNote("");
+        setMessage(`${Math.abs(operation.amount)} XP ${operation.amount > 0 ? 'ajoutés' : 'retirés'}.`);
+        router.refresh();
+      } catch {
+        setMessage('Connexion interrompue. Réessayez la même opération : elle ne sera pas appliquée deux fois.');
+      }
+    });
+  }
+
+  return <section className="border border-ember/20 bg-ink-700 p-4 space-y-3">
+    <h3 className="text-sm font-semibold">Ajustement manuel d’XP</h3>
+    <p className="text-sm text-smoke">Modifie la réserve disponible. Le motif et l’administrateur sont enregistrés dans l’historique.</p>
+    <label className="block text-sm">Montant XP
+      <input type="number" min={1} max={2147483647} step={1} value={amount} disabled={pending || !!retry}
+        onChange={e => setAmount(e.target.value)} className="block w-full bg-ink-900 border border-white/10 px-3 py-2 text-bone" />
+    </label>
+    <label className="block text-sm">Motif
+      <input type="text" maxLength={500} value={note} disabled={pending || !!retry}
+        onChange={e => setNote(e.target.value)} className="block w-full bg-ink-900 border border-white/10 px-3 py-2 text-bone" />
+    </label>
+    <div className="flex flex-wrap gap-3">
+      {retry ? <button onClick={() => submit(1)} disabled={pending} className="px-4 py-2 bg-ember text-black disabled:opacity-50">{pending ? 'Enregistrement…' : 'Réessayer l’opération'}</button> : <>
+        <button onClick={() => submit(1)} disabled={pending || !valid} className="px-4 py-2 bg-ember text-black disabled:opacity-50">Ajouter les XP</button>
+        <button onClick={() => submit(-1)} disabled={pending || !valid} className="px-4 py-2 border border-red-400 text-red-300 disabled:opacity-50">Retirer les XP</button>
+      </>}
+    </div>
+    {message && <p role="status" className="text-sm text-bone">{message}</p>}
+  </section>;
+}
+
 function XpForm({ userId }: { userId: string }) {
   const router = useRouter();
   const [confirmed, setConfirmed] = useState(false);
@@ -481,7 +541,7 @@ function XpForm({ userId }: { userId: string }) {
   }
   return <section className="border border-ember/20 bg-ink-700 p-4 space-y-3">
     <h3 className="text-sm font-semibold">XP du forum et reset technique</h3>
-    <p className="text-sm text-smoke">Le forum fixe le budget XP. Seuls les échanges finalisés peuvent le modifier sur le site. Les dons et retraits manuels sont désactivés.</p>
+    <p className="text-sm text-smoke">Le budget XP tient compte du forum, des échanges finalisés et des ajustements manuels du staff.</p>
     <label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={confirmed} disabled={pending} onChange={e => setConfirmed(e.target.checked)} />
       Réinitialiser les techniques, arts, invocations et affinités de ce joueur, en remboursant uniquement ses paiements encore éligibles. Ce reset staff ne facture pas de jeton et conserve les rangs et achats.</label>
     <button className="hnk-btn-primary" disabled={!confirmed || pending} onClick={reset}>{pending ? 'Vérification…' : 'Effectuer le reset audité'}</button>

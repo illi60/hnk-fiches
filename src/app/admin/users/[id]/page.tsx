@@ -406,7 +406,7 @@ function LiveMemberView({
           )}
         </div>
         <div className="grid sm:grid-cols-5 gap-3 mt-3">
-          <AuditStat label="Budget forum + échanges" value={audit.sourceXp} />
+          <AuditStat label="Budget forum + échanges + crédits staff" value={audit.sourceXp} />
           <AuditStat label="Réserve" value={user.xpAvailable} />
           <AuditStat label="Dépenses méca" value={audit.xpSpentTotal} />
           <AuditStat label="Ajust. staff" value={audit.staffNet} signed />
@@ -418,7 +418,7 @@ function LiveMemberView({
             : user.role !== "USER" || user.xpBudgetExempt
               ? "Le compte staff ou test est exclu du blocage automatique des dépenses XP."
             : <>Le budget autorisé correspond à l’XP du forum, augmentée des échanges reçus et diminuée
-              des échanges envoyés. Les anciens crédits staff ne créent aucun budget. Seuls les
+              des échanges envoyés, avec les nouveaux crédits manuels du staff. Les anciens crédits staff ne créent aucun budget. Seuls les
               remboursements rattachés à une dépense réelle réduisent les dépenses comptabilisées.
               {audit.missingXp > 0 && ` Écart négatif observé : ${audit.missingXp} XP.`}</>}
         </p>
