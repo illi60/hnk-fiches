@@ -3,6 +3,40 @@ import { prisma } from '@/lib/prisma';
 import { requireAdmin, jsonError } from '@/lib/permissions';
 import { adminForumLinkSchema } from '@/lib/validators';
 import { lockEconomyUsers, reconcileEconomy } from '@/lib/economy-server';
+
+async function linkNewForumProfile(id: string, forumUserId: number) {
+  const current = await prisma.user.findUnique({
+    where: { id },
+    select: { forumUserId: true },
+  });
+  if (!current) throw new Error('NOT_FOUND');
+
+  // La première liaison d'un nouveau compte ne touche pas encore à son
+  // économie : la première synchronisation forum initialisera le budget XP.
+  // Elle ne doit donc dépendre d'aucun verrou ni d'aucune réconciliation.
+  if (current.forumUserId === null) {
+    const other = await prisma.user.findFirst({
+      where: { forumUserId, NOT: { id } },
+      select: { id: true },
+    });
+    if (other) throw new Error('DUPLICATE');
+
+    return prisma.user.update({
+      where: { id },
+      data: {
+        forumUserId,
+        forumProfileUrl: `https://hinokuni.forumactif.com/u${forumUserId}`,
+        forumLastXp: null,
+        forumLastSyncAt: null,
+        forumLastSyncError: null,
+      },
+      select: { id: true, forumUserId: true, forumProfileUrl: true },
+    });
+  }
+
+  return updateLink(id, forumUserId);
+}
+
 async function updateLink(id: string, forumUserId: number | null) {
   return prisma.$transaction(async tx => {
     await lockEconomyUsers(tx, [id]);
@@ -40,7 +74,7 @@ export async function PATCH(req:Request,{params}:{params:Promise<{id:string}>}) 
     if(!parsed.success) return NextResponse.json({error:'INVALID'},{status:400});
     const match=parsed.data.forumProfileUrl.match(/\/u(\d+)/);
     if(!match) return NextResponse.json({error:'INVALID'},{status:400});
-    return NextResponse.json({user:await updateLink(id,Number(match[1]))});
+    return NextResponse.json({user:await linkNewForumProfile(id,Number(match[1]))});
   } catch(error){return jsonError(error);}
 }
 export async function DELETE(_req:Request,{params}:{params:Promise<{id:string}>}) {
