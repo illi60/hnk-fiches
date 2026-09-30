@@ -1130,7 +1130,15 @@ function ForumLinkPanel({ user }: { user: AdminUser }) {
         router.refresh();
       } else {
         const j = await res.json().catch(() => ({}));
-        setMsg(j.error === "DUPLICATE" ? "Ce profil est déjà lié." : "Erreur.");
+        setMsg(
+          j.error === "DUPLICATE"
+            ? "Ce profil est déjà lié."
+            : j.error === "INVALID"
+            ? "Lien invalide : colle l’URL du profil au format https://hinokuni.forumactif.com/u123."
+            : j.error === "XP_ACCOUNT_HAS_HISTORY"
+            ? "Ce compte possède déjà un historique XP lié à un autre profil forum."
+            : "Impossible d’enregistrer le lien forum."
+        );
       }
     });
   }

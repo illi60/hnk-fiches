@@ -450,6 +450,7 @@ export const adminQuintSchema = z.object({
 export const adminForumLinkSchema = z.object({
   forumProfileUrl: z
     .string()
+    .trim()
     .url()
     .refine((u) => /\/u\d+/.test(u), "URL doit pointer vers /u<ID>"),
 });
