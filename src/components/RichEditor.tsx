@@ -141,6 +141,21 @@ function sanitizeHtml(raw: string): string {
   return box.innerHTML;
 }
 
+const IMPORTABLE_TAGS = new Set(
+  "a b blockquote br caption code div em figcaption figure font h1 h2 h3 h4 h5 h6 hr i img li ol p pre s span strike strong sub sup table tbody td th thead tr u ul".split(" ")
+);
+
+export function sanitizeImportedEditorHtml(raw: string): string {
+  const template = document.createElement("template");
+  template.innerHTML = raw;
+  template.content.querySelectorAll("*").forEach((element) => {
+    if (!IMPORTABLE_TAGS.has(element.localName) || element.namespaceURI !== "http://www.w3.org/1999/xhtml") {
+      element.remove();
+    }
+  });
+  return sanitizeHtml(template.innerHTML);
+}
+
 // Patterns that represent a "truly empty" contenteditable state.
 const EMPTY_PATTERNS = new Set([
   "",

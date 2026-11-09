@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { RichEditor } from "./RichEditor";
+import { RichEditor, sanitizeImportedEditorHtml } from "./RichEditor";
 import {
   ADMIN_CONTRACT_RANKS,
   MISSION_RANKS,
@@ -10,6 +10,7 @@ import {
   missionDefaultPartySize,
   missionDefaultReward,
   missionForumHtml,
+  parseMissionForumHtml,
   type MissionData,
   type MissionRank,
 } from "@/lib/missions";
@@ -25,11 +26,17 @@ export default function MissionGenerator({ mode = "public" }: Props) {
   const ranks = adminMode ? ADMIN_CONTRACT_RANKS : PUBLIC_MISSION_RANKS;
   const itemName = adminMode ? "contrat" : "mission";
   const storageKey = adminMode ? "hnk-admin-mission-draft" : "hnk-mission-draft";
+  const toolbarButtonSize = adminMode
+    ? "min-h-8 !px-4 !py-0 !text-sm !leading-none"
+    : "!py-1.5 !px-3 !text-[10px]";
   const [d, setD] = useState<MissionData>(() => emptyMission(ranks[0]));
   const [copied, setCopied] = useState(false);
   const [showCode, setShowCode] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importText, setImportText] = useState("");
+  const [importError, setImportError] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -118,6 +125,27 @@ export default function MissionGenerator({ mode = "public" }: Props) {
       reward: adminMode ? p.reward : missionDefaultReward(rankKey),
       partySize: adminMode ? p.partySize : missionDefaultPartySize(rankKey),
     }));
+  }
+
+  function importContract() {
+    const contract = parseMissionForumHtml(importText);
+    if (!contract) {
+      setImportError("Code non reconnu. Colle le code forum d’un contrat généré.");
+      return;
+    }
+    if (!ADMIN_CONTRACT_RANKS.includes(contract.rank)) {
+      setImportError("Seuls les contrats de rang B, A ou S peuvent être importés ici.");
+      return;
+    }
+
+    setD({
+      ...contract,
+      description: sanitizeImportedEditorHtml(contract.description),
+      conditions: sanitizeImportedEditorHtml(contract.conditions),
+    });
+    setImportText("");
+    setImportError(null);
+    setImportOpen(false);
   }
 
   async function copy() {
@@ -299,18 +327,61 @@ export default function MissionGenerator({ mode = "public" }: Props) {
               </span>
             )}
           </div>
-          <div className="flex gap-2">
-            <button type="button" className="hnk-btn-ghost !py-1.5 !px-3 !text-[10px]" onClick={resetAll}>
+          <div className={`flex flex-wrap ${adminMode ? "gap-[11px]" : "gap-2"}`}>
+            <button type="button" className={`hnk-btn-ghost ${toolbarButtonSize}`} onClick={resetAll}>
               Réinitialiser
             </button>
-            <button type="button" className="hnk-btn-ghost !py-1.5 !px-3 !text-[10px]" onClick={() => setShowCode((s) => !s)}>
+            {adminMode && (
+              <button
+                type="button"
+                className={`hnk-btn-ghost ${toolbarButtonSize}`}
+                aria-expanded={importOpen}
+                onClick={() => {
+                  setImportOpen((open) => !open);
+                  setImportError(null);
+                }}
+              >
+                {importOpen ? "Fermer l'import" : "Importer"}
+              </button>
+            )}
+            <button type="button" className={`hnk-btn-ghost ${toolbarButtonSize}`} onClick={() => setShowCode((s) => !s)}>
               {showCode ? "Masquer le code" : "Voir le code"}
             </button>
-            <button type="button" className="hnk-btn !py-1.5 !px-3 !text-[10px]" onClick={copy}>
+            <button type="button" className={`hnk-btn ${toolbarButtonSize}`} onClick={copy}>
               {copied ? "Copié" : "Copier le code forum"}
             </button>
           </div>
         </div>
+
+        {adminMode && importOpen && (
+          <div className="hnk-panel p-4 space-y-2">
+            <Field label="Code forum du contrat">
+              <textarea
+                className="hnk-input w-full h-32 font-mono text-[11px] leading-relaxed"
+                placeholder="Colle ici le HTML complet d’un contrat généré."
+                value={importText}
+                onChange={(e) => {
+                  setImportText(e.target.value);
+                  setImportError(null);
+                }}
+              />
+            </Field>
+            <p className="text-smoke text-[11px]">
+              Le contrat importé remplacera le brouillon actuel.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                className="hnk-btn !py-1.5 !px-3 !text-[10px]"
+                onClick={importContract}
+                disabled={!importText.trim()}
+              >
+                Charger le contrat
+              </button>
+              {importError && <span role="alert" className="text-xs text-bone">{importError}</span>}
+            </div>
+          </div>
+        )}
 
         <iframe
           ref={iframeRef}

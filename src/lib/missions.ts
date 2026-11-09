@@ -126,3 +126,39 @@ export function missionForumHtml(d: MissionData, kind: "mission" | "contrat" = "
     `</div></div></div>`
   );
 }
+
+export function parseMissionForumHtml(html: string): MissionData | null {
+  if (typeof document === "undefined") return null;
+  const template = document.createElement("template");
+  template.innerHTML = html;
+  const root = template.content.querySelector(".hnkf--mission");
+  const rank = (root?.getAttribute("data-rang") ?? "").trim().toLowerCase() as MissionRank;
+  const content = root?.querySelector(".hnkf-ms-content");
+  const title = content?.querySelector(":scope > .hnkf-ms-title");
+  if (!Object.hasOwn(MISSION_RANKS, rank) || !content || !title) return null;
+
+  const [description, conditions] = Array.from(content.querySelectorAll(":scope > .hnkf-ms-desc"));
+  if (!description) return null;
+  const statValues = new Map(
+    Array.from(content.querySelectorAll(":scope > .hnkf-ms-stats > div"), (stat) => [
+      stat.querySelector(".k")?.textContent?.trim().toLowerCase(),
+      stat.querySelector(".v")?.textContent?.trim() ?? "",
+    ] as const)
+  );
+  const base = emptyMission(rank);
+
+  return {
+    ...base,
+    title: title.textContent?.trim() ?? "",
+    urgency: content.querySelector(":scope > .hnkf-ms-head .hnkf-ms-rk")?.textContent
+      ?.replace(/^\s*Rang\s+(?:du contrat|de la mission)\s*[-–—]\s*/i, "").trim() ?? base.urgency,
+    giver: content.querySelector(":scope > .hnkf-ms-giver b")?.textContent?.trim() ?? "",
+    location: statValues.get("lieu") ?? "",
+    reward: statValues.get("récompense") ?? base.reward,
+    partySize: statValues.get("effectif") ?? base.partySize,
+    requiredGrade: statValues.get("grade requis") ?? "",
+    description: description.innerHTML,
+    conditionsTitle: conditions?.previousElementSibling?.textContent?.trim() || base.conditionsTitle,
+    conditions: conditions?.innerHTML ?? "",
+  };
+}
